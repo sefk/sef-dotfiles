@@ -1,0 +1,29 @@
+alias ls="ls -FC"
+alias flushdns="dscacheutil -flushcache"
+alias top10="du -sm * | sort -k 1 -n -r | head -10"
+
+alias vi="vim"
+
+alias goog="open http://www.google.com/"
+
+alias start=open
+
+alias netbeans="open -a /Applications/NetBeans/NetBeans\ 6.9.1.app/"
+alias ia="open -a \"iA Writer\""
+
+alias mtr="sudo mtr --curses"
+
+function clone {
+    git clone scm@git.source.ninginc.com:${1}.git
+}
+
+function vin {
+    d="~/notes"
+    pushd $d
+    vi $1
+    echo "{that was just stored in $d"
+    popd
+}
+
+alias mysql=/usr/local/mysql/bin/mysql
+alias mysqladmin=/usr/local/mysql/bin/mysqladmin
