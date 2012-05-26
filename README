@@ -1,3 +1,7 @@
 My environment files.
 
 Makefile will set up symlinks 
+
+
+TODO
+- don't hardcode location or name of repository
