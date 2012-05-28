@@ -11,7 +11,7 @@ export PATH=$PATH:/usr/local/bin:/usr/local/sbin:/usr/local/maven/bin:~/pub-src/
 
 set -o vi
 
-if [ -e ~/.alias ]; then
+if [ -e ~/.bash_alias ]; then
   . ~/.bash_alias
 fi
 
