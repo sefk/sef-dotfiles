@@ -1,31 +1,31 @@
-alias ls="ls -FC"
-alias flushdns="dscacheutil -flushcache"
+#!/bin/bash
+
+alias ls="ls -FC"    # columns, trailing character showing file type
 alias top10="du -sm * | sort -k 1 -n -r | head -10"
 
-alias vi="vim"
-
+# Convenience stuff
+alias start=open
 alias goog="open http://www.google.com/"
 
 alias ssh="ssh -A"    # agent forwarding
 
-alias start=open
-
-alias netbeans="open -a /Applications/NetBeans/NetBeans\ 6.9.1.app/"
+# Mac specific stuff
+alias mtr="sudo mtr --curses"   # by default Mac doesn't have 
 alias ia="open -a \"iA Writer\""
+alias flushdns="dscacheutil -flushcache"
 
-alias mtr="sudo mtr --curses"
-
-function clone {
-    git clone scm@git.source.ninginc.com:${1}.git
-}
+# Editing
+alias vi="vim"
 
 function vin {
     d="~/notes"
     pushd $d
     vi $1
-    echo "{that was just stored in $d"
+    echo "---> that was just stored in $d"
     popd
 }
 
+# Development
+alias netbeans="open -a /Applications/NetBeans/NetBeans\ 6.9.1.app/"
 alias mysql=/usr/local/mysql/bin/mysql
 alias mysqladmin=/usr/local/mysql/bin/mysqladmin
