@@ -1,6 +1,11 @@
 #!/bin/bash
 
-alias ls="ls -FC"    # columns, trailing character showing file type
+LSOPTIONS="-FC"
+OS=`uname`
+if [ x"$OS" == x"Darwin" ]; then LSOPTIONS=$LSOPTIONS" -G"; fi
+if [ x"$OS" == x"Linux" ]; then LSOPTIONS=$LSOPTIONS" --color"; fi
+alias ls="ls $LSOPTIONS"
+
 alias top10="du -sm * | sort -k 1 -n -r | head -10"
 
 # Convenience stuff
@@ -29,3 +34,7 @@ function vin {
 alias netbeans="open -a /Applications/NetBeans/NetBeans\ 6.9.1.app/"
 alias mysql=/usr/local/mysql/bin/mysql
 alias mysqladmin=/usr/local/mysql/bin/mysqladmin
+
+# My hosts
+alias xenon="ssh sef@xenon.stanford.edu"
+
