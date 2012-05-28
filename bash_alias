@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Make directory listings perty
 LSOPTIONS="-FC"
 OS=`uname`
 if [ x"$OS" == x"Darwin" ]; then LSOPTIONS=$LSOPTIONS" -G"; fi
