@@ -20,7 +20,7 @@ EXCLUDES = README Makefile %.swp .% %.ignore
 
 SECRETS_FILE = bash_secret
 
-SOURCES = noclobber $(filter-out $(EXCLUDES),$(wildcard *)) SECRETS_FILE
+SOURCES = $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE)
 TARGETS = $(addprefix $(TARGET_LOC)/.,$(SOURCES))
 
 all: $(TARGETS)
