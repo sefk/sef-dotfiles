@@ -1,14 +1,5 @@
 #!/bin/bash
 
-#export PROMPT_COMMAND='pwd > /tmp/cwd.`ps -o tty= -p $$`'
-# export PATH=\
-#	 $PATH:\
-#	 /opt/local/bin:\
-#	 /opt/local/sbin:\
-#	 /usr/local/git/bin:\
-#	 /usr/local/maven/bin:\
-#	 ~/bin
-
 export PATH=$PATH:/usr/local/bin:/usr/local/sbin:/usr/local/maven/bin:~/pub-src/htty/bin:~/bin:/usr/local/mysql/bin
 
 set -o vi
