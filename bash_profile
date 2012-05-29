@@ -60,4 +60,6 @@ if [ -f .git-completion.bash ]; then
     # export PS1='\[\033[41;1;37m\]\u@\h:\[\033[40;1;33m\]\W$(__git_ps1 " (%s)")>\[\033[0m\] '  # Butt-ugly IMHO, but YMMV
 fi
 
+# Ruby Version Manager
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
