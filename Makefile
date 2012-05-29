@@ -22,13 +22,14 @@ SECRETS_FILE = bash_secret
 
 SOURCES = $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE)
 TARGETS = $(addprefix $(TARGET_LOC)/.,$(SOURCES))
+TARGET_PATH := $(shell python -c "import os.path; print os.path.relpath(os.getcwd(), os.environ['HOME'])")
 
 all: $(TARGETS)
 
 $(TARGET_LOC)/.%: %
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi              # exists, not symlink, stop (don't clobber!)
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi   # exists, symlink, remove
-	ln -s ~/src/sef-dotfiles/$< $@                           # create symlink
+	ln -s ./$(TARGET_PATH)/$< $@                           # create symlink
 
 $(SECRETS_FILE): 
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
@@ -36,6 +37,6 @@ $(SECRETS_FILE):
 # only remove secrets file if it exists but is empty (ie. likely that this makefile
 # created it
 clean:
-	-rm -r -i $(TARGETS)
-	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE)]; then rm $(RMFLAG) $(SECRETS_FILE); fi
+	-rm -r $(RMFLAG) $(TARGETS)
+	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
