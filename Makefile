@@ -22,6 +22,8 @@ SECRETS_FILE = bash_secret
 
 SOURCES = $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE)
 TARGETS = $(addprefix $(TARGET_LOC)/.,$(SOURCES))
+
+# colon-equal means evaluate now, not later
 TARGET_PATH := $(shell python -c "import os.path; print os.path.relpath(os.getcwd(), os.environ['HOME'])")
 
 all: $(TARGETS)
