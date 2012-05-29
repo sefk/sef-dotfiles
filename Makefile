@@ -11,27 +11,27 @@
 #
 
 SHELL := /bin/bash
+RMFLAG =   # if you want warnings, add -i here
 
-# RMFLAG = -i   # if you want warnings
-RMFLAG = 
+LINK_TARGET_PREFIX := $(shell pwd)
+LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-TARGET_LOC = ~
-EXCLUDES = README Makefile %.swp .% %.ignore
-
-SECRETS_FILE = bash_secret
-
-SOURCES = $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE)
-TARGETS = $(addprefix $(TARGET_LOC)/.,$(SOURCES))
+EXCLUDES      = README Makefile %.swp .% %.ignore
+SECRETS_FILE  = bash_secret
+FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
+LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 
 # colon-equal means evaluate now, not later
 TARGET_PATH := $(shell python -c "import os.path; print os.path.relpath(os.getcwd(), os.environ['HOME'])")
 
-all: $(TARGETS)
+all: $(LINKS)
 
-$(TARGET_LOC)/.%: %
-	if [ -e $@ ] && [ ! -h $@ ]; then false; fi              # exists, not symlink, stop (don't clobber!)
-	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi   # exists, symlink, remove
-	ln -s ./$(TARGET_PATH)/$< $@                           # create symlink
+# first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
+# second test: if exists, but symlink, OK to remove (point to different place)
+~/.%: %
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
+	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 $(SECRETS_FILE): 
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
@@ -39,6 +39,6 @@ $(SECRETS_FILE):
 # only remove secrets file if it exists but is empty (ie. likely that this makefile
 # created it
 clean:
-	-rm -r $(RMFLAG) $(TARGETS)
+	-rm -r $(RMFLAG) $(LINKS)
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
