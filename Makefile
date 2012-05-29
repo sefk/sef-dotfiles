@@ -21,9 +21,6 @@ SECRETS_FILE  = bash_secret
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 
-# colon-equal means evaluate now, not later
-TARGET_PATH := $(shell python -c "import os.path; print os.path.relpath(os.getcwd(), os.environ['HOME'])")
-
 all: $(LINKS)
 
 # first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
