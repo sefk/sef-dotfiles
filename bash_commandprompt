@@ -104,7 +104,7 @@ Jobs="\j"
 # beginning line with $IBlack$Time12h can be nice if you want to see the 
 # time a little greyed out.  I think it takes up too much real estate
 
-export PS1="$BYellow\u@\h$Color_Off"'$(git branch &>/dev/null;\
+export PS1="$Yellow\u@\h$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
@@ -116,5 +116,5 @@ if [ $? -eq 0 ]; then \
   fi) '$BYellow$PathShort\>$Color_Off' "; \
 else \
   # @2 - Prompt when not in GIT repo
-  echo " '$Yellow$PathShort\>$Color_Off' "; \
+  echo " '$BYellow$PathShort\>$Color_Off' "; \
 fi)'
