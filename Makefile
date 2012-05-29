@@ -16,7 +16,7 @@ RMFLAG =   # if you want warnings, add -i here
 LINK_TARGET_PREFIX := $(shell pwd)
 LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-EXCLUDES      = README Makefile %.swp .% %.ignore
+EXCLUDES      = README README.md Makefile %.swp .% %.ignore
 SECRETS_FILE  = bash_secret
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
