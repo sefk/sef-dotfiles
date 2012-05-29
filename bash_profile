@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #export PROMPT_COMMAND='pwd > /tmp/cwd.`ps -o tty= -p $$`'
 # export PATH=\
 #	 $PATH:\
@@ -19,16 +21,20 @@ if [ -e ~/.bash_secret ]; then
   . ~/.bash_secret
 fi
 
+# Prompt coloring
+if [ -e ~/.git-completion.bash ]; then
+    . ~/.git-completion.bash
+    # no color
+    # export PS1='[\u@\h \W$(__git_ps1 " (%s)")]\$ '
+    # same, with green
+    export PS1='\[\e[32;1m\]\u@\h \W$(__git_ps1 " (%s)")> \[\e[0m\]'
+else
+    # basic green
+    export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
+fi
+    
 # export CLICOLOR='true'
 # export LSCOLORS="gxfxcxdxbxegedabagacad"
-
-# Default PS1
-# export PS1="\h:\W \u\$"
-
-# Colored PS1
-# export PS1="\[\e[32m\]\u@\h:\W> \[\e[0m\]"
-# same as above, but bolded
-export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
 
 # autojump is cool!
 which brew 1>/dev/null 2>/dev/null
@@ -63,3 +69,4 @@ fi
 # Ruby Version Manager
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
 PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+
