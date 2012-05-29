@@ -15,7 +15,7 @@ fi
 # Prompt handling -- start with basic green, and then if we can do something 
 # fancier (ie in bash_prompt) use that instead.
 export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
-if [ -e ~/.bash_secret ]; then
+if [ -e ~/.bash_commandprompt ]; then
   . ~/.bash_commandprompt
 fi
 

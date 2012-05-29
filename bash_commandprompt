@@ -3,6 +3,14 @@
 # Cribbed from here:
 # http://mediadoneright.com/content/ultimate-git-ps1-bash-prompt
 
+if [ ! -e ~/.git-completion.bash ]; then
+    echo "Where is git completion?  Bailing out!"
+    return 1
+fi
+
+# confirmed its there -- source it and go!
+. ~/.git-completion.bash
+
 ###################################################
 
 #  Customize BASH PS1 prompt to show current GIT repository and branch.
