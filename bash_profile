@@ -59,3 +59,5 @@ if [ -f .git-completion.bash ]; then
     export PS1='\[\033[01;32m\]\u@\h\[\033[00m\] \[\033[01;34m\]\w\[\033[00m\]$(__git_ps1 "\[\033[01;33m\](%s)\[\033[00m\]")$ '         # more colorful
     # export PS1='\[\033[41;1;37m\]\u@\h:\[\033[40;1;33m\]\W$(__git_ps1 " (%s)")>\[\033[0m\] '  # Butt-ugly IMHO, but YMMV
 fi
+
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
