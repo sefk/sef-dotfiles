@@ -26,8 +26,8 @@ function vin {
 
 # Development
 alias netbeans="open -a /Applications/NetBeans/NetBeans\ 6.9.1.app/"
-alias mysql=/usr/local/mysql/bin/mysql
-alias mysqladmin=/usr/local/mysql/bin/mysqladmin
+# alias mysql=/usr/local/mysql/bin/mysql
+# alias mysqladmin=/usr/local/mysql/bin/mysqladmin
 
 # My hosts
 alias xenon="ssh sef@xenon.stanford.edu"

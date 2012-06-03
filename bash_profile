@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$PATH:/usr/local/bin:/usr/local/sbin:/usr/local/maven/bin:~/pub-src/htty/bin:~/bin:/usr/local/mysql/bin
+export PATH=$PATH:/usr/local/bin:/usr/local/sbin:/usr/local/maven/bin:~/pub-src/htty/bin:~/bin
 
 set -o vi
 
