@@ -39,14 +39,6 @@ if [ $? -eq 0 ]; then
     fi
 fi
 
-# setup EC2
-if [ -d ~/.ec2 ]; then
-    export EC2_HOME=~/.ec2
-    export PATH=$PATH:$EC2_HOME/bin
-    export EC2_PRIVATE_KEY=`ls $EC2_HOME/sef-ning-east.pem`
-    # export EC2_CERT=`ls $EC2_HOME/cert-*.pem`
-fi
-
 # Java Dev
 export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
 export MAVEN_OPTS='-Xmx1024m -XX:MaxPermSize=256m'
@@ -57,3 +49,12 @@ PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 
 # Need jodoc (and markdown, and nokogiri, and json) for generating cordova docs
 export PATH=$PATH:~/src/joDoc/
+
+# Setup Amazon EC2 Command-Line Tools
+if [ -d ~/.ec2 ]; then
+    export EC2_HOME=~/.ec2
+    export PATH=$PATH:$EC2_HOME/bin
+    export EC2_PRIVATE_KEY=`ls $EC2_HOME/pk-*.pem`
+    export EC2_CERT=`ls $EC2_HOME/cert-*.pem`
+    export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
+fi
