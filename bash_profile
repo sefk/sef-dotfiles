@@ -44,8 +44,8 @@ export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
 export MAVEN_OPTS='-Xmx1024m -XX:MaxPermSize=256m'
 
 # Ruby Version Manager
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
-PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+# [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+# PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 
 # Need jodoc (and markdown, and nokogiri, and json) for generating cordova docs
 export PATH=$PATH:~/src/joDoc/
@@ -59,3 +59,5 @@ if [ -d ~/.ec2 ]; then
     export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
     export EC2_REGION='us-west-1'
 fi
+
+export GPG_TTY=`tty`
