@@ -1,3 +1,20 @@
+[user]
+    name = Sef Kloninger
+    email = sef@kloninger.com
+
+[color]
+    ui = auto
+
 [alias]
       lol = log --graph --decorate --oneline
       lola = log --graph --decorate --oneline --all
+      dt = difftool
+      difft = difftool
+
+[difftool "opendiff"]
+	cmd = opendiff
+	trustExitCode = true
+
+[mergetool "opendiff"]
+	cmd = opendiff
+	trustExitCode = true
