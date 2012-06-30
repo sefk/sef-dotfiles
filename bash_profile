@@ -51,7 +51,7 @@ export MAVEN_OPTS='-Xmx1024m -XX:MaxPermSize=256m'
 export PATH=$PATH:~/src/joDoc/
 
 # Setup Amazon EC2 Command-Line Tools
-if [ -d ~/.ec2 ]; then
+if [ -f ~/.ec2/*.pem ]; then
     export EC2_HOME=~/.ec2
     export PATH=$PATH:$EC2_HOME/bin
     export EC2_PRIVATE_KEY=`ls $EC2_HOME/pk-*.pem`
