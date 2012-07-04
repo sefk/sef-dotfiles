@@ -10,3 +10,6 @@ Restriction: since I do sloppy text munging to create the relative pathnames for
 `git-completion.bash` just copied in here out of laziness.  Using version 1.7.11-rc0 from `http://repo.or.cz/w/git.git/blob/HEAD:/contrib/completion/git-completion.bash`.  I should probably use a submodule or something.
 
 
+TODO
+- Maybe all this gitconfig stuff shouldn't be universal?  Hm.
+
