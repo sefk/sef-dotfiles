@@ -57,7 +57,7 @@ if [ -d ~/.ec2 ]; then
     export EC2_PRIVATE_KEY=`ls $EC2_HOME/pk-*.pem`
     export EC2_CERT=`ls $EC2_HOME/cert-*.pem`
     export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
-    export EC2_REGION='us-west-1'
+    export EC2_REGION='us-west-2'
 fi
 
 export GPG_TTY=`tty`
