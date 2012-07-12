@@ -6,8 +6,6 @@ syntax on
 filetype plugin indent on
 
 set ruler
-set hlsearch
-set incsearch
 set modeline
 set ttyfast
 set hidden
@@ -46,6 +44,13 @@ set hlsearch                    " highlight matches
 set incsearch                   " incremental searching
 set ignorecase                  " searches are case insensitive...
 set smartcase                   " ... unless they contain at least one capital letter
+set showmatch
+" leader-space to remove annoying highlighting
+nnoremap <leader><space> :noh<cr>
+
+" tab to find other end of parenthesis
+nnoremap <tab> %
+vnoremap <tab> %
 
 "" macro -- change working directory
 nnoremap <leader>h :cd ~/Dropbox/Personal/notes<CR>:pwd<CR>
