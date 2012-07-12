@@ -58,7 +58,6 @@ nmap <leader>n :set invnumber<CR>
 "" use par for formatting
 set formatprg=par\ -rq
 
-
 "" when wrapping paragraphs, don't want to jump lines
 nnoremap j gj
 nnoremap k gk
@@ -81,3 +80,7 @@ nmap <silent> <leader>s :set spell!<CR>
 set spelllang=en_us
 
 colorscheme default 
+
+"" nice little underline utility
+"" from http://stevelosh.com/blog/2010/09/coming-home-to-vim/
+nnoremap <leader>= yypVr=
