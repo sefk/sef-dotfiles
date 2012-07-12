@@ -33,6 +33,7 @@ set ts=4
 set softtabstop=4
 set shiftwidth=4
 set backspace=indent,eol,start  " backspace through everything in insert mode
+nmap <leader>c :set colorcolumn=85<CR>
 
 nmap <leader>l :set list!<CR>
 set listchars=tab:▸\ ,eol:¬
@@ -99,3 +100,8 @@ colorscheme default
 "" nice little underline utility
 "" from http://stevelosh.com/blog/2010/09/coming-home-to-vim/
 nnoremap <leader>= yypVr=
+
+" autosave on lost focus -- nice
+" doesn't work in TTY mode, gvim only, all the more reason to use gvim more often
+au FocusLost * :wa
+
