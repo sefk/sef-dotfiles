@@ -4,7 +4,7 @@ set incsearch
 set modeline
 set ttyfast
 
-let mapleader = ","
+let mapleader = "`"       " lets try this -- easier to get to than comma
 
 map ,v :tabedit $MYVIMRC<cr>         " edit my .vimrc file in a split
 if has("autocmd")
