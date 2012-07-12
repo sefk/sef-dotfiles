@@ -20,3 +20,4 @@
 	trustExitCode = true
 [core]
 	excludesfile = ~/.cvsignore
+	editor = /usr/bin/vim
