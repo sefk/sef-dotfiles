@@ -11,6 +11,7 @@ set incsearch
 set modeline
 set ttyfast
 set hidden
+set laststatus=2
 
 let mapleader = "`"       " lets try this -- easier to get to than comma
 
