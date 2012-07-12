@@ -105,3 +105,5 @@ nnoremap <leader>= yypVr=
 " doesn't work in TTY mode, gvim only, all the more reason to use gvim more often
 au FocusLost * :wa
 
+" Hook for ack -- nice
+nnoremap <leader>a :Ack<CR>
