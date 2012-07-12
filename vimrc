@@ -1,3 +1,10 @@
+" Pathogen support
+filetype off
+runtime bundle/vim-pathogen/autoload/pathogen.vim
+call pathogen#infect()
+syntax on
+filetype plugin indent on
+
 set ruler
 set hlsearch
 set incsearch
@@ -15,7 +22,6 @@ set nocompatible
 syntax enable
 set encoding=utf-8
 set showcmd                     " display incomplete commands
-filetype plugin indent on       " load file type plugins + indentation
 
 "" Whitespace
 set wrap                        " visual wrapping
