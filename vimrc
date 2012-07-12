@@ -11,6 +11,9 @@ set ttyfast
 set hidden
 set laststatus=2
 
+" even quicker way to escape -- double j to get out of edit mode
+inoremap jj <ESC>
+
 let mapleader = ","
 
 map ,v :tabedit $MYVIMRC<cr>         " edit my .vimrc file in a split
@@ -62,6 +65,7 @@ map <C-h> <C-w>h
 map <C-j> <C-w>j
 map <C-k> <C-w>k
 map <C-l> <C-w>l
+nnoremap <leader>w <C-w>v<C-w>l
 
 "" line numbers
 set number
