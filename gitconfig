@@ -19,4 +19,4 @@
 	cmd = opendiff
 	trustExitCode = true
 [core]
-	excludesfile = ~/.gitignore
+	excludesfile = ~/.cvsignore
