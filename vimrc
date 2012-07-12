@@ -60,7 +60,8 @@ set number
 highlight LineNr cterm=NONE ctermfg=LightGrey ctermbg=DarkGrey  guifg=LightGrey guibg=DarkGrey 
 command! -nargs=* Wrap set wrap linebreak nolist
 nmap <C-N><C-N> :set invnumber<CR>
-nmap <leader>n :set invnumber<CR>
+nmap <leader>n :set invnumber!<CR>
+nmap <leader>r :set relativenumber!<CR>
 
 "" use par for formatting
 set formatprg=par\ -rq
