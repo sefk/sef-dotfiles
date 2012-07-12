@@ -28,6 +28,7 @@ set wrap                        " visual wrapping
 set linebreak                   " only wrap at good places (see breakat)
 let &showbreak='> '             " show on beginning of linebreak lines
 set expandtab                   " use spaces, not tabs
+set scrolloff=5
 set ts=4
 set softtabstop=4
 set shiftwidth=4
