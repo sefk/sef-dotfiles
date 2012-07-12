@@ -18,3 +18,5 @@
 [mergetool "opendiff"]
 	cmd = opendiff
 	trustExitCode = true
+[core]
+	excludesfile = ~/.gitignore
