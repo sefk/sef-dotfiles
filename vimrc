@@ -99,7 +99,7 @@ map <leader>h :syntax off<cr>         " edit my .vimrc file in a split
 nmap <silent> <leader>s :set spell!<CR>
 set spelllang=en_us
 
-colorscheme default 
+colorscheme clouds 
 
 "" nice little underline utility
 "" from http://stevelosh.com/blog/2010/09/coming-home-to-vim/
