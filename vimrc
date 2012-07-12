@@ -10,6 +10,7 @@ set hlsearch
 set incsearch
 set modeline
 set ttyfast
+set hidden
 
 let mapleader = "`"       " lets try this -- easier to get to than comma
 
