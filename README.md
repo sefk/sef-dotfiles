@@ -1,5 +1,7 @@
 ** My environment files **
 
+Now using submodules for vim plugins, so remember to do a "submodule init" and "submodule update" before doing anything else.
+
 My pile of environment files. 
 
 Makefile will set up symlinks.  Automatically sets up links for all files / directories checked in here.  Files here should **not** begin with a leading dot, although the link to them well.  Has some special creation and cleanup logic to handle the file `bash_secret`.  That file isn't to be checked in, but should otherwise be treated as a link target.  
@@ -11,4 +13,4 @@ Restriction: since I do sloppy text munging to create the relative pathnames for
 
 TODO
 - Maybe all this gitconfig stuff shouldn't be universal?  Hm.
-
+- Consider adding submodule stuff to the makefile.  That somehow seems wrong though.
