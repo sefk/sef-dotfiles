@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=$PATH:/usr/local/bin:/usr/local/sbin:/usr/local/maven/bin:~/pub-src/htty/bin:~/bin
+export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
 
 set -o vi
 
@@ -48,7 +48,7 @@ export MAVEN_OPTS='-Xmx1024m -XX:MaxPermSize=256m'
 # PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 
 # Need jodoc (and markdown, and nokogiri, and json) for generating cordova docs
-export PATH=$PATH:~/src/joDoc/
+export PATH=$PATH:~/src/joDoc
 
 # Setup Amazon EC2 Command-Line Tools
 PEM=(~/.ec2/*.pem)
