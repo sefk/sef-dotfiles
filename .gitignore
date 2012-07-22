@@ -2,4 +2,4 @@ bash_secret
 .netrwhist
 *.pem
 .DS_Store
-
+*.spl
