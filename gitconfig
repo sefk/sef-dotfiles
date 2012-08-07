@@ -18,6 +18,10 @@
 [mergetool "opendiff"]
 	cmd = opendiff
 	trustExitCode = true
+
 [core]
 	excludesfile = ~/.cvsignore
 	editor = /usr/bin/vim
+
+[github]
+	user = sefk

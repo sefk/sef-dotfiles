@@ -3,6 +3,7 @@
 export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
 
 set -o vi
+export EDITOR=/usr/bin/vim
 
 if [ -e ~/.bash_alias ]; then
   . ~/.bash_alias

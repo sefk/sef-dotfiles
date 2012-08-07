@@ -35,3 +35,8 @@ if [ -r ~/src/class2go/tools/bash_aliases ]; then
     . ~/src/class2go/tools/bash_aliases
 fi
 
+function server() {
+	local port="${1:-9000}"
+	open "http://localhost:${port}/"
+	python -m SimpleHTTPServer "$port"
+}
