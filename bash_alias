@@ -29,10 +29,11 @@ function vin {
 alias xenon="ssh -A sef@xenon.stanford.edu"
 alias dreamhost="ssh -A sefklon@sef.kloninger.com"
 
-# Class2go Project
+# Sophi Project
 
-if [ -r ~/src/class2go/tools/bash_aliases ]; then
-    . ~/src/class2go/tools/bash_aliases
+if [ -d ~/src/sophi/tools/ ]; then
+    . ~/src/sophi/tools/bash_aliases
+    . ~/src/sophi/tools/bash_bug_reports
 fi
 
 function server() {
