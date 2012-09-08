@@ -65,4 +65,5 @@ fi
 export GPG_TTY=`tty`
 
 # Display host and title in menu bar
-export PS1="\[\e]2;\h:\]$PWD\[\a\]$PS1"
+# Screws up horiz spacing / backspacing, commenting out until can get right
+# export PS1="\[\e]2;\h:\]$PWD\[\a\]$PS1"
