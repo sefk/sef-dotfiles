@@ -3,3 +3,4 @@ bash_secret
 *.pem
 .DS_Store
 *.spl
+*.swp
