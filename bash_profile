@@ -63,3 +63,6 @@ if [ -e ${PEM[0]} ]; then
 fi
 
 export GPG_TTY=`tty`
+
+# Display host and title in menu bar
+export PS1="\[\e]2;\h:\]$PWD\[\a\]$PS1"
