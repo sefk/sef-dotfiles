@@ -36,7 +36,7 @@ export LS_COLORS="di=34;40:ln=32;40:so=35;40:pi=33;40:ex=31;40:bd=34;46:cd=34;43
 which brew 1>/dev/null 2>/dev/null
 if [ $? -eq 0 ]; then
     if [ -f `brew --prefix`/etc/autojump ]; then
-    . `brew --prefix`/etc/autojump
+        . `brew --prefix`/etc/autojump
     fi
 fi
 
@@ -67,11 +67,12 @@ export GPG_TTY=`tty`
 # Display host and title in menu bar
 case ${TERM} in
     xterm*|rxvt*|Eterm|aterm|kterm|gnome*|interix)
-        PROMPT_COMMAND=${PROMPT_COMMAND}'; echo -ne "\033]0;${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\007"'
+        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033]0;${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\007"'
         use_color=true
     ;;
     screen)
-        PROMPT_COMMAND=${PROMPT_COMMAND}'; echo -ne "\033_${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\033\\"'
+        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}' echo -ne "\033_${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\033\\"'
         use_color=true
         ;;
 esac
+
