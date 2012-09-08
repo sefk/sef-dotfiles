@@ -65,5 +65,13 @@ fi
 export GPG_TTY=`tty`
 
 # Display host and title in menu bar
-# Screws up horiz spacing / backspacing, commenting out until can get right
-# export PS1="\[\e]2;\h:\]$PWD\[\a\]$PS1"
+case ${TERM} in
+    xterm*|rxvt*|Eterm|aterm|kterm|gnome*|interix)
+        PROMPT_COMMAND=${PROMPT_COMMAND}'; echo -ne "\033]0;${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\007"'
+        use_color=true
+    ;;
+    screen)
+        PROMPT_COMMAND=${PROMPT_COMMAND}'; echo -ne "\033_${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\033\\"'
+        use_color=true
+        ;;
+esac
