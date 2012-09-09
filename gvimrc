@@ -1,5 +1,5 @@
 " Font
-set guifont=Menlo\ Bold:h14
+set guifont=Menlo:h14
 set antialias
 
 " height of screen
