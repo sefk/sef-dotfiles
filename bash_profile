@@ -52,15 +52,17 @@ export MAVEN_OPTS='-Xmx1024m -XX:MaxPermSize=256m'
 export PATH=$PATH:~/src/joDoc
 
 # Setup Amazon EC2 Command-Line Tools
-PEM=(~/.ec2/*.pem)
-if [ -e ${PEM[0]} ]; then
-    export EC2_HOME=~/.ec2
-    export PATH=$PATH:$EC2_HOME/bin
-    export EC2_PRIVATE_KEY=`ls $EC2_HOME/pk-*.pem`
-    export EC2_CERT=`ls $EC2_HOME/cert-*.pem`
-    export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
-    export EC2_REGION='us-west-2'
-fi
+# PEM=(~/.ec2/*.pem)
+# if [ -e ${PEM[0]} ]; then
+#    export EC2_HOME=~/.ec2
+#    export PATH=$PATH:$EC2_HOME/bin
+#    export EC2_PRIVATE_KEY=`ls $EC2_HOME/pk-*.pem`
+#    export EC2_CERT=`ls $EC2_HOME/cert-*.pem`
+#    export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
+#    export EC2_REGION='us-west-2'
+#fi
+
+export PATH=$PATH:/usr/local/bin/aws
 
 export GPG_TTY=`tty`
 
@@ -76,3 +78,8 @@ case ${TERM} in
         ;;
 esac
 
+export GIT_PS1_SHOWUNTRACKEDFILES=1
+export GIT_PS1_SHOWDIRTYSTATE=1
+export GIT_PS1_SHOWSTASHSTATE=1
+# export GIT_PS1_SHOWUPSTREAM="auto"
+# export GIT_PS1_SHOWUPSTREAM="verbose"
