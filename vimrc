@@ -67,6 +67,8 @@ map <C-k> <C-w>k
 map <C-l> <C-w>l
 nnoremap <leader>w <C-w>v<C-w>l
 
+nmap<leader>, :set wrap!<CR>
+
 "" line numbers
 set number
 highlight LineNr cterm=NONE ctermfg=LightGrey ctermbg=DarkGrey  guifg=LightGrey guibg=DarkGrey 
@@ -99,7 +101,7 @@ map <leader>h :syntax off<cr>         " edit my .vimrc file in a split
 nmap <silent> <leader>s :set spell!<CR>
 set spelllang=en_us
 
-colorscheme clouds
+"" colorscheme clouds
 
 "" nice little underline utility
 "" from http://stevelosh.com/blog/2010/09/coming-home-to-vim/
@@ -111,3 +113,14 @@ au FocusLost * :wa
 
 " Hook for ack -- nice
 nnoremap <leader>a :Ack<CR>
+
+" consider ai in these
+" if has('autocmd')
+"    au BufRead,BufNewFile *.txt set tw=72 fo=atcn wm=0
+"    au BufRead,BufNewFile *.md set tw=72 fo=atcn wm=0
+" endif
+
+" augroup vimrc_autocmds
+"    autocmd BufEnter * highlight OverLength ctermbg=darkgrey guibg=#592929
+"    autocmd BufEnter * match OverLength /\%74v.*/
+" augroup END
