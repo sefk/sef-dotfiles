@@ -40,3 +40,14 @@ function server() {
 	open "http://localhost:${port}/"
 	python -m SimpleHTTPServer "$port"
 }
+
+function m() {
+    if [ -d  ~/src/class2go/main ]; then
+        cd ~/src/class2go/main
+    elif [ -f ~/class2go/main ]; then
+        cd ~/class2go/main
+    else
+        echo "hrm, not here"
+    fi
+}
+
