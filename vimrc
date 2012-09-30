@@ -36,7 +36,7 @@ set ts=4
 set softtabstop=4
 set shiftwidth=4
 set backspace=indent,eol,start  " backspace through everything in insert mode
-nmap <leader>c :set colorcolumn=85<CR>
+
 
 nmap <leader>l :set list!<CR>
 set listchars=tab:▸\ ,eol:¬
@@ -56,18 +56,38 @@ nnoremap <leader><space> :noh<cr>
 nnoremap <tab> %
 vnoremap <tab> %
 
-"" macro -- change working directory
-nnoremap <leader>h :cd ~/Dropbox/Personal/notes<CR>:pwd<CR>
-nnoremap <leader>w :cd ~/Dropbox/Ning/notes<CR>:pwd<CR>
+"" working with windows - movement
+map <leader>h :wincmd h<CR>
+map <leader>j :wincmd j<CR>
+map <leader>k :wincmd k<CR>
+map <leader>l :wincmd l<CR>
 
-"" working with windows
-map <C-h> <C-w>h
-map <C-j> <C-w>j
-map <C-k> <C-w>k
-map <C-l> <C-w>l
-nnoremap <leader>w <C-w>v<C-w>l
+"" opening
+map <leader>x :split<CR>
+map <leader>y :vsplit<CR>
 
-nmap<leader>, :set wrap!<CR>
+" Move the cursor to the another window
+noremap <silent> ,h :wincmd h<cr>
+noremap <silent> ,j :wincmd j<cr>
+noremap <silent> ,k :wincmd k<cr>
+noremap <silent> ,l :wincmd l<cr>
+
+" Close the window above, below...
+noremap <silent> ,cj :wincmd j<cr>:close<cr>
+noremap <silent> ,ck :wincmd k<cr>:close<cr>
+noremap <silent> ,ch :wincmd h<cr>:close<cr>
+noremap <silent> ,cl :wincmd l<cr>:close<cr>
+
+" Close the current window
+noremap <silent> ,cc :close<cr>
+
+" Move the current window to the right of the main Vim window
+noremap <silent> ,ml <C-W>L
+noremap <silent> ,mk <C-W>K
+noremap <silent> ,mh <C-W>H
+noremap <silent> ,mj <C-W>J
+
+nmap<leader>w :set wrap!<CR>
 
 "" line numbers
 set number
@@ -96,8 +116,6 @@ vnoremap <Up> gk
 inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
 
-map <leader>h :syntax off<cr>         " edit my .vimrc file in a split
-
 nmap <silent> <leader>s :set spell!<CR>
 set spelllang=en_us
 
@@ -109,18 +127,34 @@ nnoremap <leader>= yypVr=
 
 " autosave on lost focus -- nice
 " doesn't work in TTY mode, gvim only, all the more reason to use gvim more often
+" Also causes a problem if the file doesn't have a name yet -- maybe way to 
+" assign a temp filename?
 au FocusLost * :wa
 
 " Hook for ack -- nice
 nnoremap <leader>a :Ack<CR>
 
-" consider ai in these
+
+" This was an attempt to make hanging paragraphs and bulleted lists
+" work for editing markdown.  But it's too broad, and autoindent
+" has a bunch of weird side effects, wrapping things you might not
+" want to wrap
+"
 " if has('autocmd')
-"    au BufRead,BufNewFile *.txt set tw=72 fo=atcn wm=0
-"    au BufRead,BufNewFile *.md set tw=72 fo=atcn wm=0
+"    au BufRead,BufNewFile *.txt set ai tw=72 fo=atcn wm=0
+"    au BufRead,BufNewFile *.md set ai tw=72 fo=atcn wm=0
 " endif
 
+
+" This will shade everything past a certain column with a grey background
+" visual warning that things are too wide.  More annyoing than useful
 " augroup vimrc_autocmds
 "    autocmd BufEnter * highlight OverLength ctermbg=darkgrey guibg=#592929
 "    autocmd BufEnter * match OverLength /\%74v.*/
 " augroup END
+
+
+" This maps ,c to turn on a warning column.  More annoying than useful
+" and no easy way to turn off.
+"
+" nmap <leader>c :set colorcolumn=85<CR>
