@@ -51,3 +51,27 @@ function m() {
     fi
 }
 
+function mdview() {
+    if [ $# != 1 ]; then
+        echo "usage: mdview file.md"
+        return 1
+    fi
+
+    input=$1
+    base=${input%.md}
+    if [ $input == $base ]; then
+        echo "error, \"${input}\" needs to have .md extension"
+        return 1
+    fi
+    new=/tmp/${base}.html
+    if [ -f $new ]; then
+        read -p "Careful, \"${new}\" already exists, clobber? (y/n): " confirm
+        if [[ ! $confirm =~ ^[Yy] ]]; then
+            return 1
+        fi
+        rm $new
+    fi
+    markdown $input > $new
+    open $new       # not portable, works on Mac
+    return 0
+}
