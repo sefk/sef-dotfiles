@@ -20,6 +20,10 @@ if [ -e ~/.bash_commandprompt ]; then
   . ~/.bash_commandprompt
 fi
 
+if [ -e ~/.django_bash_completion ]; then
+  . ~/.django_bash_completion
+fi
+
 # Make directory listings perty
 # this is useful for getting the lscolors stuff right: http://geoff.greer.fm/lscolors/
 LSOPTIONS="-FC"
