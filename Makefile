@@ -21,7 +21,12 @@ SECRETS_FILE  = bash_secret
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 
-all: $(LINKS)
+all: submod $(LINKS)
+
+submod:
+	git submodule init
+	git submodule update
+
 
 # first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
 # second test: if exists, but symlink, OK to remove (point to different place)
