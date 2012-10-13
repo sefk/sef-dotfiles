@@ -27,13 +27,21 @@ function vin {
 
 # My hosts
 alias xenon="ssh -A sef@xenon.stanford.edu"
+alias corn="ssh -A sef@corn.stanford.edu"
 alias dreamhost="ssh -A sefklon@sef.kloninger.com"
 
+function source_if_exists {
+    if [ -f $1 ]; then
+        source $1
+    fi
+}
+
+
 # Class2Go Project
-if [ -d ~/src/class2go/tools/ ]; then
-    . ~/src/class2go/tools/bash_aliases
-    . ~/src/class2go/tools/bash_bug_reports
-fi
+source_if_exists ~/src/class2go/tools/bash_aliases
+source_if_exists ~/src/class2go/tools/bash_aliases.sh
+source_if_exists ~/src/class2go/tools/bash_bug_reports
+source_if_exists ~/src/class2go/tools/bash_bug_reports.sh
 
 function server() {
 	local port="${1:-9000}"
@@ -44,7 +52,7 @@ function server() {
 function m() {
     if [ -d  ~/src/class2go/main ]; then
         cd ~/src/class2go/main
-    elif [ -f ~/class2go/main ]; then
+    elif [ -d ~/class2go/main ]; then
         cd ~/class2go/main
     else
         echo "hrm, not here"
