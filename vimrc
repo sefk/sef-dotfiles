@@ -64,22 +64,26 @@ map <leader>l :wincmd l<CR>
 
 "" opening
 map <leader>x :split<CR>
+map <leader>2 :split<CR>
 map <leader>y :vsplit<CR>
+
+" current window
+noremap <silent> ,cc :close<cr>
+" close other window
+noremap <silent> ,1 :wincmd j<cr>:close<cr>
 
 " Move the cursor to the another window
 noremap <silent> ,h :wincmd h<cr>
 noremap <silent> ,j :wincmd j<cr>
 noremap <silent> ,k :wincmd k<cr>
 noremap <silent> ,l :wincmd l<cr>
+map <leader>, :wincmd w<CR>
 
 " Close the window above, below...
 noremap <silent> ,cj :wincmd j<cr>:close<cr>
 noremap <silent> ,ck :wincmd k<cr>:close<cr>
 noremap <silent> ,ch :wincmd h<cr>:close<cr>
 noremap <silent> ,cl :wincmd l<cr>:close<cr>
-
-" Close the current window
-noremap <silent> ,cc :close<cr>
 
 " Move the current window to the right of the main Vim window
 noremap <silent> ,ml <C-W>L
