@@ -13,6 +13,7 @@ alias ssh="ssh -A"    # agent forwarding
 alias mtr="sudo mtr --curses"   # by default Mac doesn't have 
 alias ia="open -a \"iA Writer\""
 alias flushdns="dscacheutil -flushcache"
+alias ip="ipython"
 
 # Editing
 alias vi="vim"
