@@ -93,6 +93,8 @@ noremap <silent> ,mj <C-W>J
 
 nmap<leader>w :set wrap!<CR>
 
+noremap ,` :%y<CR>
+
 "" line numbers
 set number
 highlight LineNr cterm=NONE ctermfg=LightGrey ctermbg=DarkGrey  guifg=LightGrey guibg=DarkGrey 
