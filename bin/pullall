@@ -1,0 +1,51 @@
+#!/usr/bin/ruby -w
+
+myname = $0.split('/')[-1]
+repository = "source.ninginc.com"
+
+result = `ping -q -c 1 -t 4 #{repository}`
+if ($?.exitstatus > 0) 
+  print myname + ": cannot reach source repostory \"#{repository}\" (#{$?.exitstatus})\n" 
+  exit 1
+end
+print myname + ": can ping repository \"#{repository}\", good\n"
+
+listing = `find . -depth 1 -type d -print0`
+dirs = listing.split("\0")
+if ($?.exitstatus > 0)
+  print myname + ": cannot scan directory (#{$?.exitstatus})\n" 
+  exit 1
+end
+
+successes = Array.new
+failures = Array.new
+
+dirs.each do |dir|
+  dir = dir.split("/")[-1]
+  gitTest = dir + "/.git"
+  if (! File.exist?(gitTest) || File.ftype(gitTest) != "directory" )
+    print myname + ": subdir \#{dir}\" doesn't seem to be a git repository, skipping\n"
+    next
+  end
+  print "\n"
+  print myname + ": --------  Pulling from \"#{dir}\" --------\n"
+  Dir.chdir(dir) do
+    system("git pull")
+    if ($?.exitstatus > 0)
+      failures << dir
+    else
+      successes << dir
+    end
+  end
+end
+
+print "\n";
+print myname + ": successes = " + successes.join(", ") + "\n"
+print myname + ": failures = " 
+if (failures.length == 0) then
+    print "(none)\n"    
+else
+    print failures.join(", ") + "\n"
+end
+
+exit 0

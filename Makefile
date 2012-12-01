@@ -16,17 +16,16 @@ RMFLAG =   # if you want warnings, add -i here
 LINK_TARGET_PREFIX := $(shell pwd)
 LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-EXCLUDES      = README README.md Makefile %.swp .% %.ignore
+EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin
 SECRETS_FILE  = bash_secret
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 
-all: submod $(LINKS)
+all: ~/bin submod $(LINKS)
 
 submod:
 	git submodule init
 	git submodule update
-
 
 # first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
 # second test: if exists, but symlink, OK to remove (point to different place)
@@ -34,6 +33,11 @@ submod:
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
+
+~/bin: 
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
+	ln -s $(LINK_TARGET_PREFIX)/bin $@
 
 $(SECRETS_FILE): 
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
