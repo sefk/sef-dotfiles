@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:$PATH:~/bin
 
 set -o vi
 export EDITOR=/usr/bin/vim
@@ -39,8 +39,8 @@ export LS_COLORS="di=34;40:ln=32;40:so=35;40:pi=33;40:ex=31;40:bd=34;46:cd=34;43
 # autojump is cool!
 which brew 1>/dev/null 2>/dev/null
 if [ $? -eq 0 ]; then
-    if [ -f `brew --prefix`/etc/autojump ]; then
-        . `brew --prefix`/etc/autojump
+    if [ -f `brew --prefix`/etc/autojump.bash ]; then
+        source `brew --prefix`/etc/autojump.bash
     fi
 fi
 
