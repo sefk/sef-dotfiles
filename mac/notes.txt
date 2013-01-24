@@ -1,2 +1,0 @@
-Howto: http://eaganj.free.fr/weblog/?post/2009/07/14/Demystifying-Mail.app-Plugins-on-Leopard
-Code from here: http://the.taoofmac.com/space/blog/2011/08/13/2110

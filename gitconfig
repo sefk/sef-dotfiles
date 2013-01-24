@@ -6,8 +6,8 @@
     ui = auto
 
 [alias]
-    lol = log --graph --decorate --oneline
-    lola = log --graph --decorate --oneline --all
+    logl = log --decorate --oneline
+    logla = log --decorate --oneline --all
     dt = difftool
     difft = difftool
 

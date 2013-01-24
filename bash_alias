@@ -43,6 +43,8 @@ source_if_exists ~/src/class2go/tools/bash_aliases
 source_if_exists ~/src/class2go/tools/bash_aliases.sh
 source_if_exists ~/src/class2go/tools/bash_bug_reports
 source_if_exists ~/src/class2go/tools/bash_bug_reports.sh
+alias tests="REUSE_DB=1 ./manage.py test -v 2 --attr='!selenium'"
+alias tests-full="./manage.py test -v 2 --attr='!selenium'"
 
 function server() {
 	local port="${1:-9000}"
@@ -83,4 +85,9 @@ function mdview() {
     markdown $input > $new
     open $new       # not portable, works on Mac
     return 0
+}
+
+
+function e2date() {
+    perl -le 'print scalar localtime $ARGV[0]' $1
 }
