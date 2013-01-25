@@ -25,3 +25,6 @@
 
 [github]
 	user = sefk
+
+[merge]
+    tool = opendiff
