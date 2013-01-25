@@ -12,7 +12,8 @@ set hidden
 set laststatus=2
 
 " even quicker way to escape -- double j to get out of edit mode
-inoremap jj <ESC>
+" no, this is dumb
+" inoremap jj <ESC>
 
 let mapleader = ","
 
