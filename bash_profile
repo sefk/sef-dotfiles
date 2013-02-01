@@ -5,24 +5,22 @@ export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:$PATH:~/bin
 set -o vi
 export EDITOR=/usr/bin/vim
 
-if [ -e ~/.bash_alias ]; then
-  . ~/.bash_alias
-fi
+function test_and_source {
+    if [ -e $1 ]; then
+        . $1
+    fi
+}
 
-if [ -e ~/.bash_secret ]; then
-  . ~/.bash_secret
-fi
+test_and_source ~/.bash_alias
+test_and_source ~/.bash_secret
 
 # Prompt handling -- start with basic green, and then if we can do something 
 # fancier (ie in bash_prompt) use that instead.
 export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
-if [ -e ~/.bash_commandprompt ]; then
-  . ~/.bash_commandprompt
-fi
+test_and_source ~/.bash_commandprompt
 
-if [ -e ~/.django_bash_completion ]; then
-  . ~/.django_bash_completion
-fi
+test_and_source ~/.django_bash_completion
+test_and_source /usr/local/etc/bash_completion
 
 # Make directory listings perty
 # this is useful for getting the lscolors stuff right: http://geoff.greer.fm/lscolors/
