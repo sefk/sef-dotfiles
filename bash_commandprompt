@@ -3,6 +3,15 @@
 # Cribbed from here:
 # http://mediadoneright.com/content/ultimate-git-ps1-bash-prompt
 
+function stoppedjobs {
+    j=`jobs -s | wc -l | sed -e "s/ //g"`
+    if [[ $j -eq 0 ]]; then
+        echo -n ""
+    else
+        echo -n "[$j]"
+    fi
+}
+
 if [ ! -e ~/.git-completion.bash ]; then
     echo "Where is git completion?  Bailing out!"
     return 1
@@ -104,7 +113,7 @@ Jobs="\j"
 # beginning line with $IBlack$Time12h can be nice if you want to see the 
 # time a little greyed out.  I think it takes up too much real estate
 
-export PS1="$Yellow\u@\h$Color_Off"'$(git branch &>/dev/null;\
+export PS1="$Yellow\u@\h\$(stoppedjobs)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
