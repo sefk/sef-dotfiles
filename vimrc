@@ -46,7 +46,7 @@ set ignorecase                  " searches are case insensitive...
 set smartcase                   " ... unless they contain at least one capital letter
 set showmatch
 " leader-space to remove annoying highlighting
-nnoremap <leader><space> :noh<cr>
+nnoremap <leader>q :noh<cr>
 
 " tab to find other end of parenthesis
 nnoremap <tab> %
