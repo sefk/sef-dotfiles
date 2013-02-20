@@ -100,9 +100,11 @@ noremap ,` :%y<CR>
 set number
 highlight LineNr cterm=NONE ctermfg=LightGrey ctermbg=DarkGrey  guifg=LightGrey guibg=DarkGrey 
 command! -nargs=* Wrap set wrap linebreak nolist
-nmap <C-N><C-N> :set invnumber<CR>
 nmap <leader>n :set invnumber!<CR>
 nmap <leader>r :set relativenumber!<CR>
+
+"" C-n through buffers
+:nmap <C-n> :bnext<CR>
 
 "" use par for formatting
 set formatprg=par\ -rq
@@ -165,3 +167,13 @@ nnoremap <leader>a :Ack<CR>
 " and no easy way to turn off.
 "
 " nmap <leader>c :set colorcolumn=85<CR>
+
+
+" MiniBufExpl
+" http://www.vim.org/scripts/script.php?script_id=159
+
+let $Tlist_Ctags_Cmd='/usr/local/bin/ctags'
+map <leader>p :TlistToggle<CR>
+
+set runtimepath^=~/.vim/bundle/ctrlp.vim
+:nmap ; :CtrlPBuffer<CR>
