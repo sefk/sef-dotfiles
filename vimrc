@@ -89,6 +89,7 @@ noremap <silent> ,mj <C-W>J
 
 nmap<leader>w :set wrap!<CR>
 
+" copy whole file
 noremap ,` :%y<CR>
 
 "" line numbers
@@ -169,7 +170,6 @@ nnoremap <leader>a :Ack<CR>
 
 let $Tlist_Ctags_Cmd='/usr/local/bin/ctags'
 map <leader>p :TlistToggle<CR>
-
 
 "" CTRL-P
 "" from this useful article: http://statico.github.com/vim.html
