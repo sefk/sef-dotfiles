@@ -17,11 +17,6 @@ set laststatus=2
 
 let mapleader = ","
 
-map ,v :tabedit $MYVIMRC<cr>         " edit my .vimrc file in a split
-if has("autocmd")
-    autocmd bufwritepost .vimrc source $MYVIMRC
-endif
-
 set nocompatible
 syntax enable
 set encoding=utf-8
