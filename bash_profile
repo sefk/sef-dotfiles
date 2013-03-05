@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/mysql/bin:$PATH:~/bin
+export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
 
 set -o vi
 export EDITOR=/usr/bin/vim
@@ -13,6 +13,7 @@ function test_and_source {
 
 test_and_source ~/.bash_alias
 test_and_source ~/.bash_secret
+test_and_source ~/stanford/aws/bash_aws
 
 # Prompt handling -- start with basic green, and then if we can do something 
 # fancier (ie in bash_prompt) use that instead.
@@ -53,19 +54,6 @@ export MAVEN_OPTS='-Xmx1024m -XX:MaxPermSize=256m'
 # Need jodoc (and markdown, and nokogiri, and json) for generating cordova docs
 export PATH=$PATH:~/src/joDoc
 
-# Setup Amazon EC2 Command-Line Tools
-# PEM=(~/.ec2/*.pem)
-# if [ -e ${PEM[0]} ]; then
-#    export EC2_HOME=~/.ec2
-#    export PATH=$PATH:$EC2_HOME/bin
-#    export EC2_PRIVATE_KEY=`ls $EC2_HOME/pk-*.pem`
-#    export EC2_CERT=`ls $EC2_HOME/cert-*.pem`
-#    export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Home/
-#    export EC2_REGION='us-west-2'
-#fi
-
-export PATH=$PATH:/usr/local/bin/aws
-
 export GPG_TTY=`tty`
 
 # Display host and title in menu bar
@@ -85,3 +73,11 @@ export GIT_PS1_SHOWDIRTYSTATE=1
 export GIT_PS1_SHOWSTASHSTATE=1
 # export GIT_PS1_SHOWUPSTREAM="auto"
 # export GIT_PS1_SHOWUPSTREAM="verbose"
+
+
+export EC2_HOME=/usr/local/ec2-api-tools-1.6.6.4
+export PATH=$PATH:$EC2_HOME/bin
+
+export AWS_ELB_HOME=/usr/local/ElasticLoadBalancing-1.0.17.0
+export PATH=$PATH:$AWS_ELB_HOME/bin
+
