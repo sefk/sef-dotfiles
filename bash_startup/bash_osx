@@ -1,0 +1,1 @@
+alias eject='hdiutil eject'

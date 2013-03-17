@@ -11,17 +11,11 @@ function test_and_source {
     fi
 }
 
-test_and_source ~/.bash_alias
-test_and_source ~/.bash_secret
 test_and_source ~/stanford/aws/bash_aws
 
 # Prompt handling -- start with basic green, and then if we can do something 
 # fancier (ie in bash_prompt) use that instead.
 export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
-test_and_source ~/.bash_commandprompt
-
-test_and_source ~/.django_bash_completion
-test_and_source /usr/local/etc/bash_completion
 
 # Make directory listings perty
 # this is useful for getting the lscolors stuff right: http://geoff.greer.fm/lscolors/
@@ -74,10 +68,18 @@ export GIT_PS1_SHOWSTASHSTATE=1
 # export GIT_PS1_SHOWUPSTREAM="auto"
 # export GIT_PS1_SHOWUPSTREAM="verbose"
 
-
 export EC2_HOME=/usr/local/ec2-api-tools-1.6.6.4
 export PATH=$PATH:$EC2_HOME/bin
 
 export AWS_ELB_HOME=/usr/local/ElasticLoadBalancing-1.0.17.0
 export PATH=$PATH:$AWS_ELB_HOME/bin
 
+# Now source everything else we need 
+
+for dir in `/bin/ls -1ad bash_startup .bash_startup 2>/dev/null`; do
+    for scr in `cd $dir; /bin/ls -1 | sort`; do
+        test_and_source $dir/$scr
+    done
+done
+
+test_and_source /usr/local/etc/bash_completion
