@@ -67,7 +67,7 @@ export GIT_PS1_SHOWSTASHSTATE=1
 # export GIT_PS1_SHOWUPSTREAM="verbose"
 
 # Now source everything else we need 
-for dir in `/bin/ls -1ad bash_startup .bash_startup 2>/dev/null`; do
+for dir in `/bin/ls -1ad ~/bash_startup ~/.bash_startup 2>/dev/null`; do
     for scr in `cd $dir; /bin/ls -1 | sort`; do
         test_and_source $dir/$scr
     done
