@@ -5,3 +5,5 @@ export PROJECT_HOME=~/src
 export VIRTUALENVWRAPPER_VIRTUALENV_ARGS='--no-site-packages'
 export VIRTUALENVWRAPPER_VIRTUALENV=`which virtualenv`
 source /usr/local/bin/virtualenvwrapper.sh
+
+test_and_source ~/.rvm/scripts/rvm

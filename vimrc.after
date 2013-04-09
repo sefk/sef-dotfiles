@@ -1,0 +1,28 @@
+""
+"" vimrc -- AFTER Janus runs
+""
+
+"" when wrapping paragraphs, don't want to jump lines
+nnoremap j gj
+nnoremap k gk
+nnoremap 0 g0
+nnoremap $ g$
+vnoremap j gj
+vnoremap k gk
+vnoremap 0 g0
+vnoremap $ g$
+nnoremap <Down> gj
+nnoremap <Up> gk
+vnoremap <Down> gj
+vnoremap <Up> gk
+inoremap <Down> <C-o>gj
+inoremap <Up> <C-o>gk
+
+" Window
+map <leader>, :wincmd w<CR>
+" open/close (better way?)
+map <leader>2 :split<CR>
+noremap <silent> ,1 :wincmd j<cr>:close<cr>
+
+" toggle spellcheck
+nmap <silent> <leader>ts :set spell!<CR>
