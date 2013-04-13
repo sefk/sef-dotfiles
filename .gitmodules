@@ -1,3 +1,6 @@
 [submodule "janus/vim-powerline"]
 	path = janus/vim-powerline
 	url = git://github.com/Lokaltog/vim-powerline.git
+[submodule "vim"]
+	path = vim
+	url = https://github.com/carlhuda/janus.git
