@@ -24,8 +24,7 @@ LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 all: ~/bin submod $(LINKS)
 
 submod:
-	git submodule init
-	git submodule update
+	git submodule update --init --recursive
 
 # first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
 # second test: if exists, but symlink, OK to remove (point to different place)
