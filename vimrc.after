@@ -59,3 +59,10 @@ augroup encrypted
   " after the file has been written.
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
+
+
+" Marked
+:nnoremap <leader>m :silent !open -a Marked.app '%:p'<cr>
+
+
+set ts=4
