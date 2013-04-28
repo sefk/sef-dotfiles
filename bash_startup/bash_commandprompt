@@ -103,27 +103,27 @@ Jobs="\j"
 
 function stoppedjobs {
     j=`jobs -s | wc -l | sed -e "s/ //g"`
-    if [[ $j -eq 0 ]]; then
-        echo -n ""
-    else
+    if [[ $j -ne 0 ]]; then
         echo -n "[$j]"
     fi
 }
 
 function currentvirtenv {
     ve=`basename "\$VIRTUAL_ENV"`
-    if [[ $ve == "" ]]; then
-        echo -n ""
-    else
+    if [[ $ve != "" ]]; then
         echo -n " $ve"
     fi
 }
 
+# has to be first thing in the prompt, don't now how to save $?
+function printrc {
+    prior=$?
+    if [[ $prior -ne 0 ]]; then
+        echo -n "=$prior "
+    fi
+}
 
-# beginning line with $IBlack$Time12h can be nice if you want to see the 
-# time a little greyed out.  I think it takes up too much real estate
-
-export PS1="$Yellow\u@\h\$(stoppedjobs)$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
+export PS1="$IRed\$(printrc)$Yellow\u@\h\$(stoppedjobs)$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
@@ -132,10 +132,13 @@ if [ $? -eq 0 ]; then \
   else \
     # @5 - Changes to working tree
     echo "'$IRed'"$(__git_ps1 " {%s}"); \
-  fi) '$Yellow$PathShort\>$Color_Off' "; \
-else \
-  # @2 - Prompt when not in GIT repo
-  echo " '$Yellow$PathShort\>$Color_Off' "; \
-fi)'
+  fi)"; \
+fi)'" $Yellow$PathShort>$Color_Off "
 
+# tell virtualenv not to insert itself at the beginning of the prompt, since 
+# I'm taking care of that now
 export VIRTUAL_ENV_DISABLE_PROMPT=1
+
+# beginning line with $IBlack$Time12h can be nice if you want to see the 
+# time a little greyed out.  I think it takes up too much real estate
+
