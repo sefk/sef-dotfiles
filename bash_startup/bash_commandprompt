@@ -123,7 +123,24 @@ function printrc {
     fi
 }
 
-export PS1="$IRed\$(printrc)$Yellow\u@\h\$(stoppedjobs)$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
+function timer_start {
+  timer=${timer:-$SECONDS}
+}
+
+function timer_stop {
+    elapsed=$(($SECONDS - $timer))
+    if [ $elapsed == 0 ]; then
+        timer_show=""
+    else
+        timer_show=" ${elapsed}s"
+    fi
+    unset timer
+}
+
+trap 'timer_start' DEBUG
+PROMPT_COMMAND=timer_stop;$PROMPT_COMMAND
+
+export PS1="$IRed\$(printrc)$Yellow\u@\h\$(stoppedjobs)$Green\${timer_show}$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
