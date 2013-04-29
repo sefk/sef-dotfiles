@@ -115,16 +115,21 @@ function currentvirtenv {
     fi
 }
 
-# has to be first thing in the prompt, don't now how to save $?
-function printrc {
-    prior=$?
+function priorrc {
     if [[ $prior -ne 0 ]]; then
-        echo -n "=$prior "
+        echo -n " $prior"
     fi
 }
 
+function save_returncode {
+    prior=$?
+}
+
+# needs to be the first one in the prompt command
+export PROMPT_COMMAND="save_returncode;$PROMPT_COMMAND"
+
 function timer_start {
-  timer=${timer:-$SECONDS}
+    timer=${timer:-$SECONDS}
 }
 
 function timer_stop {
@@ -138,9 +143,9 @@ function timer_stop {
 }
 
 trap 'timer_start' DEBUG
-PROMPT_COMMAND=timer_stop;$PROMPT_COMMAND
+export PROMPT_COMMAND="$PROMPT_COMMAND;timer_stop"
 
-export PS1="$IRed\$(printrc)$Yellow\u@\h\$(stoppedjobs)$Green\${timer_show}$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
+export PS1="$Yellow\u@\h\$(stoppedjobs)$Green\${timer_show}$Purple\$(priorrc)$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
