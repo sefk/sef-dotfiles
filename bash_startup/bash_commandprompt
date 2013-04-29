@@ -134,7 +134,7 @@ function timer_start {
 
 function timer_stop {
     elapsed=$(($SECONDS - $timer))
-    if [ $elapsed == 0 ]; then
+    if [[ $elapsed < 2 ]]; then
         timer_show=""
     else
         timer_show=" ${elapsed}s"
@@ -145,7 +145,7 @@ function timer_stop {
 trap 'timer_start' DEBUG
 export PROMPT_COMMAND="$PROMPT_COMMAND;timer_stop"
 
-export PS1="$Yellow\u@\h\$(stoppedjobs)$Green\${timer_show}$Purple\$(priorrc)$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
+export PS1="$Yellow\u@\h\$(stoppedjobs)\${timer_show}$Purple\$(priorrc)$Cyan\$(currentvirtenv)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
