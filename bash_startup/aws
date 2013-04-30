@@ -40,6 +40,7 @@ awst AWS_ELB_HOME             /usr/local/ElasticLoadBalancing
 awst AWS_EB_HOME              /usr/local/AWS-ElasticBeanstalk-CLI  eb/macosx/python2.7
 awst AWS_CLOUDFORMATION_HOME  /usr/local/AWSCloudFormation
 awst AWS_RDS_HOME             /usr/local/RDSCli
+awst AWS_ELASTICACHE_HOME     /usr/local/AmazonElastiCacheCli
 
 unset -f awst   # don't need anymore
 
