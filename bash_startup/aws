@@ -41,6 +41,7 @@ awst AWS_EB_HOME              /usr/local/AWS-ElasticBeanstalk-CLI  eb/macosx/pyt
 awst AWS_CLOUDFORMATION_HOME  /usr/local/AWSCloudFormation
 awst AWS_RDS_HOME             /usr/local/RDSCli
 awst AWS_ELASTICACHE_HOME     /usr/local/AmazonElastiCacheCli
+awst AWS_AUTO_SCALING_HOME    /usr/local/AutoScaling
 
 unset -f awst   # don't need anymore
 
