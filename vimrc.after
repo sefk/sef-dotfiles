@@ -68,3 +68,8 @@ augroup END
 set tabstop=4
 set shiftwidth=4
 set softtabstop=4
+
+" Wrapping
+set wrap
+set nolist
+set linebreak
