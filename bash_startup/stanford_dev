@@ -10,3 +10,20 @@ if [ -e /usr/local/bin/virtualenvwrapper.sh ]; then
 fi
 
 test_and_source ~/.rvm/scripts/rvm
+
+
+function edxprod {
+    multitail -s 2  \
+        --config /usr/local/etc/multitail.conf \
+        -CS apache \
+        -l 'ssh sefk@app10.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/access.log-*"' \
+        -l 'ssh sefk@app11.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/access.log-*"' \
+        -l 'ssh sefk@app20.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/access.log-*"' \
+        -l 'ssh sefk@app21.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/access.log-*"' \
+        -CS apache_error \
+        -l 'ssh sefk@app10.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/error.log"' \
+        -l 'ssh sefk@app11.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/error.log"' \
+        -l 'ssh sefk@app20.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/error.log"' \
+        -l 'ssh sefk@app21.prod.class.stanford.edu "tail -f /opt/wwc/log/nginx/error.log"' \
+        -c-
+}
