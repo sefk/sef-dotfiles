@@ -1,6 +1,6 @@
 #!/bin/bash
 
-alias top10="du -sm * | sort -k 1 -n -r | head -10"
+alias top10="(du -sm * | sort -k 1 -n -r | head -10 ) 2>/dev/null"
 alias ll="ls -ltrh"
 
 # Convenience stuff
