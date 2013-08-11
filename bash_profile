@@ -48,18 +48,6 @@ export PATH=$PATH:~/src/joDoc
 
 export GPG_TTY=`tty`
 
-# Display host and title in menu bar
-case ${TERM} in
-    xterm*|rxvt*|Eterm|aterm|kterm|gnome*|interix)
-        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033]0;${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\007"'
-        use_color=true
-    ;;
-    screen)
-        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}' echo -ne "\033_${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}\033\\"'
-        use_color=true
-        ;;
-esac
-
 export GIT_PS1_SHOWUNTRACKEDFILES=1
 export GIT_PS1_SHOWDIRTYSTATE=1
 export GIT_PS1_SHOWSTASHSTATE=1
