@@ -3,17 +3,7 @@
 alias top10="(du -sm * | sort -k 1 -n -r | head -10 ) 2>/dev/null"
 alias ll="ls -ltrh"
 
-# Convenience stuff
-alias start=open
-alias goog="open http://www.google.com/"
-
 alias ssh="ssh -A"    # agent forwarding
-
-# Mac specific stuff
-alias mtr="sudo mtr --curses"   # by default Mac doesn't have 
-alias ia="open -a \"iA Writer\""
-alias flushdns="dscacheutil -flushcache"
-alias ip="ipython"
 
 # Editing
 alias vi="vim"
@@ -52,16 +42,6 @@ function server() {
 	python -m SimpleHTTPServer "$port"
 }
 
-function m() {
-    if [ -d  ~/src/class2go/main ]; then
-        cd ~/src/class2go/main
-    elif [ -d ~/class2go/main ]; then
-        cd ~/class2go/main
-    else
-        echo "hrm, not here"
-    fi
-}
-
 function mdview() {
     if [ $# != 1 ]; then
         echo "usage: mdview file.md"
@@ -95,3 +75,4 @@ function e2date() {
 function lt() { ls -ltrsa "$@" | tail; }
 function psgrep() { ps -er | grep -v grep | grep "$@" -i --color=auto; }
 function ffind() { find . -iname "*$@*"; }
+

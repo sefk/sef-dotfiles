@@ -1,1 +1,22 @@
 alias eject='hdiutil eject'
+alias mtr="sudo mtr --curses"   # by default Mac doesn't have 
+alias flushdns="dscacheutil -flushcache"
+
+alias ip="ipython"
+alias ia="open -a \"iA Writer\""
+
+alias start=open
+alias goog="open http://www.google.com/"
+
+function mysql-start {
+    echo "launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist"
+    launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
+}
+    
+function mysql-stop {
+    echo "launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist"
+    launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
+}
+
+alias mongo-start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
+alias mongo-stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
