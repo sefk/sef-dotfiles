@@ -47,3 +47,6 @@ clean:
 	-rm -r $(RMFLAG) $(LINKS)
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
+
+.vim:
+	curl -Lo- https://bit.ly/janus-bootstrap | bash
