@@ -147,11 +147,11 @@ function timer_stop {
 # Display host and title in menu bar
 case ${TERM} in
     xterm*|rxvt*|Eterm|aterm|kterm|gnome*|interix)
-        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033]0;${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}$(currentvirtenv)\007"'
+        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033]0;${TITLE}${TITLE+  }${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}$(currentvirtenv)\007"'
         use_color=true
     ;;
     screen)
-        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033_${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}$(currentvirtenv)\033\\"'
+        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033_${TITLE}${TITLE+  }${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}$(currentvirtenv)\033\\"'
         use_color=true
         ;;
 esac
