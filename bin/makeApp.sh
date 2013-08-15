@@ -30,8 +30,8 @@ plistPath="$appRoot/$name.app/Contents/Info.plist"
 mkdir -p  $resourcePath $execPath $profilePath
 
 # convert the icon and copy into Resources
-if [ -f $icon ] ; then
-    sips -s format tiff $icon --out $resourcePath/icon.tiff --resampleWidth 128 >& /dev/null
+if [ -f "$icon" ] ; then
+    sips -s format tiff "$icon" --out $resourcePath/icon.tiff --resampleWidth 128 >& /dev/null
     tiff2icns -noLarge $resourcePath/icon.tiff >& /dev/null
 fi
 
