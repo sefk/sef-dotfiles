@@ -11,8 +11,10 @@ if [ -e /usr/local/bin/virtualenvwrapper.sh ]; then
     source /usr/local/bin/virtualenvwrapper.sh
 fi
 
-PATH=$PATH:~/.rbenv/bin
-eval "$(rbenv init -)"
+if [ $(which rbenv) ]; then
+    PATH=$PATH:~/.rbenv/bin
+    eval "$(rbenv init -)"
+fi
 
 function edxprod {
     multitail -s 2  \
