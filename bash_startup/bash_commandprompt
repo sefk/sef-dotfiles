@@ -128,7 +128,7 @@ function save_returncode {
 }
 
 # needs to be the first one in the prompt command
-export PROMPT_COMMAND="save_returncode;$PROMPT_COMMAND"
+export PROMPT_COMMAND="save_returncode${PROMPT_COMMAND+;}$PROMPT_COMMAND"
 
 function timer_start {
     timer=${timer:-$SECONDS}
