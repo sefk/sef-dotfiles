@@ -76,3 +76,16 @@ function lt() { ls -ltrsa "$@" | tail; }
 function psgrep() { ps -er | grep -v grep | grep "$@" -i --color=auto; }
 function ffind() { find . -iname "*$@*"; }
 
+# from this thread on HN
+# https://news.ycombinator.com/item?id=6309639
+function bd () {
+    OLDPWD=`pwd`
+    NEWPWD=`echo $OLDPWD | sed 's|\(.*/'$1'[^/]*/\).*|\1|'`
+    index=`echo $NEWPWD | awk '{ print index($1,"/'$1'"); }'`
+    if [ $index -eq 0 ] ; then
+        echo "No such occurrence."
+    else
+        echo $NEWPWD
+        cd "$NEWPWD"
+    fi
+}
