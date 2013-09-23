@@ -10,3 +10,9 @@ call janus#disable_plugin('vroom', 'by Sef')
 call janus#disable_plugin('nrrwrgn', 'by Sef')
 call janus#disable_plugin('easymotion', 'by Sef')
 
+"" highlight current line
+"" set cul
+
+" Keep visual blocks around
+vmap < <gv
+vmap > >gv
