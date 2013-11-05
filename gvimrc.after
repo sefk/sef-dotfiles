@@ -15,3 +15,5 @@ set clipboard=unnamed
 " autosave on change focus. unnamed files won't be written. doesn't work in TTY mode.
 au FocusLost * silent! wa
 
+" Wildmenu on gvim is cool
+set wildchar=<Tab> wildmenu wildmode=full

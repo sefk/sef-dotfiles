@@ -9,6 +9,7 @@ let mapleader = ","
 call janus#disable_plugin('vroom', 'by Sef')
 call janus#disable_plugin('nrrwrgn', 'by Sef')
 call janus#disable_plugin('easymotion', 'by Sef')
+call janus#disable_plugin('buffergator', 'by Sef')
 
 "" highlight current line
 "" set cul
