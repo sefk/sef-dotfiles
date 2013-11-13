@@ -25,7 +25,8 @@ if [ $(uname -s) == "Darwin" ]; then
 
     export PATH=$PATH:/usr/local/mysql/bin
     # export DYLD_LIBRARY_PATH=/usr/local/mysql/lib/:$DYLD_LIBRARY_PATH
+
+    alias vi=mvim
 fi
 
-alias vi=mvim
 
