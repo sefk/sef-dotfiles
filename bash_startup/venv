@@ -38,5 +38,5 @@ function workon_cwd {
     fi
 }
 
-export PROMPT_COMMAND="workon_cwd;$PROMPT_COMMAND"
+export PROMPT_COMMAND="workon_cwd${PROMPT_COMMAND+;}$PROMPT_COMMAND"
 

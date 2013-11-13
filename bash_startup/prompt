@@ -157,7 +157,7 @@ case ${TERM} in
 esac
 
 trap 'timer_start' DEBUG
-export PROMPT_COMMAND="$PROMPT_COMMAND;timer_stop"
+export PROMPT_COMMAND="$PROMPT_COMMAND${PROMPT_COMMAND+;}timer_stop"
 
 export PS1="$Yellow\${USER}$(stoppedjobs)\${timer_show}$Purple\$(priorrc)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
