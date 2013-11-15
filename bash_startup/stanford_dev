@@ -36,3 +36,13 @@ function edxprod {
 function watchmongo {
     watch -d -n 10 'mongo edx --eval "printjson(db.currentOp());"'
 }
+
+function keys {
+    for i in sef-stanford-20130415 sef-github-20120416 sef-personal-20120426; do
+        if ssh-add -l | grep $i; then
+            echo "key $i found"
+        else
+            ssh-add ~/.ssh/$i
+        fi
+    done
+}
