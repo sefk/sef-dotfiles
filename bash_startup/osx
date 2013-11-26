@@ -1,3 +1,5 @@
+# vi: set filetype=bash 
+
 if [ $(uname -s) == "Darwin" ]; then
     alias eject='hdiutil eject'
     alias mtr="sudo mtr --curses"   # by default Mac doesn't have 
@@ -27,6 +29,14 @@ if [ $(uname -s) == "Darwin" ]; then
     # export DYLD_LIBRARY_PATH=/usr/local/mysql/lib/:$DYLD_LIBRARY_PATH
 
     alias vi=mvim
+
+    # image procesing
+    function image-info {
+        echo "sips --getProperty pixelHeight --getProperty pixelWidth $@"
+        sips --getProperty pixelHeight --getProperty pixelWidth $@
+        echo "consider \"sips -Z 400\" or similar"
+    }
+
 fi
 
 
