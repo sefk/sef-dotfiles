@@ -34,7 +34,7 @@ function edxprod {
 
 
 function watchmongo {
-    watch -d -n 10 'mongo edx --eval "printjson(db.currentOp());"'
+    watch -n 10 'mongo edx --eval "printjson(db.currentOp());"'
 }
 
 function keys {
