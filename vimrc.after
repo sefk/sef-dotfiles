@@ -74,9 +74,13 @@ set wrap
 set nolist
 set linebreak
 
-" Cycling through buffers
-:nnoremap <C-n> :bnext!<CR>:redraw<CR>:ls<CR>
-:nnoremap <C-p> :bprevious!<CR>:redraw<CR>:ls<CR>
-map <leader>b :ls<CR>
+" crtl n/p cycle through buffers in current tab, which we don't want
+" if we're using one tab per buffer
+" :nnoremap <C-n> :bnext!<CR>:redraw<CR>:ls<CR>
+" :nnoremap <C-p> :bprevious!<CR>:redraw<CR>:ls<CR>
+" map <leader>b :ls<CR>
 
-
+" every buffer gets its own tab
+:au BufAdd,BufNewFile * nested tab sball
+nmap \ gt
+nmap \| gT
