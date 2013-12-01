@@ -32,7 +32,6 @@ function edxprod {
 }
 
 
-
 function watchmongo {
     watch -n 10 'mongo edx --eval "printjson(db.currentOp());"'
 }
@@ -46,3 +45,5 @@ function keys {
         fi
     done
 }
+
+DYLD_FALLBACK_LIBRARY_PATH=/usr/local/PostgreSQL/9.3/lib:$DYLD_FALLBACK_LIBRARY_PATH
