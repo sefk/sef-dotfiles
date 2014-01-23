@@ -1,0 +1,10 @@
+# if we have a session (has-session returns 0 = OK) but not in the TMUX
+# window (variable TMUX is empty) then warn
+tmux has-session 2>/dev/null
+if [[ $? -eq 0 && -z $TMUX  ]]; then
+    echo
+    echo "------------------------"
+    echo "TMUX session(s) open, consider \"tmux attach\".  Listing:"
+    tmux ls
+    echo "------------------------"
+fi
