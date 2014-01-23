@@ -80,7 +80,39 @@ set linebreak
 " :nnoremap <C-p> :bprevious!<CR>:redraw<CR>:ls<CR>
 " map <leader>b :ls<CR>
 
-" every buffer gets its own tab
-:au BufAdd,BufNewFile * nested tab sball
-nmap \ gt
-nmap \| gT
+" useful doohickey copied from
+" http://stackoverflow.com/questions/53664/how-to-effectively-work-with-multiple-files-in-vim
+" Movement between tabs OR buffers
+nnoremap L :call MyNext()<CR>
+nnoremap H :call MyPrev()<CR>
+
+" MyNext() and MyPrev(): Movement between tabs OR buffers
+function! MyNext()
+    if exists( '*tabpagenr' ) && tabpagenr('$') != 1
+        " Tab support && tabs open
+        normal gt
+    else
+        " No tab support, or no tabs open
+        execute ":bnext"
+    endif
+endfunction
+function! MyPrev()
+    if exists( '*tabpagenr' ) && tabpagenr('$') != '1'
+        " Tab support && tabs open
+        normal gT
+    else
+        " No tab support, or no tabs open
+        execute ":bprev"
+    endif
+endfunction
+
+" Use the system clipboard instead of just the VIM one
+" noremap y "*y
+" noremap yy "*Y
+" noremap p "*p
+" noremap P "*P
+" noremap dd "*dd
+" noremap D "*D
+
+" Preserve indentation while pasting text from the OS X clipboard
+noremap <leader>p :set paste<CR>:put  *<CR>:set nopaste<CR>
