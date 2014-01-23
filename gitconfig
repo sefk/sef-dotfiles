@@ -10,13 +10,25 @@
     logla = log --decorate --oneline --all
     dt = difftool
     difft = difftool
+    conflicts = !git ls-files -u | cut -f 2 | sort -u
 
 [difftool "opendiff"]
 	cmd = opendiff
 	trustExitCode = true
 
+[difftool "diffmerge"]
+	cmd = diffmerge \"$LOCAL\" \"$REMOTE\"
+
 [mergetool "opendiff"]
-	cmd = opendiff
+	cmd = "opendiff \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\""
+	trustExitCode = false
+
+[mergetool "diffmerge"]
+	cmd = "diffmerge --merge --result=\"$MERGED\" \"$LOCAL\" \"$(if test -f \"$BASE\"; then echo \"$BASE\"; else echo \"$LOCAL\"; fi)\" \"$REMOTE\""
+	trustExitCode = true
+
+[mergetool "vi"]
+	cmd = vi
 	trustExitCode = true
 
 [core]
@@ -27,6 +39,9 @@
 	user = sefk
 
 [merge]
-    tool = opendiff
+	tool = opendiff
+
 [push]
 	default = current
+[diff]
+	tool = diffmerge
