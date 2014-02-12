@@ -3,7 +3,8 @@
 
 # only do this if an interactive shell.  Without this test this screws
 # up things that use ssh as transport, eg. rsync over ssh
-if [ -z "$PS1" ]; then
+case $- in
+*i*)
     tmux has-session 2>/dev/null
     if [[ $? -eq 0 && -z $TMUX  ]]; then
         echo
@@ -12,4 +13,5 @@ if [ -z "$PS1" ]; then
         tmux ls
         echo "------------------------"
     fi
-fi
+;;
+esac
