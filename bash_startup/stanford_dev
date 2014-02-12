@@ -46,4 +46,6 @@ function keys {
     done
 }
 
-DYLD_FALLBACK_LIBRARY_PATH=/usr/local/PostgreSQL/9.3/lib:$DYLD_FALLBACK_LIBRARY_PATH
+# not sure if we still need to run postgres
+# DYLD_FALLBACK_LIBRARY_PATH=/usr/local/PostgreSQL/9.3/lib:$DYLD_FALLBACK_LIBRARY_PATH
+
