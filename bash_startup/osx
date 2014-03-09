@@ -6,6 +6,7 @@ if [ $(uname -s) == "Darwin" ]; then
     alias flushdns="dscacheutil -flushcache"
 
     alias ia="open -a \"iA Writer\""
+    alias paper="open -a \"LightPaper\""
 
     alias start=open
     alias goog="open http://www.google.com/"
@@ -37,6 +38,9 @@ if [ $(uname -s) == "Darwin" ]; then
         sips --getProperty pixelHeight --getProperty pixelWidth $@
         echo "consider \"sips -Z 400\" or similar"
     }
+
+    # iterm hotkey shouldn't animate down
+    defaults write com.googlecode.iterm2 HotkeyTermAnimationDuration -float 0.00001
 
 fi
 
