@@ -11,6 +11,7 @@
     dt = difftool
     difft = difftool
     conflicts = !git ls-files -u | cut -f 2 | sort -u
+    track = "!f() { ([ $# -eq 2 ] && ( echo \"Setting tracking for branch \" $1 \" -> \" $2;git branch --set-upstream $1 $2; ) || ( git for-each-ref --format=\"local: %(refname:short) <--sync--> remote: %(upstream:short)\" refs/heads && echo --Remotes && git remote -v)); }; f"
 
 [difftool "opendiff"]
 	cmd = opendiff
