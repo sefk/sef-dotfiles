@@ -14,8 +14,12 @@ def unsort():
 
     content = f.readlines()
     random.shuffle(content)
-    for i in content:
-        sys.stdout.write(i)
+    try:
+        for i in content:
+            sys.stdout.write(i)
+    except IOError:
+        # if you pipe to head, for example, stdout closes early, don't want to fail
+        pass
 
 if __name__ == "__main__":
     unsort()
