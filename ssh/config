@@ -1,0 +1,64 @@
+# 5/24/2012 instructions from here: http://www.slac.stanford.edu/comp/unix/sshGSSAPI.html
+
+GSSAPIAuthentication yes
+# Specifies whether user authentication based on GSSAPI is allowed.
+# The default is ``no''. Note that this option applies to protocol
+# version 2 only.
+
+GSSAPIDelegateCredentials yes
+### Forward (delegate) credentials to the server. The default is
+# ``no''. Note that this option applies to protocol version 2
+# only.
+
+GSSAPITrustDns yes
+# Set to ``yes'' to indicate that the DNS is trusted to securely canonicalize the name of the
+# host being connected to. If ``no'', the hostname entered on the command line will be passed
+# untouched to the GSSAPI library.  The default is ``no''.  This option only applies to protocol
+# version 2 connections using GSSAPI.
+
+# SEF: use these two to turn off host checking alltogether
+# StrictHostKeyChecking no
+# UserKnownHostsFile=/dev/null
+
+# OpenEdX PROD instance
+Host *.prod.class.stanford.edu
+    ProxyCommand ssh -W %h:%p jump
+    ForwardAgent yes
+    User sefk
+
+Host *.prod *.carn *.cme
+    ProxyCommand ssh -W %h.class.stanford.edu:%p jump
+    ForwardAgent yes
+    User sefk
+
+Host jump
+    HostName jump.prod.class.stanford.edu
+    ForwardAgent yes
+    User sef
+
+Host *.us-west-1.compute.internal
+    ProxyCommand ssh -W %h:%p jump
+    ForwardAgent yes
+
+# OpenEdX STAGE instance
+Host *.stage.class.stanford.edu
+    ProxyCommand ssh -W %h:%p jump-stage
+    ForwardAgent yes
+    User sefk
+
+Host *.stage
+    ProxyCommand ssh -W %h.class.stanford.edu:%p jump-stage
+    ForwardAgent yes
+    User sefk
+
+Host jump-stage
+    HostName jump.stage.class.stanford.edu
+    ForwardAgent yes
+    User sef
+
+Host burrito
+    HostName 10.34.65.34
+
+host vagrant
+    Hostname 192.168.33.10
+    User vagrant
