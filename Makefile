@@ -21,7 +21,7 @@ SECRETS_FILE  = bash_secret
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 
-all: ~/bin submod $(LINKS)
+all: ~/bin ~/.ssh/config submod $(LINKS)
 
 submod:
 	git submodule update --init --recursive
@@ -37,6 +37,12 @@ submod:
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/bin $@
+
+~/.ssh/config:
+	if [ -e $@ ]; then false; fi
+	if [ ! -e ~/.ssh ]; then mkdir ~/.ssh; fi
+	cp sshconfig $@
+	
 
 $(SECRETS_FILE): 
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
