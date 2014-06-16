@@ -38,8 +38,8 @@ function watchmongo {
 
 function keys {
     for i in sef-stanford-20130415 sef-github-20120416 sef-personal-20120426; do
-        if ssh-add -l | grep $i; then
-            echo "key $i found"
+        if (ssh-add -l | grep $i > /dev/null); then
+            echo "key found: $i"
         else
             ssh-add ~/.ssh/$i
         fi
@@ -51,3 +51,5 @@ function keys {
 
 export ANSIBLE_NOCOWS=1
 
+export GOPATH=$HOME/gocode
+export PATH=$PATH:$GOPATH/bin
