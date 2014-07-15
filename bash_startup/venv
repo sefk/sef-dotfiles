@@ -1,8 +1,11 @@
 # Adapted from https://gist.github.com/swanson/861514
 # Matt Swanson
 
+if [[ ! -x /usr/local/bin/virtualenvwrapper.sh ]]; then
+    return
+fi
+
 # assumes you've defined green() and friends from colors.sh
-#
 source /usr/local/bin/virtualenvwrapper.sh
 
 # Automatically activate Git projects' virtual environments based on the
