@@ -159,10 +159,9 @@ esac
 trap 'timer_start' DEBUG
 export PROMPT_COMMAND="$PROMPT_COMMAND${PROMPT_COMMAND+;}timer_stop"
 
-hostnamecolor=$(hostname | od | tr ' ' '\n' | awk '{total = total + $1}END{print 30 + (total % 6)}')
-hostnameesc="\[\e[${hostnamecolor}m\]\]"
 
-export PS1="$Yellow\${USER}@${hostnameesc}${HOSTNAME%%.*}$Yellow$(stoppedjobs)\${timer_show}$Purple\$(priorrc)$Color_Off"'$(git branch &>/dev/null;\
+
+export PS1="$Yellow\${USER}@${HOSTNAME%%.*}$(stoppedjobs)\${timer_show}$Purple\$(priorrc)$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
