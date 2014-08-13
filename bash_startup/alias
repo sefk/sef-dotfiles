@@ -5,9 +5,6 @@ alias ll="ls -ltrh"
 
 alias ssh="ssh -A"    # agent forwarding
 
-# Editing
-alias vi="vim"
-
 function vin {
     d="~/notes"
     pushd $d
