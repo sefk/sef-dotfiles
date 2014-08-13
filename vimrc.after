@@ -116,3 +116,8 @@ endfunction
 
 " Preserve indentation while pasting text from the OS X clipboard
 noremap <leader>p :set paste<CR>:put  *<CR>:set nopaste<CR>
+
+
+" Attempts at making macvim open files correctly
+" set shortmess+=A
+" autocmd BufWinEnter,BufNewFile * silent tabo

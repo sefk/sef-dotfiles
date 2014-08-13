@@ -8,6 +8,7 @@ if [ $(uname -s) == "Darwin" ]; then
     alias ia="open -a \"iA Writer\""
     alias paper="open -a \"LightPaper\""
     alias komodo="open -a \"Komodo Edit 8\""
+    alias k="open -a \"Komodo Edit 8\""
 
     alias start=open
     alias goog="open http://www.google.com/"
