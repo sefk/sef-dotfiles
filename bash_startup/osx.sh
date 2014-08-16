@@ -10,36 +10,30 @@ if [ $(uname -s) == "Darwin" ]; then
     alias komodo="open -a \"Komodo Edit 8\""
     alias k="open -a \"Komodo Edit 8\""
 
+    # vim aliases
+    alias vim="mvim"
+    alias vi="mvim"
+
     alias start=open
     alias goog="open http://www.google.com/"
 
-#    # if you homebrew mysql -- which I don't anymore
-#    function mysql-start {
-#        echo "launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.#plist"
-#        launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
-#    }
-#        
-#    function mysql-stop {
-#        echo "launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.#plist"
-#        launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
-#    }
-
-    alias mongo-start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
-    alias mongo-stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
+    #    # if you homebrew mysql -- which I don't anymore
+    #    function mysql-start {
+    #        echo "launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.#plist"
+    #        launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
+    #    }
+    #        
+    #    function mysql-stop {
+    #        echo "launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.#plist"
+    #        launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
+    #    }
 
     export PATH=$PATH:/usr/local/mysql/bin
     export DYLD_LIBRARY_PATH=/usr/local/mysql/lib/:$DYLD_LIBRARY_PATH
 
-    # vim aliases.  vim is in window, 
-    alias vim="mvim -v"
-
-    unalias vi >/dev/null 2&>/dev/null
-    function vi {
-        if [[ $# > 0 && ! -e $1 ]]; then
-            touch $1
-        fi    
-        open -a MacVim $1
-    }
+    # Mongo
+    alias mongo-start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
+    alias mongo-stop="launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
 
     # image procesing
     function image-info {
