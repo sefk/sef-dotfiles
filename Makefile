@@ -16,12 +16,14 @@ RMFLAG =   # if you want warnings, add -i here
 LINK_TARGET_PREFIX := $(shell pwd)
 LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin
+EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin osx_services
 SECRETS_FILE  = bash_secret
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
+SERVICES_DIR  = ~/Library/Services
 
-all: ~/bin ~/.ssh/config submod $(LINKS)
+all: ~/bin ~/.ssh/config submod $(LINKS) $(SERVICES_DIR)
+
 
 submod:
 	git submodule update --init --recursive
@@ -53,6 +55,12 @@ clean:
 	-rm -r $(RMFLAG) $(LINKS)
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
-
-.vim:
+vim .vim:
 	curl -Lo- https://bit.ly/janus-bootstrap | bash
+
+$(SERVICES_DIR):
+	if [ $(shell uname) == Darwin ]; then \
+		rsync -rupEv osx_services/ $(SERVICES_DIR); \
+	fi
+
+.PHONY: $(SERVICES_DIR)
