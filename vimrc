@@ -1,0 +1,240 @@
+call pathogen#infect()
+
+"" it all starts with the leader
+let mapleader = ","
+
+filetype plugin indent on
+
+"
+" Plugins
+"
+
+" nerdtree
+noremap <C-n> :NERDTreeToggle<CR>
+
+" ack
+noremap <leader>a :Ack<space>
+let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
+
+" fugitive
+nnoremap <leader>gb :Gblame<CR>
+nnoremap <leader>gs :Gstatus<CR>
+nnoremap <leader>gd :Gdiff<CR>
+nnoremap <leader>gl :Glog<CR>
+nnoremap <leader>gc :Gcommit<CR>
+nnoremap <leader>gp :Gpush<CR>
+
+
+"" highlight current line
+"" set cul
+
+" Keep visual blocks around
+vnoremap < <gv
+vnoremap > >gv
+
+"" when wrapping paragraphs, don't want to jump lines
+nnoremap j gj
+nnoremap k gk
+nnoremap 0 g0
+nnoremap $ g$
+vnoremap j gj
+vnoremap k gk
+vnoremap 0 g0
+vnoremap $ g$
+nnoremap <Down> gj
+nnoremap <Up> gk
+vnoremap <Down> gj
+vnoremap <Up> gk
+inoremap <Down> <C-o>gj
+inoremap <Up> <C-o>gk
+
+" Window
+noremap <leader>, :wincmd w<CR>
+noremap <leader>2 :split<CR>
+noremap <silent> ,1 :wincmd j<cr>:close<cr>
+
+" toggle spellcheck
+nnoremap <silent> <leader>ts :set spell!<CR>
+
+
+" Transparent editing of GnuPG-encrypted files
+" Based on a solution by Wouter Hanegraaff
+augroup encrypted
+  au!
+
+  " First make sure nothing is written to ~/.viminfo while editing
+  " an encrypted file.
+  autocmd BufReadPre,FileReadPre *.gpg,*.asc set viminfo=
+  " We don't want a swap file, as it writes unencrypted data to disk.
+  autocmd BufReadPre,FileReadPre *.gpg,*.asc set noswapfile
+  " Switch to binary mode to read the encrypted file.
+  autocmd BufReadPre,FileReadPre *.gpg set bin
+  autocmd BufReadPre,FileReadPre *.gpg,*.asc let ch_save = &ch|set ch=2
+  autocmd BufReadPost,FileReadPost *.gpg,*.asc
+    \ '[,']!sh -c 'gpg --decrypt 2> /dev/null'
+  " Switch to normal mode for editing
+  autocmd BufReadPost,FileReadPost *.gpg set nobin
+  autocmd BufReadPost,FileReadPost *.gpg,*.asc let &ch = ch_save|unlet ch_save
+  autocmd BufReadPost,FileReadPost *.gpg,*.asc
+    \ execute ":doautocmd BufReadPost " . expand("%:r")
+
+  " Convert all text to encrypted text before writing
+  autocmd BufWritePre,FileWritePre *.gpg set bin
+  autocmd BufWritePre,FileWritePre *.gpg
+    \ '[,']!sh -c 'gpg --default-recipient-self -e 2>/dev/null'
+  autocmd BufWritePre,FileWritePre *.asc
+    \ '[,']!sh -c 'gpg --default-recipient-self -e -a 2>/dev/null'
+  " Undo the encryption so we are back in the normal text, directly
+  " after the file has been written.
+  autocmd BufWritePost,FileWritePost *.gpg,*.asc u
+augroup END
+
+
+" Marked
+nnoremap <leader>m :silent !open -a Marked.app '%:p'<cr>
+
+set hidden
+set linebreak
+
+set nocompatible      " Use vim, no vi defaults
+set number            " Show line numbers
+set ruler             " Show line and column number
+syntax enable         " Turn on syntax highlighting allowing local overrides
+set encoding=utf-8    " Set default encoding to UTF-8
+
+set nowrap                        " don't wrap lines
+set tabstop=4                     " a tab is two spaces
+set shiftwidth=4                  " an autoindent (with <<) is two spaces
+set softtabstop=4
+set expandtab                     " use spaces, not tabs
+set list                          " Show invisible characters
+set backspace=indent,eol,start    " backspace through everything in insert mode
+
+" List chars
+set listchars=""                  " Reset the listchars
+set listchars=tab:\ \             " a tab should display as "  ", trailing whitespace as "."
+set listchars+=trail:.            " show trailing spaces as dots
+set listchars+=extends:>          " The character to show in the last column when wrap is
+                                  " off and the line continues beyond the right of the screen
+set listchars+=precedes:<         " The character to show in the last column when wrap is
+                                  " off and the line continues beyond the left of the screen
+
+
+""
+"" Searching
+""
+
+set hlsearch    " highlight matches
+set incsearch   " incremental searching
+set ignorecase  " searches are case insensitive...
+set smartcase   " ... unless they contain at least one capital letter
+
+
+""
+"" Backup and swap files
+""
+
+set backupdir^=~/.vim/_backup//    " where to put backup files.
+set directory^=~/.vim/_temp//      " where to put swap files.
+
+
+" crtl n/p cycle through buffers in current tab, which we don't want
+" if we're using one tab per buffer
+" :nnoremap <C-n> :bnext!<CR>:redraw<CR>:ls<CR>
+" :nnoremap <C-p> :bprevious!<CR>:redraw<CR>:ls<CR>
+" map <leader>b :ls<CR>
+
+" useful doohickey copied from
+" http://stackoverflow.com/questions/53664/how-to-effectively-work-with-multiple-files-in-vim
+" Movement between tabs OR buffers
+nnoremap L :call MyNext()<CR>
+nnoremap H :call MyPrev()<CR>
+
+" MyNext() and MyPrev(): Movement between tabs OR buffers
+function! MyNext()
+    if exists( '*tabpagenr' ) && tabpagenr('$') != 1
+        " Tab support && tabs open
+        normal gt
+    else
+        " No tab support, or no tabs open
+        execute ":bnext"
+    endif
+endfunction
+function! MyPrev()
+    if exists( '*tabpagenr' ) && tabpagenr('$') != '1'
+        " Tab support && tabs open
+        normal gT
+    else
+        " No tab support, or no tabs open
+        execute ":bprev"
+    endif
+endfunction
+
+" Use the system clipboard instead of just the VIM one
+" noremap y "*y
+" noremap yy "*Y
+" noremap p "*p
+" noremap P "*P
+" noremap dd "*dd
+" noremap D "*D
+
+" Preserve indentation while pasting text from the OS X clipboard
+noremap <leader>p :set paste<CR>:put  *<CR>:set nopaste<CR>
+
+" Attempts at making macvim open files correctly
+" set shortmess+=A
+" autocmd BufWinEnter,BufNewFile * silent tabo
+
+noremap <leader>vs :source $MYVIMRC<cr>
+noremap <leader>ve :e ~/.vimrc<cr>
+autocmd bufwritepost .vimrc source $MYVIMRC
+
+
+
+
+"
+" Cribbed from Janus
+"
+
+" format the entire file
+nnoremap <leader>fef :normal! gg=G``<CR>
+
+" Some helpers to edit mode
+" http://vimcasts.org/e/14
+nnoremap <leader>ew :e <C-R>=expand('%:h').'/'<cr>
+nnoremap <leader>es :sp <C-R>=expand('%:h').'/'<cr>
+nnoremap <leader>ev :vsp <C-R>=expand('%:h').'/'<cr>
+nnoremap <leader>et :tabe <C-R>=expand('%:h').'/'<cr>
+
+" Underline the current line with '='
+nnoremap <silent> <leader>ul :t.<CR>Vr=
+
+" find merge conflict markers
+nnoremap <silent> <leader>fc <ESC>/\v^[<=>]{7}( .*\|$)<CR>
+
+" Toggle hlsearch with <leader>hs
+nnoremap <leader>hs :set hlsearch! hlsearch?<CR>
+
+if has("autocmd")
+    " In Makefiles, use real tabs, not tabs expanded to spaces
+    au FileType make setlocal noexpandtab
+
+    " Make sure all mardown files have the correct filetype set and setup wrapping
+    au BufRead,BufNewFile *.{md,markdown,mdown,mkd,mkdn,txt} setf markdown
+    if !exists("g:disable_markdown_autostyle")
+        au FileType markdown setlocal wrap linebreak textwidth=72 nolist
+    endif
+
+    " Treat JSON files like JavaScript
+    au BufNewFile,BufRead *.json set ft=javascript
+
+    " make Python follow PEP8 for whitespace ( http://www.python.org/dev/peps/pep-0008/ )
+    au FileType python setlocal softtabstop=4 tabstop=4 shiftwidth=4
+
+    " Remember last location in file, but not for commit messages.
+    " see :help last-position-jump
+    au BufReadPost * if &filetype !~ '^git\c' && line("'\"") > 0 && line("'\"") <= line("$")
+      \| exe "normal! g`\"" | endif
+endif
+
+

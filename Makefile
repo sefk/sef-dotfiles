@@ -2,12 +2,12 @@
 # The files aren't preceeded by a dot in the source tree, but they are in
 # the target.
 #
-# "bash_secret" is not intended to be checked in (on purpose) for things 
+# "bash_secret" is not intended to be checked in (on purpose) for things
 # that aren't intended for general knowledge.  So we need to explicitly
 # add it to the list of sources (since it isn't checked in) and then create
 # it if its not present.
 #
-# Copyright Sef Kloninger 2012, all rights reserved
+# Copyright Sef Kloninger 2014, all rights reserved
 #
 
 SHELL := /bin/bash
@@ -18,6 +18,7 @@ LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
 EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin
 SECRETS_FILE  = bash_secret
+OLD_FILES     = .vimrc.before .vimrc.after .gvimrc.before .gvimrc.after
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 
@@ -33,7 +34,7 @@ submod:
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
-~/bin: 
+~/bin:
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/bin $@
@@ -43,7 +44,6 @@ submod:
 	if [ ! -e ~/.ssh ]; then mkdir ~/.ssh; fi
 	cp sshconfig $@
 	
-
 $(SECRETS_FILE): 
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
 
@@ -51,8 +51,7 @@ $(SECRETS_FILE):
 # created it
 clean:
 	-rm -r $(RMFLAG) $(LINKS)
+	-rm -r $(RMFLAG) $(OLD_FILES)
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
 
-.vim:
-	curl -Lo- https://bit.ly/janus-bootstrap | bash
