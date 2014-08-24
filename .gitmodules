@@ -22,6 +22,6 @@
 [submodule "vim/bundle/colorschemes"]
 	path = vim/bundle/colorschemes
 	url = git@github.com:flazz/vim-colorschemes.git
-[submodule "vim/bundle/airline"]
-	path = vim/bundle/airline
-	url = git@github.com:bling/vim-airline.git
+[submodule "vim/bundle/lightline"]
+	path = vim/bundle/lightline
+	url = git@github.com:itchyny/lightline.vim.git
