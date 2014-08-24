@@ -86,3 +86,5 @@ function bd () {
         cd "$NEWPWD"
     fi
 }
+
+export GREP_OPTIONS="--color=auto"

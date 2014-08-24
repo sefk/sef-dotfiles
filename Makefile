@@ -16,13 +16,15 @@ RMFLAG =   # if you want warnings, add -i here
 LINK_TARGET_PREFIX := $(shell pwd)
 LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin
+EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin osx_services
 SECRETS_FILE  = bash_secret
 OLD_FILES     = .vimrc.before .vimrc.after .gvimrc.before .gvimrc.after
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
+SERVICES_DIR  = ~/Library/Services
 
-all: ~/bin ~/.ssh/config submod $(LINKS)
+all: ~/bin ~/.ssh/config submod $(LINKS) $(SERVICES_DIR)
+
 
 submod:
 	git submodule update --init --recursive
@@ -47,11 +49,16 @@ submod:
 $(SECRETS_FILE): 
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
 
-# only remove secrets file if it exists but is empty (ie. likely that this makefile
+# only remove secrets file if it exists but is empty, i.e. likely that this makefile
 # created it
 clean:
 	-rm -r $(RMFLAG) $(LINKS)
 	-rm -r $(RMFLAG) $(OLD_FILES)
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
+$(SERVICES_DIR):
+	if [ $(shell uname) == Darwin ]; then \
+		rsync -rupEv osx_services/ $(SERVICES_DIR); \
+	fi
 
+.PHONY: $(SERVICES_DIR)
