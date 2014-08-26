@@ -5,28 +5,12 @@ let mapleader = ","
 
 filetype plugin indent on
 
-"
-" Plugins
-"
-
-" nerdtree
-noremap <C-n> :NERDTreeToggle<CR>
-
-" ack
-noremap <leader>a :Ack<space>
-let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
-
-" fugitive
-nnoremap <leader>gb :Gblame<CR>
-nnoremap <leader>gs :Gstatus<CR>
-nnoremap <leader>gd :Gdiff<CR>
-nnoremap <leader>gl :Glog<CR>
-nnoremap <leader>gc :Gcommit<CR>
-nnoremap <leader>gp :Gpush<CR>
-
 
 "" highlight current line
 "" set cul
+
+" Printing
+set printheader=%=Page\ %N
 
 " Keep visual blocks around
 vnoremap < <gv
@@ -50,12 +34,13 @@ inoremap <Up> <C-o>gk
 
 " Window
 noremap <leader>, :wincmd w<CR>
-noremap <leader>2 :split<CR>
-noremap <silent> ,1 :wincmd j<cr>:close<cr>
+noremap <silent> <leader>2 :split<CR>
+noremap <silent> <leader>1 :wincmd j<cr>:close<cr>
 
-" toggle spellcheck
-nnoremap <silent> <leader>ts :set spell!<CR>
 
+" Misc useful leader commands
+nnoremap <leader>ts :set spell!<CR>
+nnoremap <leader>fp !ipfmt 72<CR>
 
 " Transparent editing of GnuPG-encrypted files
 " Based on a solution by Wouter Hanegraaff
@@ -89,11 +74,7 @@ augroup encrypted
   autocmd BufWritePost,FileWritePost *.gpg,*.asc u
 augroup END
 
-
-" Marked
-nnoremap <leader>m :silent !open -a Marked.app '%:p'<cr>
-
-set hidden
+set hidden                        " allow unsaved buffers to exist (duh)
 set linebreak
 
 set nocompatible      " Use vim, no vi defaults
@@ -118,6 +99,9 @@ set listchars+=extends:>          " The character to show in the last column whe
                                   " off and the line continues beyond the right of the screen
 set listchars+=precedes:<         " The character to show in the last column when wrap is
                                   " off and the line continues beyond the left of the screen
+
+" text mode: wrap nicely
+au BufRead,BufNewFile *.txt,*.text set wrap linebreak nolist textwidth=0 wrapmargin=0
 
 
 ""
@@ -376,6 +360,9 @@ if has("autocmd")
 endif
 
 
+"
+" Plugins
+"
 
 
 " Tabularize
@@ -396,5 +383,22 @@ endfunction
 
 
 
+" Markdown
+nnoremap <leader>m :silent !open -a "Marked 2.app" '%:p'<cr>
+au BufRead,BufNewFile *.md,*.markdown set wrap linebreak nolist textwidth=0 wrapmargin=0
 
-nnoremap <leader>fp !ipfmt 72<CR>
+" nerdtree
+noremap <C-n> :NERDTreeToggle<CR>
+
+" ack
+noremap <leader>a :Ack<space>
+let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
+
+" fugitive
+nnoremap <leader>gb :Gblame<CR>
+nnoremap <leader>gs :Gstatus<CR>
+nnoremap <leader>gd :Gdiff<CR>
+nnoremap <leader>gl :Glog<CR>
+nnoremap <leader>gc :Gcommit<CR>
+nnoremap <leader>gp :Gpush<CR>
+
