@@ -140,6 +140,7 @@ set directory^=~/.vim/_temp//      " where to put swap files.
 
 ""
 "" Statusline
+"" This is from https://github.com/itchyny/lightline.vim
 ""
 
 let g:lightline = {

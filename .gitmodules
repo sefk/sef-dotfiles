@@ -25,3 +25,6 @@
 [submodule "vim/bundle/lightline"]
 	path = vim/bundle/lightline
 	url = git@github.com:itchyny/lightline.vim.git
+[submodule "vim/bundle/syntastic"]
+	path = vim/bundle/syntastic
+	url = git@github.com:scrooloose/syntastic.git
