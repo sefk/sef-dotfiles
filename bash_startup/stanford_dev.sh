@@ -2,15 +2,6 @@
 
 export rabbit='launchctl load ~/Library/LaunchAgents/homebrew.mxcl.rabbitmq.plist'
 
-if [ -e /usr/local/bin/virtualenvwrapper.sh ]; then
-    # virtualenvwrapper setup (feel free to change project directories)
-    export WORKON_HOME=$HOME/.virtualenv
-    export PROJECT_HOME=~/src
-    export VIRTUALENVWRAPPER_VIRTUALENV_ARGS='--no-site-packages'
-    export VIRTUALENVWRAPPER_VIRTUALENV=`which virtualenv`
-    source /usr/local/bin/virtualenvwrapper.sh
-fi
-
 if [ -e ~/.rbenv ]; then
     PATH=$PATH:~/.rbenv/bin
     eval "$(rbenv init -)"
@@ -36,20 +27,8 @@ function watchmongo {
     watch -n 10 'mongo edx --eval "printjson(db.currentOp());"'
 }
 
-function keys {
-    for i in sef-stanford-20130415 sef-github-20120416 sef-personal-20120426; do
-        if (ssh-add -l | grep $i > /dev/null); then
-            echo "key found: $i"
-        else
-            ssh-add ~/.ssh/$i
-        fi
-    done
-}
-
 # not sure if we still need to run postgres
 # DYLD_FALLBACK_LIBRARY_PATH=/usr/local/PostgreSQL/9.3/lib:$DYLD_FALLBACK_LIBRARY_PATH
 
 export ANSIBLE_NOCOWS=1
 
-export GOPATH=$HOME/gocode
-export PATH=$PATH:$GOPATH/bin
