@@ -31,3 +31,6 @@
 [submodule "vim/bundle/tabular"]
 	path = vim/bundle/tabular
 	url = git@github.com:godlygeek/tabular.git
+[submodule "vim/bundle/DistractFree"]
+	path = vim/bundle/DistractFree
+	url = git@github.com:chrisbra/DistractFree.git

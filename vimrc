@@ -394,6 +394,9 @@ noremap <C-n> :NERDTreeToggle<CR>
 noremap <leader>a :Ack<space>
 let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
 
+" DistractFree
+noremap <leader>df :DistractFreeToggle<CR>
+
 " fugitive
 nnoremap <leader>gb :Gblame<CR>
 nnoremap <leader>gs :Gstatus<CR>
