@@ -4,6 +4,7 @@ if [ $(uname -s) == "Darwin" ]; then
     alias eject='hdiutil eject'
     alias mtr="sudo mtr --curses"   # by default Mac doesn't have 
     alias flushdns="dscacheutil -flushcache"
+    alias top="top -o cpu"
 
     alias ia="open -a \"iA Writer\""
     alias paper="open -a \"LightPaper\""
