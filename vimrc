@@ -37,6 +37,8 @@ noremap <leader>, :wincmd w<CR>
 noremap <silent> <leader>2 :split<CR>
 noremap <silent> <leader>1 :wincmd j<cr>:close<cr>
 
+" Force saving files that require root permission
+cmap w!! w !sudo tee > /dev/null %
 
 " Misc useful leader commands
 nnoremap <leader>ts :set spell!<CR>
