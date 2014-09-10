@@ -20,6 +20,16 @@ GSSAPITrustDns yes
 # StrictHostKeyChecking no
 # UserKnownHostsFile=/dev/null
 
+
+# STANFORD
+Host xenon
+    Hostname xenon.stanford.edu
+    User sef
+
+Host corn
+    Hostname corn.stanford.edu
+    User sef
+
 # OpenEdX PROD instance
 Host *.prod.class.stanford.edu
     ProxyCommand ssh -W %h:%p jump

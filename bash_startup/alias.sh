@@ -2,7 +2,6 @@
 
 alias top10="(du -sm * | sort -k 1 -n -r | head -10 ) 2>/dev/null"
 alias ll="ls -ltrh"
-
 alias ssh="ssh -A"    # agent forwarding
 
 function vin {
@@ -13,10 +12,6 @@ function vin {
     popd
 }
 
-# My hosts
-alias xenon="ssh -A sef@xenon.stanford.edu"
-alias corn="ssh -A sef@corn.stanford.edu"
-alias dreamhost="ssh -A sefklon@sef.kloninger.com"
 
 function source_if_exists {
     if [ -f $1 ]; then
