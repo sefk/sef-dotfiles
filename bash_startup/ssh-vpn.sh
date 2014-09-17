@@ -53,5 +53,6 @@ function vpn {
     fi
 
     echo "usage: vpn {up|down|status}"
+    return 1
 }
 
