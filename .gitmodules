@@ -34,3 +34,6 @@
 [submodule "vim/bundle/DistractFree"]
 	path = vim/bundle/DistractFree
 	url = git@github.com:chrisbra/DistractFree.git
+[submodule "vim/bundle/presenting"]
+	path = vim/bundle/presenting
+	url = git@github.com:sotte/presenting.vim.git
