@@ -257,6 +257,9 @@ let g:vimfiler_force_overwrite_statusline = 0
 let g:vimshell_force_overwrite_statusline = 0
 
 
+" Notes
+let g:notes_directories = ['~/notes', '~/pen/board/notes', '~/wave/notes']
+let g:notes_suffix = '.txt'
 
 
 " crtl n/p cycle through buffers in current tab, which we don't want
