@@ -12,7 +12,6 @@ if [ $(uname -s) == "Darwin" ]; then
     alias k="open -a \"Komodo Edit 8\""
 
     # vim aliases
-    alias vim="mvim"
     alias vi="mvim"
 
     alias start=open
