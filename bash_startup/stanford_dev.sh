@@ -32,3 +32,7 @@ function watchmongo {
 
 export ANSIBLE_NOCOWS=1
 
+# was using these for a while to get mysql to work
+# export PATH=$PATH:/usr/local/mysql/bin
+# export DYLD_LIBRARY_PATH=/usr/local/mysql/lib/:$DYLD_LIBRARY_PATH
+

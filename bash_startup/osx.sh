@@ -22,14 +22,11 @@ if [ $(uname -s) == "Darwin" ]; then
     #        echo "launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.#plist"
     #        launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
     #    }
-    #        
+    #
     #    function mysql-stop {
     #        echo "launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.#plist"
     #        launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
     #    }
-
-    export PATH=$PATH:/usr/local/mysql/bin
-    export DYLD_LIBRARY_PATH=/usr/local/mysql/lib/:$DYLD_LIBRARY_PATH
 
     # Mongo
     alias mongo-start="launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.mongodb.plist"
