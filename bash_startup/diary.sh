@@ -1,7 +1,6 @@
-function vitoday {
-
+function diary {
+    adj=$1
     loc=~/diary
-    today=`date +"%Y-%m-%d"`
     extension=.txt
     editor=vi
 
@@ -25,9 +24,15 @@ function vitoday {
         fi
     fi
 
-    diary_file=${loc}/${today}${extension}
+    if [[ "x$adj" == "x" ]]; then
+        targetdate=`date +"%Y-%m-%d"`
+    else
+        targetdate=`date -v$adj +"%Y-%m-%d"`
+    fi
+
+    diary_file=${loc}/${targetdate}${extension}
     echo "editing $diary_file"
     $editor $diary_file
 }
 
-alias diary=vitoday
+alias vitoday=diary
