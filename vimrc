@@ -257,14 +257,6 @@ let g:vimfiler_force_overwrite_statusline = 0
 let g:vimshell_force_overwrite_statusline = 0
 
 
-" Notes
-" https://github.com/xolox/vim-notes
-" let g:notes_directories = ['~/notes', '~/pen/board/notes', '~/wave/notes']
-" let g:notes_suffix = '.txt'
-" let g:notes_smart_quotes = 0
-" let g:notes_unicode_enabled = 0
-
-
 " crtl n/p cycle through buffers in current tab, which we don't want
 " if we're using one tab per buffer
 " :nnoremap <C-n> :bnext!<CR>:redraw<CR>:ls<CR>
@@ -394,7 +386,6 @@ function! s:align()
 endfunction
 
 
-
 " Markdown
 nnoremap <leader>m :silent !open -a "Marked 2.app" '%:p'<cr>
 au BufRead,BufNewFile *.md,*.markdown set wrap linebreak nolist textwidth=0 wrapmargin=0
@@ -405,9 +396,6 @@ noremap <C-n> :NERDTreeToggle<CR>
 " ack
 noremap <leader>a :Ack<space>
 let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
-
-" DistractFree
-noremap <leader>df :DistractFreeToggle<CR>
 
 " fugitive
 nnoremap <leader>gb :Gblame<CR>

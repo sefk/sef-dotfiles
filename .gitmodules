@@ -31,15 +31,9 @@
 [submodule "vim/bundle/tabular"]
 	path = vim/bundle/tabular
 	url = git@github.com:godlygeek/tabular.git
-[submodule "vim/bundle/DistractFree"]
-	path = vim/bundle/DistractFree
-	url = git@github.com:chrisbra/DistractFree.git
 [submodule "vim/bundle/presenting"]
 	path = vim/bundle/presenting
 	url = git@github.com:sotte/presenting.vim.git
 [submodule "vim/bundle/vim-misc"]
 	path = vim/bundle/vim-misc
 	url = git@github.com:xolox/vim-misc.git
-[submodule "vim/bundle/notes"]
-	path = vim/bundle/notes
-	url = git@github.com:xolox/vim-notes.git
