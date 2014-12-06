@@ -259,10 +259,10 @@ let g:vimshell_force_overwrite_statusline = 0
 
 " Notes
 " https://github.com/xolox/vim-notes
-let g:notes_directories = ['~/notes', '~/pen/board/notes', '~/wave/notes']
-let g:notes_suffix = '.txt'
-let g:notes_smart_quotes = 0
-let g:notes_unicode_enabled = 0
+" let g:notes_directories = ['~/notes', '~/pen/board/notes', '~/wave/notes']
+" let g:notes_suffix = '.txt'
+" let g:notes_smart_quotes = 0
+" let g:notes_unicode_enabled = 0
 
 
 " crtl n/p cycle through buffers in current tab, which we don't want
@@ -322,7 +322,8 @@ autocmd bufwritepost .vimrc source $MYVIMRC
 " Text mode
 autocmd BufRead,BufNewFile *.txt set wrap linebreak nolist
 
-
+" Auto flow editing
+" autocmd BufRead,BufNewFile *.md set formatoptions+=aw2tqn
 
 
 "
