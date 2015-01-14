@@ -388,7 +388,7 @@ endfunction
 
 
 " Markdown
-nnoremap <leader>m :silent !open -a "Marked 2.app" '%:p'<cr>
+nnoremap <leader>m :w<cr>:silent !open -a "Marked 2.app" '%:p'<cr>
 au BufRead,BufNewFile *.md,*.markdown set wrap linebreak nolist textwidth=0 wrapmargin=0
 
 " nerdtree
@@ -438,3 +438,6 @@ autocmd BufWinLeave *.md call clearmatches()
 
 " mouse scrolling in the terminal!!
 set mouse=a
+
+" Save when losing focus
+au FocusLost * :silent! wall
