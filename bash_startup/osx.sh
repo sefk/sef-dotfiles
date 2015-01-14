@@ -12,7 +12,7 @@ if [ $(uname -s) == "Darwin" ]; then
     alias k="open -a \"Komodo Edit 8\""
 
     # vim aliases
-    alias vi="mvim"
+    alias vim="mvim"
 
     alias start=open
     alias goog="open http://www.google.com/"
