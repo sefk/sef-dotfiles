@@ -42,6 +42,7 @@ cmap w!! w !sudo tee > /dev/null %
 
 " Misc useful leader commands
 nnoremap <leader>ts :set spell!<CR>
+nnoremap <leader>z 1z=
 nnoremap <leader>fp !ipfmt 72<CR>
 
 " Transparent editing of GnuPG-encrypted files
@@ -104,7 +105,7 @@ set listchars+=precedes:<         " The character to show in the last column whe
 
 " text mode: wrap nicely
 au BufRead,BufNewFile *.txt,*.text set wrap linebreak nolist textwidth=0 wrapmargin=0
-
+nnoremap <leader>q gqip
 
 ""
 "" Searching
@@ -407,6 +408,11 @@ nnoremap <leader>gp :Gpush<CR>
 
 
 
+" Presenting
+nnoremap <leader>sp :StartPresenting<CR>
+
+
+
 
 
 " Highlight words to avoid in tech writing
@@ -429,3 +435,6 @@ autocmd InsertEnter *.md call MatchTechWordsToAvoid()
 autocmd InsertLeave *.md call MatchTechWordsToAvoid()
 autocmd BufWinLeave *.md call clearmatches()
 
+
+" mouse scrolling in the terminal!!
+set mouse=a
