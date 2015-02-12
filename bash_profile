@@ -31,6 +31,9 @@ export LS_COLORS="di=34;40:ln=32;40:so=35;40:pi=33;40:ex=31;40:bd=34;46:cd=34;43
 # MAC OS X
 which brew 1>/dev/null 2>/dev/null
 if [ $? -eq 0 ]; then
+    if [ -f `brew --prefix`/etc/autojump.sh ]; then
+        source `brew --prefix`/etc/autojump.sh
+    fi
     if [ -f `brew --prefix`/etc/autojump.bash ]; then
         source `brew --prefix`/etc/autojump.bash
     fi
