@@ -301,6 +301,9 @@ endfunction
 " noremap dd "*dd
 " noremap D "*D
 
+" use system clipboard with mac in terminal mode
+set clipboard=unnamed
+
 " Preserve indentation while pasting text from the OS X clipboard
 noremap <leader>p :set paste<CR>:put  *<CR>:set nopaste<CR>
 
@@ -388,8 +391,9 @@ endfunction
 
 
 " Markdown
-nnoremap <leader>m :w<cr>:silent !open -a "Marked 2.app" '%:p'<cr>
+nnoremap <leader>m :w<cr>:silent !open -a "Marked 2.app" '%:p'<cr>:redraw!<cr>
 au BufRead,BufNewFile *.md,*.markdown set wrap linebreak nolist textwidth=0 wrapmargin=0
+let g:vim_markdown_folding_disabled=1
 
 " nerdtree
 noremap <C-n> :NERDTreeToggle<CR>
@@ -441,3 +445,4 @@ set mouse=a
 
 " Save when losing focus
 au FocusLost * :silent! wall
+
