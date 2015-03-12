@@ -32,6 +32,9 @@ vnoremap <Up> gk
 inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
 
+" never want to enter Ex mode 
+nnoremap Q <nop>
+
 " Window
 noremap <leader>, :wincmd w<CR>
 noremap <silent> <leader>2 :split<CR>
@@ -44,6 +47,10 @@ cmap w!! w !sudo tee > /dev/null %
 nnoremap <leader>ts :set spell!<CR>
 nnoremap <leader>z 1z=
 nnoremap <leader>fp !ipfmt 72<CR>
+
+" Centering the search next/search previous$
+nmap n nzz$
+nmap N Nzz$
 
 " Transparent editing of GnuPG-encrypted files
 " Based on a solution by Wouter Hanegraaff
@@ -426,8 +433,22 @@ nnoremap <leader>gp :Gpush<CR>
 " Presenting
 nnoremap <leader>sp :StartPresenting<CR>
 
+" Tab mappingt
+map <leader>tt :tabnew<cr>
+map <leader>te :tabedit
+map <leader>tc :tabclose<cr>
+map <leader>to :tabonly<cr>
+map <leader>tn :tabnext<cr>
+map <leader>tp :tabprevious<cr>
+map <leader>tf :tabfirst<cr>
+map <leader>tl :tablast<cr>
+map <leader>tm :tabmove
 
-
+" useful tab commands: control to select, control+shift to move
+nnoremap <C-Left> :tabprevious<CR>
+nnoremap <C-Right> :tabnext<CR>
+nnoremap <silent> <C-S-Left> :execute 'silent! tabmove ' . (tabpagenr()-2)<CR>
+nnoremap <silent> <C-S-Right> :execute 'silent! tabmove ' . tabpagenr()<CR>
 
 
 " Highlight words to avoid in tech writing
@@ -464,3 +485,5 @@ hi CSVColumnEven ctermbg=4 guibg=DarkBlue
 hi CSVColumnOdd  ctermbg=5 guibg=DarkMagenta
 hi CSVColumnHeaderEven term=bold ctermbg=4 guibg=DarkBlue
 hi CSVColumnHeaderOdd  term=bold ctermbg=5 guibg=DarkMagenta
+
+
