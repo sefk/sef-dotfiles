@@ -18,3 +18,5 @@ sineload () {
         sleep 1
     done
 }
+
+PYTHONPATH=$PYTHONPATH:/Users/sef/src/wave/ops/tools

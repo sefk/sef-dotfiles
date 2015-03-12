@@ -46,3 +46,12 @@
 [submodule "vim/bundle/vim-markdown"]
 	path = vim/bundle/vim-markdown
 	url = https://github.com/plasticboy/vim-markdown.git
+[submodule "vim/bundle/csv"]
+	path = vim/bundle/csv
+	url = git@github.com:chrisbra/csv.vim.git
+[submodule "vim/bundle/tabline"]
+	path = vim/bundle/tabline
+	url = git://github.com/mkitt/tabline.vim.git
+[submodule "vim/bundle/tmuxline"]
+	path = vim/bundle/tmuxline
+	url = git@github.com:edkolev/tmuxline.vim.git

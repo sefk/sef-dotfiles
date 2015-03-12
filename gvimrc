@@ -1,5 +1,6 @@
 " Font
 set guifont=Menlo:h12
+# set guifont=Menlo\ for\ Powerline:h12
 set antialias
 
 " height of screen

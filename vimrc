@@ -126,6 +126,16 @@ set directory^=~/.vim/_temp//      " where to put swap files.
 
 
 ""
+"" airline
+""
+
+" let g:airline#extensions#tabline#enabled = 1
+" let g:airline_powerline_fonts = 1
+" let g:airline_detect_paste=1
+" set laststatus=2
+
+
+""
 "" Statusline
 "" This is from https://github.com/itchyny/lightline.vim
 ""
@@ -404,6 +414,7 @@ let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher inste
 
 " fugitive
 nnoremap <leader>gb :Gblame<CR>
+nnoremap <leader>ga :Gblame<CR>
 nnoremap <leader>gs :Gstatus<CR>
 nnoremap <leader>gd :Gdiff<CR>
 nnoremap <leader>gl :Glog<CR>
@@ -446,3 +457,10 @@ set mouse=a
 " Save when losing focus
 au FocusLost * :silent! wall
 
+
+" csv
+
+hi CSVColumnEven ctermbg=4 guibg=DarkBlue
+hi CSVColumnOdd  ctermbg=5 guibg=DarkMagenta
+hi CSVColumnHeaderEven term=bold ctermbg=4 guibg=DarkBlue
+hi CSVColumnHeaderOdd  term=bold ctermbg=5 guibg=DarkMagenta
