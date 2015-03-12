@@ -451,20 +451,6 @@ nnoremap <silent> <C-S-Left> :execute 'silent! tabmove ' . (tabpagenr()-2)<CR>
 nnoremap <silent> <C-S-Right> :execute 'silent! tabmove ' . tabpagenr()<CR>
 
 
-" Highlight words to avoid in tech writing
-" =======================================
-"
-" obviously, basically, simply, of course, clearly,
-" just, everyone knows, However, So, easy, a bit
-
-" http://css-tricks.com/words-avoid-educational-writing/
-
-highlight TechWordsToAvoid ctermbg=red ctermfg=white
-
-function MatchTechWordsToAvoid()
-  match TechWordsToAvoid /\c\<\(obviously\|basically\|simply\|of\scourse\|clearly\|just\|everyone\sknows\|however\|so,\|easy\|a bit\)\>/
-endfunction
-
 autocmd FileType markdown call MatchTechWordsToAvoid()
 autocmd BufWinEnter *.md call MatchTechWordsToAvoid()
 autocmd InsertEnter *.md call MatchTechWordsToAvoid()
