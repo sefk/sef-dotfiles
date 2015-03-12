@@ -450,14 +450,6 @@ nnoremap <C-Right> :tabnext<CR>
 nnoremap <silent> <C-S-Left> :execute 'silent! tabmove ' . (tabpagenr()-2)<CR>
 nnoremap <silent> <C-S-Right> :execute 'silent! tabmove ' . tabpagenr()<CR>
 
-
-autocmd FileType markdown call MatchTechWordsToAvoid()
-autocmd BufWinEnter *.md call MatchTechWordsToAvoid()
-autocmd InsertEnter *.md call MatchTechWordsToAvoid()
-autocmd InsertLeave *.md call MatchTechWordsToAvoid()
-autocmd BufWinLeave *.md call clearmatches()
-
-
 " mouse scrolling in the terminal!!
 set mouse=a
 
