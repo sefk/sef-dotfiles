@@ -7,7 +7,7 @@ function gg {
 }
 
 function keys {
-    for i in sef-github-20120416 sef-personal-20120426 sef-wavefront-20140916; do
+    for i in sef-github-20120416 sef-personal-20120426; do
         if (ssh-add -l | grep $i > /dev/null); then
             echo "key found: $i"
         else
