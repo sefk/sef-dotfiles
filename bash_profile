@@ -3,7 +3,7 @@
 export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
 
 set -o vi
-export EDITOR=/usr/bin/vim
+export EDITOR=vim
 
 function test_and_source {
     if [ -e "$1" ]; then
