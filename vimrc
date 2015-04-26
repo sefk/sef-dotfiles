@@ -32,8 +32,8 @@ vnoremap <Up> gk
 inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
 
-" never want to enter Ex mode 
-nnoremap Q <nop>
+" never want to enter Ex mode -- replace w/ format paragraph
+nnoremap Q !}fmt<cr>
 
 " Window
 noremap <leader>, :wincmd w<CR>
