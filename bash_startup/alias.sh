@@ -4,6 +4,8 @@ alias top10="(du -sm * | sort -k 1 -n -r | head -10 ) 2>/dev/null"
 alias ll="ls -ltrh"
 alias ssh="ssh -A"    # agent forwarding
 
+alias gl="git log --oneline --decorate"
+
 function vin {
     d="~/notes"
     pushd $d
