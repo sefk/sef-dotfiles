@@ -47,3 +47,5 @@
 	default = current
 [diff]
 	tool = diffmerge
+[ghi]
+	token = !security find-internet-password -a sefk -s github.com -l 'ghi token' -w
