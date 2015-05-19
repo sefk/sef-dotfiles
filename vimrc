@@ -33,7 +33,7 @@ inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
 
 " never want to enter Ex mode -- replace w/ format paragraph
-nnoremap Q !}fmt<cr>
+nnoremap <silent> Q gwip
 
 " Window
 noremap <leader>, :wincmd w<CR>
@@ -47,6 +47,7 @@ cmap w!! w !sudo tee > /dev/null %
 nnoremap <leader>ts :set spell!<CR>
 nnoremap <leader>z 1z=
 nnoremap <leader>fp !ipfmt 72<CR>
+nnoremap <leader>q gqip
 
 " Centering the search next/search previous$
 nmap n nzz$
@@ -93,10 +94,10 @@ set ruler             " Show line and column number
 syntax enable         " Turn on syntax highlighting allowing local overrides
 set encoding=utf-8    " Set default encoding to UTF-8
 
-set nowrap                        " don't wrap lines
+set wrap                          " by default wrap lines
 set tabstop=4                     " a tab is two spaces
-set shiftwidth=4                  " an autoindent (with <<) is two spaces
-set softtabstop=4
+set shiftwidth=2                  " an autoindent (with <<) is two spaces
+set softtabstop=2
 set expandtab                     " use spaces, not tabs
 set list                          " Show invisible characters
 set backspace=indent,eol,start    " backspace through everything in insert mode
@@ -110,9 +111,6 @@ set listchars+=extends:>          " The character to show in the last column whe
 set listchars+=precedes:<         " The character to show in the last column when wrap is
                                   " off and the line continues beyond the left of the screen
 
-" text mode: wrap nicely
-au BufRead,BufNewFile *.txt,*.text set wrap linebreak nolist textwidth=0 wrapmargin=0
-nnoremap <leader>q gqip
 
 ""
 "" Searching
@@ -335,9 +333,6 @@ autocmd bufwritepost .vimrc source $MYVIMRC
 " Text mode
 autocmd BufRead,BufNewFile *.txt set wrap linebreak nolist
 
-" Auto flow editing
-" autocmd BufRead,BufNewFile *.md set formatoptions+=aw2tqn
-
 
 "
 " Cribbed from Janus
@@ -384,6 +379,21 @@ if has("autocmd")
       \| exe "normal! g`\"" | endif
 endif
 
+"
+" Specific Formats
+"
+
+set noautoindent
+noremap <leader>a :set formatoptions-=a<CR>
+noremap <leader>A :set formatoptions+=a<CR>
+
+" text modes: wrap nicely
+au BufEnter *.txt,*.text setlocal wrap linebreak nolist textwidth=0 wrapmargin=5
+
+" markdown
+au BufEnter *.Markdown,*.md setlocal wrap linebreak nolist textwidth=0 wrapmargin=5
+nnoremap <leader>m :w<cr>:silent !open -a "Marked 2.app" '%:p'<cr>:redraw!<cr>
+
 
 "
 " Plugins
@@ -407,16 +417,15 @@ function! s:align()
 endfunction
 
 
-" Markdown
-nnoremap <leader>m :w<cr>:silent !open -a "Marked 2.app" '%:p'<cr>:redraw!<cr>
-au BufRead,BufNewFile *.md,*.markdown set wrap linebreak nolist textwidth=0 wrapmargin=0
-let g:vim_markdown_folding_disabled=1
+
+
+
+
 
 " nerdtree
 noremap <C-n> :NERDTreeToggle<CR>
 
 " ack
-noremap <leader>a :Ack<space>
 let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
 
 " fugitive
@@ -455,7 +464,10 @@ set mouse=a
 
 " Save when losing focus
 au FocusLost * :silent! wall
+set autoread autowrite
 
+
+" COLORS
 
 " csv
 
@@ -463,5 +475,9 @@ hi CSVColumnEven ctermbg=4 guibg=DarkBlue
 hi CSVColumnOdd  ctermbg=5 guibg=DarkMagenta
 hi CSVColumnHeaderEven term=bold ctermbg=4 guibg=DarkBlue
 hi CSVColumnHeaderOdd  term=bold ctermbg=5 guibg=DarkMagenta
+
+hi SpellBad ctermbg=136
+
+
 
 
