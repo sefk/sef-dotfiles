@@ -46,4 +46,10 @@ if [ $(uname -s) == "Darwin" ]; then
     # see: http://unix.stackexchange.com/questions/108174/how-to-persist-ulimit-settings-in-osx-mavericks
     ulimit -n 2048
 
+
+    if [ -e /usr/local/bin/rmtrash ]; then
+        alias trash="rmtrash"
+        alias del="rmtrash"
+    fi
+
 fi
