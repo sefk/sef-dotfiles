@@ -16,6 +16,9 @@ set printheader=%=Page\ %N
 vnoremap < <gv
 vnoremap > >gv
 
+" Don't insert two spaces after period when joining / reformatting
+set nojs
+
 "" when wrapping paragraphs, don't want to jump lines
 nnoremap j gj
 nnoremap k gk
