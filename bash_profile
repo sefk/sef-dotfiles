@@ -62,7 +62,7 @@ export GIT_PS1_SHOWSTASHSTATE=1
 
 # Now source everything else we need 
 for dir in `/bin/ls -1ad ~/bash_startup ~/.bash_startup 2>/dev/null`; do
-    for scr in `cd $dir; /bin/ls -1 | grep -v README | sort`; do
+    for scr in `cd $dir; /bin/ls -1 | grep -v README | grep -v '_skip' | sort`; do
         test_and_source $dir/$scr
     done
 done
