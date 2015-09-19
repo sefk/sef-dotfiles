@@ -52,4 +52,10 @@ if [ $(uname -s) == "Darwin" ]; then
         alias del="rmtrash"
     fi
 
+    # nice little doohickey to provide unified interface to clipboard.
+    # seen here: https://news.ycombinator.com/item?id=10143143
+    function clip() {
+        [ -t 0 ] && pbpaste || pbcopy 
+    }
+
 fi
