@@ -6,11 +6,6 @@ if [ $(uname -s) == "Darwin" ]; then
     alias flushdns="dscacheutil -flushcache"
     alias top="top -o cpu"
 
-    alias ia="open -a \"iA Writer\""
-    alias paper="open -a \"LightPaper\""
-    alias komodo="open -a \"Komodo Edit 8\""
-    alias k="open -a \"Komodo Edit 8\""
-
     # vim aliases
     alias vi="vim"
 
