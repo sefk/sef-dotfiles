@@ -21,7 +21,8 @@ GSSAPITrustDns yes
 # UserKnownHostsFile=/dev/null
 
 
-# STANFORD
+# Stanford
+
 Host xenon
     Hostname xenon.stanford.edu
     User sef
@@ -30,44 +31,8 @@ Host corn
     Hostname corn.stanford.edu
     User sef
 
-# OpenEdX PROD instance
-Host *.prod.class.stanford.edu
-    ProxyCommand ssh -W %h:%p jump
-    ForwardAgent yes
-    User sefk
 
-Host *.prod *.carn *.cme
-    ProxyCommand ssh -W %h.class.stanford.edu:%p jump
-    ForwardAgent yes
-    User sefk
-
-Host jump
-    HostName jump.prod.class.stanford.edu
-    ForwardAgent yes
-    User sef
-
-Host *.us-west-1.compute.internal
-    ProxyCommand ssh -W %h:%p jump
-    ForwardAgent yes
-
-# OpenEdX STAGE instance
-Host *.stage.class.stanford.edu
-    ProxyCommand ssh -W %h:%p jump-stage
-    ForwardAgent yes
-    User sefk
-
-Host *.stage
-    ProxyCommand ssh -W %h.class.stanford.edu:%p jump-stage
-    ForwardAgent yes
-    User sefk
-
-Host jump-stage
-    HostName jump.stage.class.stanford.edu
-    ForwardAgent yes
-    User sef
-
-Host burrito
-    HostName 10.34.65.34
+# Local Dev
 
 host vagrant
     Hostname 192.168.33.10
