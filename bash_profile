@@ -7,13 +7,18 @@ export EDITOR=vim
 
 function test_and_source {
     if [ -e "$1" ]; then
-        . "$1"
+        source "$1"
     fi
 }
 
 # Prompt handling -- start with basic green, and then if we can do something 
 # fancier (ie in bash_prompt) use that instead.
 export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
+
+# add brew location to the path on osx. Need to use brew in this file (hacky)
+if [ x"$OS" == x"Darwin" ]; then
+    export PATH=~/homebrew/bin:$PATH
+fi
 
 # Make directory listings perty
 # this is useful for getting the lscolors stuff right: http://geoff.greer.fm/lscolors/
@@ -31,12 +36,8 @@ export LS_COLORS="di=34;40:ln=32;40:so=35;40:pi=33;40:ex=31;40:bd=34;46:cd=34;43
 # MAC OS X
 which brew 1>/dev/null 2>/dev/null
 if [ $? -eq 0 ]; then
-    if [ -f `brew --prefix`/etc/autojump.sh ]; then
-        source `brew --prefix`/etc/autojump.sh
-    fi
-    if [ -f `brew --prefix`/etc/autojump.bash ]; then
-        source `brew --prefix`/etc/autojump.bash
-    fi
+    test_and_source `brew --prefix`/etc/autojump.sh
+    test_and_source `brew --prefix`/etc/autojump.bash
 fi
 # LINUX
 [ -e /usr/share/autojump/autojump.sh ] && . /usr/share/autojump/autojump.sh
