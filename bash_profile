@@ -16,7 +16,7 @@ function test_and_source {
 export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
 
 # add brew location to the path on osx. Need to use brew in this file (hacky)
-if [ x"$OS" == x"Darwin" ]; then
+if [ `uname` == "Darwin" ]; then
     export PATH=~/homebrew/bin:$PATH
 fi
 
