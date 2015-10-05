@@ -8,4 +8,5 @@ if ! shopt -oq posix; then
     fi
 fi
 
-export PATH=$HOME/homebrew/bin:$PATH
+export PATH=$PATH:~/gbin
+export AUTH_HOST="daphne.mtv"
