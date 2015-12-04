@@ -19,15 +19,9 @@
 [submodule "vim/bundle/colorschemes"]
 	path = vim/bundle/colorschemes
 	url = git@github.com:flazz/vim-colorschemes.git
-[submodule "vim/bundle/lightline"]
-	path = vim/bundle/lightline
-	url = git@github.com:itchyny/lightline.vim.git
 [submodule "vim/bundle/syntastic"]
 	path = vim/bundle/syntastic
 	url = git@github.com:scrooloose/syntastic.git
-[submodule "vim/bundle/tabular"]
-	path = vim/bundle/tabular
-	url = git@github.com:godlygeek/tabular.git
 [submodule "vim/bundle/presenting"]
 	path = vim/bundle/presenting
 	url = git@github.com:sotte/presenting.vim.git
