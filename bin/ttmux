@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# from http://unix.stackexchange.com/questions/103898/how-to-start-tmux-with-attach-if-a-session-exists
+
+if [ $# -eq 1 ]; then
+  (tmux ls | grep $1 | grep -vq attached && tmux at -t $1) \
+    || tmux new-session -s $1
+else
+  (tmux ls | grep -vq attached && tmux at) || tmux
+fi
+
+export DISPLAY=:0
