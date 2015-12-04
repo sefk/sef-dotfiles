@@ -68,4 +68,12 @@ for dir in `/bin/ls -1ad ~/bash_startup ~/.bash_startup 2>/dev/null`; do
     done
 done
 
+ssh_sock=~/.ssh/ssh_auth_sock
+if test $SSH_AUTH_SOCK && [ $SSH_AUTH_SOCK != $ssh_sock ]; then
+    rm -f $ssh_sock
+    ln -sf $SSH_AUTH_SOCK $ssh_sock
+    export SSH_AUTH_SOCK=$ssh_sock
+fi
+
 test_and_source /usr/local/etc/bash_completion
+
