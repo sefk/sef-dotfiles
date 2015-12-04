@@ -1,0 +1,10 @@
+#!/bin/bash
+
+prefix='sef-'
+
+found=$(tmux ls|grep -v '(attached)')
+if [[ $found == "" ]]; then
+    tmux new -s ${prefix}$$
+else
+    tmux attach
+fi
