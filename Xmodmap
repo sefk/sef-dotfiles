@@ -2,5 +2,17 @@
 ! yes, I've gotten used to Apple "natural scroll" for better or worse
 ! source: https://www.maketecheasier.com/reverse-mouse-scrolling-direction-in-ubuntu/
 
-pointer = 1 2 3 5 4 6 7 8 9 10 11 12
+pointer = 1 2 3 5 4 6 7 8 9 10
 
+clear control
+clear mod4
+
+keycode 37 = Super_L
+keycode 105 = Super_R
+keycode 133 = Control_L
+keycode 134 = Control_R
+
+add control = Control_L
+add control = Control_R
+add mod4 = Super_L
+add mod4 = Super_R

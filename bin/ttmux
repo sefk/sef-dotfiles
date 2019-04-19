@@ -2,11 +2,14 @@
 #
 # from http://unix.stackexchange.com/questions/103898/how-to-start-tmux-with-attach-if-a-session-exists
 
+# for Google
+TMUX=tmx2
+
 if [ $# -eq 1 ]; then
-  (tmux ls | grep $1 | grep -vq attached && tmux at -t $1) \
-    || tmux new-session -s $1
+  ($TMUX ls | grep $1 | grep -vq attached && $TMUX at -t $1) \
+    || $TMUX new-session -s $1
 else
-  (tmux ls | grep -vq attached && tmux at) || tmux
+  ($TMUX ls | grep -vq attached && $TMUX at) || $TMUX
 fi
 
 export DISPLAY=:0
