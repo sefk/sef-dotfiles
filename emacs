@@ -13,7 +13,7 @@
 ;;; and you will lose this if you copy this file over it.
 
 
-(setq homedir "/Users/sef")
+;; (setq homedir "/Users/sef")
 
 
 ;;; Just some randoms.
