@@ -4,6 +4,7 @@ export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
 
 set -o vi
 export EDITOR=vim
+bind '"jk":"\e"'
 
 function test_and_source {
     if [ -e "$1" ]; then
@@ -13,7 +14,7 @@ function test_and_source {
 
 # Prompt handling -- start with basic green, and then if we can do something 
 # fancier (ie in bash_prompt) use that instead.
-export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
+# export PS1="\[\e[32;1m\]\u@\h:\W> \[\e[0m\]"
 
 # add brew location to the path on osx. Need to use brew in this file (hacky)
 if [ `uname` == "Darwin" ]; then
@@ -61,12 +62,17 @@ export GIT_PS1_SHOWSTASHSTATE=1
 # export GIT_PS1_SHOWUPSTREAM="auto"
 # export GIT_PS1_SHOWUPSTREAM="verbose"
 
+loas_check || prodaccess
+
 # Now source everything else we need 
+# put after prodaccess because it's up on a shared drive now
 for dir in `/bin/ls -1ad ~/bash_startup ~/.bash_startup 2>/dev/null`; do
     for scr in `cd $dir; /bin/ls -1 | grep -v README | grep -v '_skip' | sort`; do
         test_and_source $dir/$scr
     done
 done
+
+test_and_source /google/data/ro/users/se/sefk/google-dev.sh
 
 ssh_sock=~/.ssh/ssh_auth_sock
 if test $SSH_AUTH_SOCK && [ $SSH_AUTH_SOCK != $ssh_sock ]; then
