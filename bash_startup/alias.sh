@@ -1,6 +1,6 @@
 #!/bin/bash
 
-alias top10="(du -sm * | sort -k 1 -n -r | head -10 ) 2>/dev/null"
+alias top10="(du -smx * | sort -k 1 -n -r | head -10 ) 2>/dev/null"
 alias ll="ls -ltrh"
 alias ssh="ssh -A"    # agent forwarding
 
@@ -84,4 +84,5 @@ function bd () {
     fi
 }
 
-export GREP_OPTIONS="--color=auto"
+# no longer works
+# export GREP_OPTIONS="--color=auto"

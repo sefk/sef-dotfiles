@@ -10,7 +10,7 @@ case $- in
         echo
         echo "------------------------"
         echo "TMUX session(s) open, consider \"tmux attach\".  Listing:"
-        tmux ls
+        tmx2 ls
         echo "------------------------"
     fi
 ;;

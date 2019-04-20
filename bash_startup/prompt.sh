@@ -7,12 +7,10 @@ if [ ! -e ~/.git-completion.bash ]; then
     echo "Where is git completion?  Bailing out!"
     return 1
 fi
-
 # confirmed its there -- source it and go!
 . ~/.git-completion.bash
 
 ###################################################
-
 #  Customize BASH PS1 prompt to show current GIT repository and branch.
 #  by Mike Stewart - http://MediaDoneRight.com
 
@@ -101,12 +99,10 @@ PathFull="\w"
 NewLine="\n"
 Jobs="\j"
 
-
-
 function stoppedjobs {
     j=`jobs -s | wc -l | sed -e "s/ //g"`
     if [[ $j -ne 0 ]]; then
-        echo -n "[$j]"
+        echo -n " bg=$j"
     fi
 }
 
@@ -119,49 +115,26 @@ function currentvirtenv {
 
 function priorrc {
     if [[ $prior -ne 0 ]]; then
-        echo -n " [$prior]"
+        echo -n " rc=$prior"
     fi
 }
-
 function save_returncode {
     prior=$?
 }
-
 # needs to be the first one in the prompt command
 export PROMPT_COMMAND="save_returncode${PROMPT_COMMAND+;}$PROMPT_COMMAND"
 
-function timer_start {
-    timer=${timer:-$SECONDS}
-}
+# attempt to reset tabs in tmux
+# this function was defined and then at the end of PS1
+# this right before the \]
+# "'$(tabname)'"
+#function tabname {
+#  if [ -z $TMUX ] ; then
+#    tmux rename-window "$USER@$HOSTNAME $PWD"
+#  fi
+#}
 
-function timer_stop {
-    elapsed=$(($SECONDS - $timer))
-    if [[ $elapsed < 5 ]]; then
-        timer_show=""
-    else
-        timer_show=" ${elapsed}s"
-    fi
-    unset timer
-}
-
-# Display host and title in menu bar
-case ${TERM} in
-    xterm*|rxvt*|Eterm|aterm|kterm|gnome*|interix)
-        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033]0;${TITLE}${TITLE+  }${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}$(currentvirtenv)\007"'
-        use_color=true
-    ;;
-    screen)
-        PROMPT_COMMAND=${PROMPT_COMMAND}${PROMPT_COMMAND+;}'echo -ne "\033_${TITLE}${TITLE+  }${USER}@${HOSTNAME%%.*}:${PWD/$HOME/~}$(currentvirtenv)\033\\"'
-        use_color=true
-        ;;
-esac
-
-trap 'timer_start' DEBUG
-export PROMPT_COMMAND="$PROMPT_COMMAND${PROMPT_COMMAND+;}timer_stop"
-
-
-
-export PS1="$Yellow\${USER}@${HOSTNAME%%.*}$(stoppedjobs)\${timer_show}$Purple\$(priorrc)$Color_Off"'$(git branch &>/dev/null;\
+export PS1="$Yellow\${USER}@${HOSTNAME%%.*}"'$(stoppedjobs)$(priorrc)'"$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
@@ -171,9 +144,8 @@ if [ $? -eq 0 ]; then \
     # @5 - Changes to working tree
     echo "'$IRed'"$(__git_ps1 " {%s}"); \
   fi)"; \
-fi)'" $Yellow$PathShort>$Color_Off "
+fi)'" $Yellow$PathShort>$Color_Off \[\033]0;\u:\h $PathFull\007\]"
 
 # tell virtualenv not to insert itself at the beginning of the prompt, since 
 # I'm taking care of that now
 export VIRTUAL_ENV_DISABLE_PROMPT=1
-
