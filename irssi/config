@@ -1,4 +1,38 @@
 settings = {
-  core = { real_name = "Sef Kloninger"; user_name = "sef"; nick = "sef"; };
+  core = {
+    real_name = "Sef Kloninger";
+    user_name = "sefk";
+    nick = "sefk";
+    server_reconnect_time = "5";
+    use_proxy = "no";
+    resolve_prefer_ipv6 = "yes";
+  };
   "fe-text" = { actlist_sort = "refnum"; };
+  "perl/core/scripts" = { awl_shared_sbar = "OFF"; };
 };
+
+chatnets = { google = { type = "IRC"; }; };
+servers = (
+  {
+    address = "irc.corp.google.com";
+    chatnet = "google";
+    port = "6697";
+    use_ssl = "yes";
+    ssl_verify = "yes";
+    autoconnect = "yes";
+  },
+  {
+    address = "irc-dr.corp.google.com";
+    chatnet = "google";
+    port = "6697";
+    use_ssl = "yes";
+    ssl_verify = "yes";
+    autoconnect = "yes";
+  }
+);
+ignores = ( { level = "JOINS PARTS QUITS"; } );
+keyboard = (
+  { key = "meta-[M"; id = "command"; data = "mouse_xterm "; }
+);
+statusbar = { default = { }; };
+logs = { };
