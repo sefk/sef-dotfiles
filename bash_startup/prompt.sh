@@ -134,7 +134,16 @@ export PROMPT_COMMAND="save_returncode${PROMPT_COMMAND+;}$PROMPT_COMMAND"
 #  fi
 #}
 
-export PS1="$Yellow\${USER}@${HOSTNAME%%.*}"'$(stoppedjobs)$(priorrc)'"$Color_Off"'$(git branch &>/dev/null;\
+case $(hostname -a) in
+  daph)
+    hostcolor=$Yellow
+    ;;
+  *)
+    hostcolor=$Green
+    ;;
+esac
+
+export PS1="$hostcolor\${USER}@${HOSTNAME%%.*}"'$(stoppedjobs)$(priorrc)'"$Color_Off"'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
   echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
   if [ "$?" -eq "0" ]; then \
@@ -144,7 +153,7 @@ if [ $? -eq 0 ]; then \
     # @5 - Changes to working tree
     echo "'$IRed'"$(__git_ps1 " {%s}"); \
   fi)"; \
-fi)'" $Yellow$PathShort>$Color_Off \[\033]0;\u:\h $PathFull\007\]"
+fi)'" $hostcolor$PathShort>$Color_Off \[\033]0;\u:\h $PathFull\007\]"
 
 # tell virtualenv not to insert itself at the beginning of the prompt, since 
 # I'm taking care of that now
