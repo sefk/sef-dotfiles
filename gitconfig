@@ -1,7 +1,8 @@
 [user]
     name = Sef Kloninger
+    email = sefklon@gmail.com
 #    email = sef@kloninger.com
-    email = sefk@google.com
+#    email = sefk@google.com
 
 [color]
     ui = auto
