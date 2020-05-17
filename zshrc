@@ -106,3 +106,17 @@ source $ZSH/oh-my-zsh.sh
 
 # SEF
 set -o vi
+
+# share history across multiple zsh sessions
+setopt SHARE_HISTORY
+# append to history
+setopt APPEND_HISTORY
+# adds commands as they are typed, not at shell exit
+setopt INC_APPEND_HISTORY
+# expire duplicates first
+setopt HIST_EXPIRE_DUPS_FIRST 
+
+# directory correction, prompts [ynae] 
+setopt CORRECT
+setopt CORRECT_ALL
+
