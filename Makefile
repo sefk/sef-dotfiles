@@ -18,7 +18,7 @@ LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
 EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin osx_services brewlist iterm_prefs
 SECRETS_FILE  = bash_secret
-OLD_FILES     = .vimrc.before .vimrc.after .gvimrc.before .gvimrc.after
+OLD_FILES     = .vimrc.before .vimrc.after
 FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 SERVICES_DIR  = ~/Library/Services
