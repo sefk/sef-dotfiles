@@ -23,11 +23,7 @@ FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))	
 LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
 SERVICES_DIR  = ~/Library/Services
 
-all: ~/bin ~/.ssh/config submod $(LINKS) $(SERVICES_DIR)
-
-
-submod:
-	git submodule update --init --recursive
+all: ~/bin ~/.ssh/config $(LINKS) $(SERVICES_DIR)
 
 # first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
 # second test: if exists, but symlink, OK to remove (point to different place)
