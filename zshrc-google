@@ -1,0 +1,13 @@
+# Homebrew stuff
+# This is for running homebrew in my home directory. No the standard setup but works with
+# Google configurations
+export PATH=$HOME/homebrew/bin:$PATH
+export LD_LIBRARY_PATH=$HOME/homebrew/lib:$LD_LIBRARY_PATH
+
+# Tried these other configs but they look to be out of date
+# https://g3doc.corp.google.com/experimental/users/khenriks/g3doc/homebrew.md?cl=head
+#export HOMEBREW_NO_UPDATE_CLEANUP=1
+#brewprefix=/usr/local/brew
+#export PATH="$brewprefix/bin:$brewprefix/sbin:$PATH"
+#export MANPATH="$brewprefix/share/man:$MANPATH"
+#unset brewprefix

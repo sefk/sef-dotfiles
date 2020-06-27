@@ -1,8 +1,16 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
+# SEF
+set -o vi
+export PATH=$HOME/bin:$PATH
+
+case $(uname -n) in
+  *google.com) source .zshrc-google;;
+esac
+
 # Path to your oh-my-zsh installation.
-export ZSH="/Users/sef/.oh-my-zsh"
+export ZSH="/Users/$(whoami)/.oh-my-zsh"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -103,9 +111,6 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-
-# SEF
-set -o vi
 
 # share history across multiple zsh sessions
 setopt SHARE_HISTORY
