@@ -6,11 +6,13 @@ set -o vi
 export PATH=$HOME/bin:$PATH
 
 case $(uname -n) in
-  *google.com) source .zshrc-google;;
+  *google.com) source ~/.zshrc-google;;
 esac
 
 # Path to your oh-my-zsh installation.
 export ZSH="/Users/$(whoami)/.oh-my-zsh"
+
+source ~/.iterm2_shell_integration.zsh
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -82,6 +84,7 @@ plugins=(
   autojump
   zsh_reload
   python
+  iterm2
 )
 
 source $ZSH/oh-my-zsh.sh
