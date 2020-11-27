@@ -106,6 +106,11 @@ source $ZSH/oh-my-zsh.sh
 
 # SEF
 set -o vi
+for i in .bash_secret .zsh_secret; do
+  if [ -e $i ]; then
+    source $i
+  fi
+done
 
 # share history across multiple zsh sessions
 setopt SHARE_HISTORY
