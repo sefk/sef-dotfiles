@@ -1,14 +1,6 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
-# SEF
-set -o vi
-export PATH=$HOME/bin:$PATH
-
-case $(uname -n) in
-  *google.com) source ~/.zshrc-google;;
-esac
-
 # Path to your oh-my-zsh installation.
 export ZSH="/Users/$(whoami)/.oh-my-zsh"
 
@@ -132,3 +124,14 @@ PYTHON_BIN_PATH="$(python3 -m site --user-base)/bin"
 PATH="$PATH:$PYTHON_BIN_PATH"
 PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 PATH="$PATH:/usr/local/sbin"
+
+# SEF
+bindkey -v
+export PATH=$HOME/bin:$PATH
+
+case $(uname -n) in
+  *google.com) source ~/.zshrc-google;;
+esac
+
+[[ -s /Users/sefk/.autojump/etc/profile.d/autojump.sh ]] && source /Users/sefk/.autojump/etc/profile.d/autojump.sh
+autoload -U compinit && compinit -u
