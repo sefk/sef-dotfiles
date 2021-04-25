@@ -2,16 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AppleAntiAliasingThreshold</key>
+	<integer>1</integer>
+	<key>ApplePressAndHoldEnabled</key>
+	<false/>
+	<key>AppleScrollAnimationEnabled</key>
+	<integer>0</integer>
+	<key>AppleSmoothFixedFontsSizeThreshold</key>
+	<integer>1</integer>
+	<key>AppleWindowTabbingMode</key>
+	<string>manual</string>
 	<key>Default Bookmark Guid</key>
-	<string>23DAFCD7-DFA6-4574-9078-8B5A86F83AFE</string>
-	<key>EnableDivisionView</key>
-	<false/>
-	<key>EnableProxyIcon</key>
-	<false/>
+	<string>90C61AE9-A1EF-42D2-AC32-0AA59BFB15F2</string>
 	<key>HapticFeedbackForEsc</key>
 	<false/>
-	<key>HideScrollbar</key>
-	<true/>
 	<key>HotkeyMigratedFromSingleToMulti</key>
 	<true/>
 	<key>New Bookmarks</key>
@@ -212,8 +216,6 @@
 			<integer>120</integer>
 			<key>Command</key>
 			<string></string>
-			<key>Cursor Boost</key>
-			<real>0.0</real>
 			<key>Cursor Color</key>
 			<dict>
 				<key>Blue Component</key>
@@ -256,7 +258,7 @@
 			<key>Disable Window Resizing</key>
 			<true/>
 			<key>Draw Powerline Glyphs</key>
-			<true/>
+			<false/>
 			<key>Flashing Bell</key>
 			<false/>
 			<key>Foreground Color</key>
@@ -269,7 +271,7 @@
 				<string>1</string>
 			</dict>
 			<key>Guid</key>
-			<string>23DAFCD7-DFA6-4574-9078-8B5A86F83AFE</string>
+			<string>90C61AE9-A1EF-42D2-AC32-0AA59BFB15F2</string>
 			<key>Horizontal Spacing</key>
 			<real>1</real>
 			<key>Idle Code</key>
@@ -586,7 +588,7 @@
 			<key>Non-ASCII Anti Aliased</key>
 			<true/>
 			<key>Normal Font</key>
-			<string>Monaco 12</string>
+			<string>Monaco 14</string>
 			<key>Option Key Sends</key>
 			<integer>0</integer>
 			<key>Prompt Before Closing 2</key>
@@ -594,11 +596,11 @@
 			<key>Right Option Key Sends</key>
 			<integer>0</integer>
 			<key>Rows</key>
-			<integer>32</integer>
+			<integer>40</integer>
 			<key>Screen</key>
 			<integer>-1</integer>
 			<key>Scrollback Lines</key>
-			<integer>0</integer>
+			<integer>1000</integer>
 			<key>Selected Text Color</key>
 			<dict>
 				<key>Blue Component</key>
@@ -623,10 +625,6 @@
 			<string></string>
 			<key>Silence Bell</key>
 			<false/>
-			<key>Smart Cursor Color</key>
-			<true/>
-			<key>Space</key>
-			<integer>0</integer>
 			<key>Sync Title</key>
 			<false/>
 			<key>Tags</key>
@@ -636,7 +634,7 @@
 			<key>Transparency</key>
 			<real>0.0</real>
 			<key>Unlimited Scrollback</key>
-			<true/>
+			<false/>
 			<key>Use Bold Font</key>
 			<true/>
 			<key>Use Bright Bold</key>
@@ -655,8 +653,6 @@
 			<string>/Users/sef</string>
 		</dict>
 	</array>
-	<key>PMPrintingExpandedStateForPrint2</key>
-	<false/>
 	<key>PointerActions</key>
 	<dict>
 		<key>Button,1,1,,</key>
@@ -690,21 +686,11 @@
 			<string>kNextWindowPointerAction</string>
 		</dict>
 	</dict>
-	<key>PreventEscapeSequenceFromClearingHistory</key>
-	<false/>
-	<key>Print In Black And White</key>
-	<true/>
 	<key>SoundForEsc</key>
 	<false/>
 	<key>UseBorder</key>
 	<true/>
 	<key>VisualIndicatorForEsc</key>
-	<false/>
-	<key>findMode_iTerm</key>
-	<integer>0</integer>
-	<key>kCPKSelectionViewPreferredModeKey</key>
-	<integer>0</integer>
-	<key>kCPKSelectionViewShowHSBTextFieldsKey</key>
 	<false/>
 </dict>
 </plist>
