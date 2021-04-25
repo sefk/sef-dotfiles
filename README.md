@@ -22,5 +22,10 @@ links, the target for these links must be a subdirectory of the user's home.
 `http://repo.or.cz/w/git.git/blob/HEAD:/contrib/completion/git-completion.bash`.
 I should probably use a submodule or something.
 
+.bash_secret should look like:
+```
+export RESUME_ADDRESS="street<br>city, state, zip<br>phone<br>"
+```
+
 TODO - Maybe all this gitconfig stuff shouldn't be universal? Hm. - Consider
 adding submodule stuff to the makefile. That somehow seems wrong though.
