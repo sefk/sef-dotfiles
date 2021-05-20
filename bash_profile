@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
+export PATH=$HOME/bin:/usr/local/bin:/usr/local/sbin:$PATH
 
 set -o vi
 export EDITOR=vim
