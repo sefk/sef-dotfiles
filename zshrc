@@ -4,7 +4,27 @@
 # Path to your oh-my-zsh installation.
 export ZSH="/Users/$(whoami)/.oh-my-zsh"
 
-source ~/.iterm2_shell_integration.zsh
+# SEF (TOP)
+export PATH=$HOME/bin:$HOME/homebrew/bin:$PATH
+function test_and_source {
+    if test -e "$1"; then
+        source "$1"
+    fi
+}
+# autojump is cool!
+# MAC OS X
+if brew --version > /dev/null; then
+    test_and_source `brew --prefix`/etc/autojump.sh
+    test_and_source `brew --prefix`/etc/autojump.bash
+fi
+# LINUX
+test_and_source /usr/share/autojump/autojump.sh
+test_and_source /Users/sefk/.autojump/etc/profile.d/autojump.sh
+autoload -U compinit && compinit -u
+
+test_and_source ~/.iterm2_shell_integration.zsh
+
+# SEF (TOP) END
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -108,12 +128,14 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 # SEF
+
 set -o vi
-for i in .bash_secret .zsh_secret; do
-  if [ -e $i ]; then
-    source $i
-  fi
-done
+bindkey -v
+bindkey "^R" history-incremental-search-backward
+bindkey "^[/" history-incremental-search-backward
+
+test_and_source .bash_secret
+test_and_source .zsh_secret
 
 # share history across multiple zsh sessions
 setopt SHARE_HISTORY
@@ -133,13 +155,7 @@ PATH="$PATH:$PYTHON_BIN_PATH"
 PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 PATH="$PATH:/usr/local/sbin"
 
-# SEF
-bindkey -v
-export PATH=$HOME/bin:$PATH
-
 case $(uname -n) in
-  *google.com) source ~/.zshrc-google;;
+  *google.com) test_and_source ~/.zshrc-google;;
 esac
 
-[[ -s /Users/sefk/.autojump/etc/profile.d/autojump.sh ]] && source /Users/sefk/.autojump/etc/profile.d/autojump.sh
-autoload -U compinit && compinit -u
