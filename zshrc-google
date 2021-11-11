@@ -11,3 +11,13 @@ export LD_LIBRARY_PATH=$HOME/homebrew/lib:$LD_LIBRARY_PATH
 #export PATH="$brewprefix/bin:$brewprefix/sbin:$PATH"
 #export MANPATH="$brewprefix/share/man:$MANPATH"
 #unset brewprefix
+
+# from go/laptop-productivity, sefk May 2021
+function work() {
+  # If gcertstatus returns true, don't refresh auth, because our previous auth hasn't expired yet.
+  gcertstatus || ~/bin/auth-refresh-gtunnel.py
+  # -X enables X11 forwarding, allowing you to do things like run WebDriver
+  # tests on your workstation and have the browsers appear on your laptop.
+  # https://man.openbsd.org/ssh#X
+  # ssh -X YOUR_WORKSTATION_HOSTNAME.YOUR_OFFICE_CODE.corp.google.com
+}

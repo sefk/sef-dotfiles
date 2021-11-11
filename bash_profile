@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH:~/bin
+export PATH=$HOME/bin:/usr/local/bin:/usr/local/sbin:$PATH
 
 set -o vi
 export EDITOR=vim
@@ -56,9 +56,9 @@ export PATH=$PATH:~/src/joDoc
 
 export GPG_TTY=`tty`
 
-export GIT_PS1_SHOWUNTRACKEDFILES=1
-export GIT_PS1_SHOWDIRTYSTATE=1
-export GIT_PS1_SHOWSTASHSTATE=1
+# export GIT_PS1_SHOWUNTRACKEDFILES=1
+# export GIT_PS1_SHOWDIRTYSTATE=1
+# export GIT_PS1_SHOWSTASHSTATE=1
 # export GIT_PS1_SHOWUPSTREAM="auto"
 # export GIT_PS1_SHOWUPSTREAM="verbose"
 
