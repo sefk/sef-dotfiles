@@ -72,9 +72,8 @@ HIST_STAMPS="yyyy-mm-dd"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
-  osx
+  macos
   autojump
-  zsh_reload
   python
   iterm2
 )
