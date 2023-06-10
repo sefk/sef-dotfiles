@@ -158,3 +158,5 @@ case $(uname -n) in
   *google.com) test_and_source ~/.zshrc-google;;
 esac
 
+test_and_source .bash_secret
+
