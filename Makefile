@@ -40,7 +40,7 @@ all: ~/bin ~/.ssh/config $(LINKS) $(SERVICES_DIR)
 	if [ ! -e ~/.ssh ]; then mkdir ~/.ssh; fi
 	cp sshconfig $@
 	
-$(SECRETS_FILE): 
+$(SECRETS_FILE):
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
 
 # only remove secrets file if it exists but is empty, i.e. likely that this makefile
