@@ -162,3 +162,4 @@ esac
 
 test_and_source .bash_secret
 
+defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
