@@ -7,8 +7,6 @@
 # add it to the list of sources (since it isn't checked in) and then create
 # it if its not present.
 #
-# Copyright Sef Kloninger 2014, all rights reserved
-#
 
 SHELL := /bin/bash
 RMFLAG =   # if you want warnings, add -i here
