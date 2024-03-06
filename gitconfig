@@ -65,3 +65,5 @@
 	tool = diffmerge
 [ghi]
 	token = !security find-internet-password -a sefk -s github.com -l 'ghi token' -w
+[oh-my-zsh]
+	hide-status = 1
