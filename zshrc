@@ -6,9 +6,9 @@ export ZSH="$HOME/.oh-my-zsh"
 
 # SEF (TOP) BEGIN
 
-[[ -d $HOME/bin ]] && export PATH=$PATH:$HOME/bin
-[[ -d /opt/homebrew/bin ]] && export PATH=$PATH:/opt/homebrew/bin
-[[ -d $HOME/homebrew/bin ]] && export PATH=$PATH:$HOME/homebrew/bin
+[[ -d $HOME/bin ]] && export PATH="$PATH:$HOME/bin"
+[[ -d /opt/homebrew/bin ]] && export PATH="$PATH:/opt/homebrew/bin"
+[[ -d $HOME/homebrew/bin ]] && export PATH="$PATH:$HOME/homebrew/bin"
 
 function test_and_source {
     if test -e "$1"; then
