@@ -4,19 +4,25 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-# SEF (TOP)
-export PATH=$HOME/bin:$HOME/homebrew/bin:$PATH
+# SEF (TOP) BEGIN
+
+[[ -d $HOME/bin ]] && export PATH=$PATH:$HOME/bin
+[[ -d /opt/homebrew/bin ]] && export PATH=$PATH:/opt/homebrew/bin
+[[ -d $HOME/homebrew/bin ]] && export PATH=$PATH:$HOME/homebrew/bin
+
 function test_and_source {
     if test -e "$1"; then
         source "$1"
     fi
 }
+
 # autojump is cool!
 # MAC OS X
 if brew --version > /dev/null; then
     test_and_source `brew --prefix`/etc/autojump.sh
     test_and_source `brew --prefix`/etc/autojump.bash
 fi
+
 # LINUX
 test_and_source /usr/share/autojump/autojump.sh
 test_and_source /Users/sefk/.autojump/etc/profile.d/autojump.sh
