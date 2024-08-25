@@ -6,9 +6,13 @@ export ZSH="$HOME/.oh-my-zsh"
 
 # SEF (TOP) BEGIN
 
+# Homebrew at the start to override system-supported things
+[[ -d /opt/homebrew/sbin ]] && export PATH="/opt/homebrew/sbin:$PATH"
+[[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:$PATH"
+[[ -d $HOME/homebrew/sbin ]] && export PATH="$HOME/homebrew/sbin:$PATH"
+[[ -d $HOME/homebrew/bin ]] && export PATH="$HOME/homebrew/bin:$PATH"
+# OK for my stuff to be at the end of the path
 [[ -d $HOME/bin ]] && export PATH="$PATH:$HOME/bin"
-[[ -d /opt/homebrew/bin ]] && export PATH="$PATH:/opt/homebrew/bin"
-[[ -d $HOME/homebrew/bin ]] && export PATH="$PATH:$HOME/homebrew/bin"
 
 function test_and_source {
     if test -e "$1"; then
