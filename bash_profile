@@ -62,8 +62,6 @@ export GPG_TTY=`tty`
 # export GIT_PS1_SHOWUPSTREAM="auto"
 # export GIT_PS1_SHOWUPSTREAM="verbose"
 
-loas_check || prodaccess
-
 # Now source everything else we need 
 # put after prodaccess because it's up on a shared drive now
 for dir in `/bin/ls -1ad ~/bash_startup ~/.bash_startup 2>/dev/null`; do
@@ -71,8 +69,6 @@ for dir in `/bin/ls -1ad ~/bash_startup ~/.bash_startup 2>/dev/null`; do
         test_and_source $dir/$scr
     done
 done
-
-test_and_source /google/data/ro/users/se/sefk/google-dev.sh
 
 ssh_sock=~/.ssh/ssh_auth_sock
 if test $SSH_AUTH_SOCK && [ $SSH_AUTH_SOCK != $ssh_sock ]; then
