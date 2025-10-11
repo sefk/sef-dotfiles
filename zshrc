@@ -7,10 +7,12 @@ export ZSH="$HOME/.oh-my-zsh"
 # SEF (TOP) BEGIN
 
 # Homebrew at the start to override system-supported things
-[[ -d /opt/homebrew/sbin ]] && export PATH="/opt/homebrew/sbin:$PATH"
-[[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:$PATH"
-[[ -d $HOME/homebrew/sbin ]] && export PATH="$HOME/homebrew/sbin:$PATH"
-[[ -d $HOME/homebrew/bin ]] && export PATH="$HOME/homebrew/bin:$PATH"
+if [[ `uname` == "Darwin" ]]; then
+    [[ -d /opt/homebrew/sbin ]] && export PATH="/opt/homebrew/sbin:$PATH"
+    [[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:$PATH"
+    [[ -d $HOME/homebrew/sbin ]] && export PATH="$HOME/homebrew/sbin:$PATH"
+    [[ -d $HOME/homebrew/bin ]] && export PATH="$HOME/homebrew/bin:$PATH"
+fi
 # OK for my stuff to be at the end of the path
 [[ -d $HOME/bin ]] && export PATH="$PATH:$HOME/bin"
 
@@ -22,9 +24,11 @@ function test_and_source {
 
 # autojump is cool!
 # MAC OS X
-if brew --version > /dev/null; then
-    test_and_source `brew --prefix`/etc/autojump.sh
-    test_and_source `brew --prefix`/etc/autojump.bash
+if [[ `uname` == "Darwin" ]]; then
+    if brew --version > /dev/null; then
+        test_and_source `brew --prefix`/etc/autojump.sh
+        test_and_source `brew --prefix`/etc/autojump.bash
+    fi
 fi
 
 # LINUX
@@ -172,7 +176,9 @@ esac
 
 test_and_source .bash_secret
 
-defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
+if [[ `uname` == "Darwin" ]]; then
+    defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
+fi
 
 PATH="${PATH:+${PATH}:}$HOME/perl5/bin"; export PATH;
 PERL5LIB="$HOME/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
@@ -184,4 +190,10 @@ PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"; export PERL_MM_OPT;
 export PATH="$PATH:/Users/sefk/.local/bin"
 
 # Link for direnv, automatic python virtual environments by directory
-eval "$(direnv hook zsh)"
+
+if command -v direnv >/dev/null 2>&1
+then
+    eval "$(direnv hook zsh)"
+else
+    echo "warning: consider installing direnv, skipping for now"
+fi
