@@ -1,0 +1,10 @@
+# from here: https://medium.com/@artemkhrenov/modern-terminal-emulators-ghostty-vs-iterm2-3cd5e55a8d24
+gpu-accelerated: true
+vsync: true
+max-frame-rate: 120
+background-opacity: 1.0
+font-feature-settings: "calt" 0
+
+# Performance monitoring
+debug-gpu-stats: true
+performance-overlay: true
