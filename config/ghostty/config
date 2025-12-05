@@ -5,5 +5,7 @@ theme = Arthur
 # Hacktober is kind of low contrast but satisfying
 # theme = Treehouse
 # theme = Hacktober
-
 # theme = Synthwave
+
+# Needed to fix ssh issues: https://ghostty.org/docs/help/terminfo
+shell-integration-features = ssh-terminfo
