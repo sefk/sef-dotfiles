@@ -195,3 +195,10 @@ export PATH="$PATH:/Users/sefk/.local/bin"
 
 # Link for direnv, automatic python virtual environments by directory
 eval "$(direnv hook zsh)"
+
+# from here, Oct 2025
+# https://marvelousmlops.substack.com/p/the-right-way-to-install-python-on
+eval "$(pyenv init -)"
+if which pyenv-virtualenv-init > /dev/null; then 
+  eval "$(pyenv virtualenv-init -)"; 
+fi
