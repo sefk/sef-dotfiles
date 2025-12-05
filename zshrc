@@ -157,6 +157,16 @@ setopt INC_APPEND_HISTORY
 # expire duplicates first
 setopt HIST_EXPIRE_DUPS_FIRST 
 
+# This gives you better history searching
+export HISTSIZE=1000000
+export SAVEHIST=1000000
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+
+# Create an alias for searching history
+alias hg='history | grep'
+
 # directory correction, prompts [ynae] 
 setopt CORRECT
 setopt CORRECT_ALL
