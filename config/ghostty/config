@@ -6,5 +6,7 @@ font-family = Menlo
 # Hacktober is kind of low contrast but satisfying
 # theme = Hacktober
 # theme = Synthwave
-
 theme = Adventure
+
+# Needed to fix ssh issues: https://ghostty.org/docs/help/terminfo
+shell-integration-features = ssh-terminfo
