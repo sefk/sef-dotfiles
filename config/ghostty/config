@@ -1,9 +1,10 @@
 font-family = Menlo
 
-theme = Arthur
-
-# Hacktober is kind of low contrast but satisfying
+# Mellow, grey background and pink cursor
+# theme = Arthur
 # theme = Treehouse
+# Hacktober is kind of low contrast but satisfying
 # theme = Hacktober
-
 # theme = Synthwave
+
+theme = Adventure
