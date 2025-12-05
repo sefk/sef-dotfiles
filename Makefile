@@ -12,7 +12,7 @@ SHELL := /bin/bash
 RMFLAG =   # if you want warnings, add -i here
 
 LINK_TARGET_PREFIX := $(shell pwd)
-LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
+# LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
 EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin osx_services brewlist iterm_prefs
 SECRETS_FILE  = bash_secret
