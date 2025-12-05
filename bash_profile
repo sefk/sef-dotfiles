@@ -79,3 +79,7 @@ fi
 
 test_and_source /usr/local/etc/bash_completion
 
+if [ `uname` == "Darwin" ]; then
+  alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+fi
+
