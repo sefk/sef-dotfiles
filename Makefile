@@ -14,17 +14,33 @@ RMFLAG =   # if you want warnings, add -i here
 LINK_TARGET_PREFIX := $(shell pwd)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-EXCLUDES      = README README.md Makefile %.swp .% %.ignore bin osx_services brewlist iterm_prefs
-SECRETS_FILE  = bash_secret
-OLD_FILES     = .vimrc.before .vimrc.after
-FILES_TO_LINK = $(sort $(filter-out $(EXCLUDES),$(wildcard *)) $(SECRETS_FILE))		# sort also removes dups
-LINKS         = $(addprefix ~/.,$(FILES_TO_LINK))
-SERVICES_DIR  = ~/Library/Services
+FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist iterm_prefs
+SECRETS_FILE           = bash_secret
+OLD_FILES              = .vimrc.before .vimrc.after
+SERVICES_DIR           = ~/Library/Services
 
-all: ~/bin ~/.ssh/config $(LINKS) $(SERVICES_DIR)
+# Dependencies that will end up with symlinks
+# Relies on "sort" to also remove dups
+FILES_TO_LINK          = $(sort $(filter-out $(FILE_EXCLUDES),$(wildcard *)) $(SECRETS_FILE))
+FILE_LINKS             = $(addprefix ~/.,$(FILES_TO_LINK))
+CONFIG_SUBDIRS_TO_LINK = $(sort $(wildcard config/*))
+CONFIG_SUBDIR_LINKS    = $(addprefix ~/.,$(CONFIG_SUBDIRS_TO_LINK))
 
-# first test: if exists (-e), but not symlink (-h), halt (don't clobber!)
-# second test: if exists, but symlink, OK to remove (point to different place)
+
+all: ~/bin ~/.ssh/config $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(SERVICES_DIR)
+
+# For directories, test
+# 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
+# 2. if exists, but symlink, OK to remove (point to different place)
+
+# Put config rule first to match before the next rule which would also match,
+# but not as specific
+~/.config/%: config/%
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
+	if [ ! -e ~/.config ]; then mkdir ~/.config; fi
+	ln -s $(LINK_TARGET_PREFIX)/$< $@
+
 ~/.%: %
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
