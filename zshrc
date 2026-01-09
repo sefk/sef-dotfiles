@@ -22,6 +22,10 @@ function test_and_source {
     fi
 }
 
+if ! [[ -v HOSTNAME ]]; then
+  export HOSTNAME=$(uname -n)
+fi
+
 # autojump is cool!
 # MAC OS X
 if [[ `uname` == "Darwin" ]]; then
@@ -217,3 +221,4 @@ fi
 if [[ `uname` == "Darwin" ]]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
+
