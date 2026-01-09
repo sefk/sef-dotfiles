@@ -10,3 +10,4 @@ theme = Adventure
 
 # Needed to fix ssh issues: https://ghostty.org/docs/help/terminfo
 shell-integration-features = ssh-terminfo
+keybind = shift+enter=text:\x1b\r
