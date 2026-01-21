@@ -222,3 +222,5 @@ if [[ `uname` == "Darwin" ]]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
 
+# Added by Antigravity -- but it's rude to put first. end is fine.
+export PATH="$PATH:/Users/sefk/.antigravity/antigravity/bin"
