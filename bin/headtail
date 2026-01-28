@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# Source - https://stackoverflow.com/a
+# Posted by sorin
+# Retrieved 2026-01-20, License - CC BY-SA 3.0
+
+stdbuf -i0 -o0 -e0 awk -v offset=${MAX_LINES:-10} \
+          '{
+               if (NR <= offset) print;
+               else {
+                   a[NR] = $0;
+                   delete a[NR-offset];
+                   printf "." > "/dev/stderr"
+                   }
+           }
+           END {
+             print "" > "/dev/stderr";
+             for(i=NR-offset+1 > offset ? NR-offset+1: offset+1 ;i<=NR;i++)
+             { print a[i]}
+           }'
+
