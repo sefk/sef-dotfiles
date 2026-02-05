@@ -27,11 +27,12 @@ if ! [[ -v HOSTNAME ]]; then
 fi
 
 # autojump is cool!
+# also syntax highligting
 # MAC OS X
 if [[ `uname` == "Darwin" ]]; then
     if brew --version > /dev/null; then
-        test_and_source `brew --prefix`/etc/autojump.sh
-        test_and_source `brew --prefix`/etc/autojump.bash
+        test_and_source $(brew --prefix)/etc/autojump.sh
+        test_and_source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
     fi
 fi
 
