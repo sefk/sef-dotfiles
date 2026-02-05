@@ -14,7 +14,7 @@ RMFLAG =   # if you want warnings, add -i here
 LINK_TARGET_PREFIX := $(shell pwd)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist iterm_prefs
+FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services

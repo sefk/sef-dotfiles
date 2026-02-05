@@ -34,9 +34,6 @@ if [ $(uname -s) == "Darwin" ]; then
         echo "consider \"sips -Z 400\" or similar"
     }
 
-    # iterm hotkey shouldn't animate down
-    defaults write com.googlecode.iterm2 HotkeyTermAnimationDuration -float 0.00001
-
     # Macs have insanely low FD limits
     # see: http://unix.stackexchange.com/questions/108174/how-to-persist-ulimit-settings-in-osx-mavericks
     ulimit -n 2048

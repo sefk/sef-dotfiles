@@ -41,8 +41,6 @@ test_and_source /usr/share/autojump/autojump.sh
 test_and_source /Users/sefk/.autojump/etc/profile.d/autojump.sh
 autoload -U compinit && compinit -u
 
-test_and_source ~/.iterm2_shell_integration.zsh
-
 # SEF (TOP) END
 
 # Set name of the theme to load --- if set to "random", it will
@@ -116,7 +114,6 @@ plugins=(
   macos
   autojump
   python
-  iterm2
 )
 
 source $ZSH/oh-my-zsh.sh
