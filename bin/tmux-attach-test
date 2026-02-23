@@ -6,12 +6,7 @@ if command -v tmux >/dev/null 2>&1 && [ -z "$TMUX" ]; then
     if [ -s /tmp/tmux_sessions ]; then
         echo "\033[1;33m>>> Existing tmux sessions:\033[0m"
         cat /tmp/tmux_sessions
-        echo -n "\033[1;32mAttach? [y/n]: \033[0m"
-        read -k 1 -s answer
-        echo
-        if [[ $answer = [Yy] ]]; then
-            tmux attach-session
-        fi
+        echo "use \"tmux attach-session -t #\" to attach"
     fi
     rm /tmp/tmux_sessions
 fi
