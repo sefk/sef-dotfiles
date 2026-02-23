@@ -224,3 +224,5 @@ fi
 export PATH="$PATH:/Users/sefk/.antigravity/antigravity/bin"
 
 eval "$(zoxide init zsh)"
+
+~/bin/tmux-attach-test
