@@ -226,3 +226,7 @@ export PATH="$PATH:/Users/sefk/.antigravity/antigravity/bin"
 # best practice for installing things not as root. First I did this:
 #         npm config set prefix '~/.npm-global'
 export PATH=~/.npm-global/bin:$PATH
+
+eval "$(zoxide init zsh)"
+
+~/bin/tmux-attach-test

@@ -1,0 +1,13 @@
+#!/usr/bin/env zsh
+
+# Warn if tmux sessions exist and offer to attach
+if command -v tmux >/dev/null 2>&1 && [ -z "$TMUX" ]; then
+    tmux ls 2>/dev/null | grep -v "attached" >/tmp/tmux_sessions
+    if [ -s /tmp/tmux_sessions ]; then
+        echo "\033[1;33m>>> Existing tmux sessions:\033[0m"
+        cat /tmp/tmux_sessions
+        echo "use \"tmux attach-session -t #\" to attach"
+    fi
+    rm /tmp/tmux_sessions
+fi
+
