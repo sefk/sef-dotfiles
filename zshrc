@@ -222,3 +222,7 @@ fi
 
 # Added by Antigravity -- but it's rude to put first. end is fine.
 export PATH="$PATH:/Users/sefk/.antigravity/antigravity/bin"
+
+# best practice for installing things not as root. First I did this:
+#         npm config set prefix '~/.npm-global'
+export PATH=~/.npm-global/bin:$PATH
