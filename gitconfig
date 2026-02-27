@@ -9,7 +9,7 @@
 
 [alias]
     logl = log --decorate --oneline
-    logla = log --decorate --oneline --all
+    logla = log --decorate --oneline --all --graph
     dt = difftool
     difft = difftool
     conflicts = !git ls-files -u | cut -f 2 | sort -u
