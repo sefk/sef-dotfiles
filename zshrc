@@ -211,9 +211,11 @@ fi
 
 # from here, Oct 2025
 # https://marvelousmlops.substack.com/p/the-right-way-to-install-python-on
-eval "$(pyenv init -)"
-if which pyenv-virtualenv-init > /dev/null; then 
-  eval "$(pyenv virtualenv-init -)"; 
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - zsh)"
+if which pyenv-virtualenv-init > /dev/null; then
+  eval "$(pyenv virtualenv-init -)";
 fi
 
 if [[ `uname` == "Darwin" ]]; then
@@ -222,6 +224,10 @@ fi
 
 # Added by Antigravity -- but it's rude to put first. end is fine.
 export PATH="$PATH:/Users/sefk/.antigravity/antigravity/bin"
+
+# best practice for installing things not as root. First I did this:
+#         npm config set prefix '~/.npm-global'
+export PATH=~/.npm-global/bin:$PATH
 
 eval "$(zoxide init zsh)"
 
