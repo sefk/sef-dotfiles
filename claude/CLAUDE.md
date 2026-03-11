@@ -14,5 +14,6 @@ I use Google Analytics to track website use.
 
 I use Git for version control, hosted at GitHub.
 
-- I like writing my own commit messages.
-- I **never** want Claude to push code to GitHub.
+For some projects I like writing my own commit messages and pushing code
+to HitHub myself. For others I'm more comfortable letting Claude run on
+its own. Check with me what to do in each session.
