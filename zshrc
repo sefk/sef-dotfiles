@@ -231,4 +231,7 @@ export PATH=~/.npm-global/bin:$PATH
 
 eval "$(zoxide init zsh)"
 
+export GOG_ACCOUNT=sefklon@gmail.com
+
 ~/bin/tmux-attach-test
+
