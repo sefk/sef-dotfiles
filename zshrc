@@ -151,8 +151,8 @@ bindkey -v
 bindkey "^R" history-incremental-search-backward
 bindkey "^[/" history-incremental-search-backward
 
-test_and_source .bash_secret
-test_and_source .zsh_secret
+test_and_source ~/.bash_secret
+test_and_source ~/.zsh_secret
 
 # share history across multiple zsh sessions
 setopt SHARE_HISTORY
@@ -185,8 +185,6 @@ PATH="$PATH:/usr/local/sbin"
 case $(uname -n) in
   *google.com) test_and_source ~/.zshrc-google;;
 esac
-
-test_and_source .bash_secret
 
 if [[ `uname` == "Darwin" ]]; then
     defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
