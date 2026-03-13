@@ -48,6 +48,9 @@ autoload -U compinit && compinit -u
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
 ZSH_THEME="fishy"
+ZSH_THEME="essembeh"
+# My custom, basically a union of "fishy" and "essembeh"
+ZSH_THEME="sefk"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load

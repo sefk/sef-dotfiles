@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude
+FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
@@ -26,11 +26,13 @@ FILES_TO_LINK          = $(sort $(filter-out $(FILE_EXCLUDES),$(wildcard *)) $(S
 FILE_LINKS             = $(addprefix $(HOME)/.,$(FILES_TO_LINK))
 CONFIG_SUBDIRS_TO_LINK = $(sort $(wildcard config/*))
 CONFIG_SUBDIR_LINKS    = $(addprefix ~/.,$(CONFIG_SUBDIRS_TO_LINK))
+OMZ_THEMES_TO_LINK     = $(sort $(wildcard oh-my-zsh/custom/themes/*))
+OMZ_THEME_LINKS        = $(addprefix ~/.,$(OMZ_THEMES_TO_LINK))
 
 # Deep links: targets under ~ with one or more subdirs. Source file = basename in repo root.
 DEEP_LINKS             = ~/.claude/CLAUDE.md
 
-all: ~/bin ~/.ssh/config $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(SERVICES_DIR) $(DEEP_LINKS)
+all: ~/bin ~/.ssh/config $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(DEEP_LINKS)
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -54,6 +56,11 @@ $(FILE_LINKS): $(HOME)/.%: %
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/bin $@
+
+~/.oh-my-zsh/custom/themes/%: oh-my-zsh/custom/themes/%
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 ~/.ssh/config:
 	if [ -e $@ ]; then false; fi
