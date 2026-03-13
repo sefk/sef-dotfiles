@@ -233,3 +233,5 @@ export GOG_ACCOUNT=sefklon@gmail.com
 
 ~/bin/tmux-attach-test
 
+export PATH="$PATH:/opt/homebrew/opt/postgresql@18/bin"
+
