@@ -66,9 +66,11 @@ if [[ $UID = 0 ]]; then
 	# always use magenta for root sessions, even in ssh
 	ZSH_ESSEMBEH_COLOR="magenta"
 fi
-if [[ -n "$TMUX" ]]; then
-	local tmux_session=$(tmux display-message -p '#S' 2>/dev/null)
-	ZSH_ESSEMBEH_PREFIX="${ZSH_ESSEMBEH_PREFIX}%{$fg[blue]%}[${tmux_session}]%{$reset_color%} "
-fi
-PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{%B$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%b%} $(zsh_essembeh_gitstatus)%(!.#.>) '
+function _tmux_session_prefix {
+	if [[ -n "$TMUX" ]]; then
+		local s=$(tmux display-message -p '#S' 2>/dev/null)
+		echo "%{$fg[blue]%}[${s}]%{$reset_color%} "
+	fi
+}
+PROMPT='${ZSH_ESSEMBEH_PREFIX}$(_tmux_session_prefix)%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{%B$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%b%} $(zsh_essembeh_gitstatus)%(!.#.>) '
 RPROMPT="%(?..%{$fg[red]%}%?%{$reset_color%})"
