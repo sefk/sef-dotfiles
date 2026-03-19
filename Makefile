@@ -28,11 +28,10 @@ CONFIG_SUBDIRS_TO_LINK = $(sort $(wildcard config/*))
 CONFIG_SUBDIR_LINKS    = $(addprefix ~/.,$(CONFIG_SUBDIRS_TO_LINK))
 OMZ_THEMES_TO_LINK     = $(sort $(wildcard oh-my-zsh/custom/themes/*))
 OMZ_THEME_LINKS        = $(addprefix ~/.,$(OMZ_THEMES_TO_LINK))
+CLAUDE_FILES_TO_LINK   = $(sort $(wildcard claude/*))
+CLAUDE_DEEP_LINKS      = $(patsubst claude/%,~/.claude/%,$(CLAUDE_FILES_TO_LINK))
 
-# Deep links: targets under ~ with one or more subdirs. Source file = basename in repo root.
-DEEP_LINKS             = ~/.claude/CLAUDE.md
-
-all: ~/bin ~/.ssh/config $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(DEEP_LINKS)
+all: ~/bin ~/.ssh/config $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS)
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -82,17 +81,11 @@ $(SERVICES_DIR):
 		rsync -rupEv osx_services/ $(SERVICES_DIR); \
 	fi
 
-# Repo-root copy of deep-link sources (so absolute prereq has a rule). Customize per repo.
-$(LINK_TARGET_PREFIX)/CLAUDE.md: claude/CLAUDE.md
-	ln -sf claude/CLAUDE.md $(LINK_TARGET_PREFIX)/CLAUDE.md
-
-# Deep links: create parent dir(s) as needed, then symlink to basename in repo.
-# Prerequisite must be absolute repo path so make does not resolve relative prereq to target (cycle).
-.SECONDEXPANSION:
-$(DEEP_LINKS): %: $$(LINK_TARGET_PREFIX)/$$(notdir $$@)
+# Deep links for ~/.claude/: link each file directly to the claude/ subdir in the repo.
+~/.claude/%: $(LINK_TARGET_PREFIX)/claude/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
-	if [ ! -e $@ ]; then ln -s $(LINK_TARGET_PREFIX)/$(notdir $@) $@; fi
+	ln -s $< $@
 
 .PHONY: $(SERVICES_DIR)
