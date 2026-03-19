@@ -4,3 +4,4 @@ bash_secret
 .DS_Store
 *.spl
 *.swp
+.claude
