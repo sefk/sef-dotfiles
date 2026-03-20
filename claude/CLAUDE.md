@@ -15,6 +15,14 @@
 - For complex bash operations, break them into simple sequential commands rather
   than nested pipes.
 
+## Tool Use
+
+I like sandbox mode.
+
+Prefer calling tools individually instead of batching them up into one
+"bash" tool call. This will prevent the "Command contains quoted
+characters in flag names" warnings and prompts.
+
 ## Version Control
 
 I use Git for version control, hosted at GitHub.

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(bash /Users/sefk/.claude/statusline-command.sh)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "Bash(python3:*)",
+      "Bash(gh:*)"
     ]
   },
   "statusLine": {
