@@ -233,3 +233,11 @@ export GOG_ACCOUNT=sefklon@gmail.com
 
 export PATH="$PATH:/opt/homebrew/opt/postgresql@18/bin"
 
+
+# pnpm -- I modified to put at the end, thank you very much
+export PNPM_HOME="/Users/sefk/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PATH:$PNPM_HOME" ;;
+esac
+# pnpm end
