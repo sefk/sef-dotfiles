@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bash /Users/sefk/.claude/statusline-command.sh)"
+      "Bash(bash /Users/sefk/.claude/statusline-command.sh)",
+      "Bash(xcodebuild:*)"
     ]
   },
   "statusLine": {
@@ -11,8 +12,10 @@
   "enabledPlugins": {
     "swift-lsp@claude-plugins-official": true
   },
-  "effortLevel": "medium",
   "sandbox": {
-    "network": {}
-  }
+    "network": {
+      "enableWeakerNetworkIsolation": true
+    }
+  },
+  "effortLevel": "high"
 }
