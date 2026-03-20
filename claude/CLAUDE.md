@@ -51,13 +51,3 @@ Keep things tidy
 
 - When making changes that affect README files or other docs, update them
   proactively. Include those changes in same commit.
-
-## Web Development
-
-Use Google Analytics for tracking website use.
-
-- Static things are usually hosted by Github Pages and hosted under a domain
-  that I own, `sef.kloninger.com`. The GA token for that domain is
-  "UA-30366531-1".
-- Dynamic sites can be hosted at 'home.kloninger.com'. My GA token for that
-  domain is "G-WBWKEMHRC7".
