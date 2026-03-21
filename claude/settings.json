@@ -15,9 +15,8 @@
     "swift-lsp@claude-plugins-official": true
   },
   "sandbox": {
-    "network": {
-      "enableWeakerNetworkIsolation": true
-    }
+    "network": {}
   },
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "voiceEnabled": true
 }

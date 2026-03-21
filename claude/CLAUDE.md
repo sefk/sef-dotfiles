@@ -19,6 +19,9 @@
 
 I like sandbox mode.
 
+I use Github a lot. Due to the `gh` command not playing nicely with
+sandbox mode, I prefer to use the Git MCP if present.
+
 Prefer calling tools individually instead of batching them up into one
 "bash" tool call. This will prevent the "Command contains quoted
 characters in flag names" warnings and prompts.
