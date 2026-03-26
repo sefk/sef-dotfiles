@@ -241,3 +241,7 @@ case ":$PATH:" in
   *) export PATH="$PATH:$PNPM_HOME" ;;
 esac
 # pnpm end
+
+# the gh command doesn't play nicely with some escape sequences.
+# https://github.com/cli/cli/issues/544
+export GH_EDITOR=vim
