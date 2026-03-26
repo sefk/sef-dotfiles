@@ -4,7 +4,31 @@
       "Bash(bash /Users/sefk/.claude/statusline-command.sh)",
       "Bash(xcodebuild:*)",
       "Bash(python3:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(sleep:*)",
+      "Bash(sed:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Bash(awk:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(cut:*)",
+      "Bash(tr:*)",
+      "Bash(touch:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(date:*)",
+      "Bash(which:*)",
+      "Bash(env:*)",
+      "Bash(export:*)",
+      "Bash(printf:*)"
     ]
   },
   "statusLine": {
@@ -12,11 +36,14 @@
     "command": "bash /Users/sefk/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "swift-lsp@claude-plugins-official": true
+    "swift-lsp@claude-plugins-official": false,
+    "github@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "code-review@claude-plugins-official": false
   },
   "sandbox": {
     "network": {}
   },
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "voiceEnabled": true
 }
