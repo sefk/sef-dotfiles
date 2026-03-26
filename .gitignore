@@ -5,3 +5,4 @@ bash_secret
 *.spl
 *.swp
 .claude
+lazy-lock.json
