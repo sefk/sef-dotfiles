@@ -6,8 +6,8 @@ if [ $(uname -s) == "Darwin" ]; then
     alias flushdns="dscacheutil -flushcache"
     alias top="top -o cpu"
 
-    # vim aliases
-    alias vi="vim"
+    # vim/nvim aliases
+    command -v nvim &>/dev/null && alias vi="nvim" || alias vi="vim"
 
     alias start=open
     alias goog="open http://www.google.com/"

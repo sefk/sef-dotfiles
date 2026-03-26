@@ -3,7 +3,11 @@
 export PATH=$HOME/bin:/usr/local/bin:/usr/local/sbin:$PATH
 
 set -o vi
-export EDITOR=vim
+if command -v nvim &>/dev/null; then
+    export EDITOR=nvim
+else
+    export EDITOR=vim
+fi
 bind '"jk":"\e"'
 
 function test_and_source {

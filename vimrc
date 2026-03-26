@@ -1,18 +1,9 @@
 set nocompatible
 
-
-"======================"
-" Vundle configuration "
-"======================"
-
-filetype off
 filetype plugin indent on
 
 "" it all starts with the leader
 let mapleader = ","
-
-
-filetype plugin indent on
 
 
 "" highlight current line
@@ -246,16 +237,6 @@ au BufEnter *.txt,*.text setlocal wrap linebreak nolist textwidth=0 wrapmargin=5
 " text modes: wrap nicely
 au BufEnter *.h,*.c,*.cc,*.cpp setlocal autoindent
 
-"
-" Plugins
-"
-
-" nerdtree
-noremap <C-n> :NERDTreeToggle<CR>
-
-" ack
-let g:ackprg = 'ag --nogroup --nocolor --column'     " use silver searcher instead of ack
-
 " Tab mapping
 map <leader>tt :tabnew<cr>
 map <leader>te :tabedit
@@ -283,13 +264,6 @@ set autoread autowrite
 
 " COLORS
 
-" csv
-
-hi CSVColumnEven ctermbg=4 guibg=DarkBlue
-hi CSVColumnOdd  ctermbg=5 guibg=DarkMagenta
-hi CSVColumnHeaderEven term=bold ctermbg=4 guibg=DarkBlue
-hi CSVColumnHeaderOdd  term=bold ctermbg=5 guibg=DarkMagenta
-
 hi SpellBad ctermbg=136
 
 
@@ -297,7 +271,6 @@ hi SpellBad ctermbg=136
 " STATUSLINE
 
 set laststatus=2
-" set statusline=\ %f\ %{fugitive#statusline()}\ %m%r%h%w\ %=%({%{&ff}\|%{(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\")}%k\|%Y}%)\ %([%l,%v][%p%%]\ %)
 hi StatusLine ctermbg=black ctermfg=DarkYellow
 hi StatusLineNC ctermbg=black ctermfg=gray
 hi VertSplit ctermbg=black ctermfg=DarkYellow
