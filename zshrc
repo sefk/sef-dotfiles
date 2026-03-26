@@ -128,7 +128,12 @@ source $ZSH/oh-my-zsh.sh
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
 
-export EDITOR='vim'
+if command -v nvim &>/dev/null; then
+    export EDITOR=nvim
+    alias vi=nvim
+else
+    export EDITOR=vim
+fi
 
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
@@ -244,4 +249,4 @@ esac
 
 # the gh command doesn't play nicely with some escape sequences.
 # https://github.com/cli/cli/issues/544
-export GH_EDITOR=vim
+export GH_EDITOR=${EDITOR:-vim}
