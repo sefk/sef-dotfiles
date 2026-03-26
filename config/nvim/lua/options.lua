@@ -117,6 +117,9 @@ au({ "BufLeave", "FocusLost" }, {
   callback = function() vim.cmd("silent! wall") end,
 })
 
+-- Disable LSP diagnostic signs/virtual text (too noisy coming from plain vim)
+vim.diagnostic.config({ signs = false, virtual_text = false, underline = false })
+
 -- Transparent background: inherit terminal black
 vim.api.nvim_set_hl(0, "Normal",     { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "NormalNC",   { bg = "none", ctermbg = "none" })
