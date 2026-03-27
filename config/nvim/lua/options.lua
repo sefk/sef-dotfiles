@@ -10,7 +10,7 @@ opt.ruler = true
 opt.wrap = true
 opt.linebreak = true
 opt.list = true
-opt.listchars = { tab = "  ", trail = ".", extends = ">", precedes = "<" }
+opt.listchars = { tab = "  ", trail = "·", extends = ">", precedes = "<" }
 opt.laststatus = 2
 opt.fillchars:append({ vert = " " })
 
