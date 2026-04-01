@@ -1,17 +1,26 @@
 {
   "permissions": {
     "allow": [
+      "WebSearch",
+      "WebFetch",
+
       "Bash(bash /Users/sefk/.claude/statusline-command.sh)",
+
+      "Skill(commit-commands:commit)",
+      "Bash(gh:*)",
+
       "Bash(xcodebuild:*)",
       "Bash(python3:*)",
-      "Bash(gh:*)",
-      "Bash(sleep:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+
       "Bash(sed:*)",
+      "Bash(touch:*)",
+
       "Bash(tail:*)",
       "Bash(head:*)",
       "Bash(awk:*)",
       "Bash(cat:*)",
-      "Bash(echo:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
@@ -20,10 +29,13 @@
       "Bash(uniq:*)",
       "Bash(cut:*)",
       "Bash(tr:*)",
-      "Bash(touch:*)",
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(mv:*)",
+
+      "Bash(sleep:*)",
+      "Bash(echo:*)",
+      "Bash(wait:*)",
       "Bash(date:*)",
       "Bash(which:*)",
       "Bash(env:*)",
@@ -42,7 +54,10 @@
     "code-review@claude-plugins-official": false
   },
   "sandbox": {
-    "network": {}
+    "network": {},
+    "filesystem": {
+      "allowWrite": ["/tmp"]
+    }
   },
   "effortLevel": "medium",
   "voiceEnabled": true
