@@ -64,14 +64,15 @@ au({ "BufRead", "BufNewFile" }, {
   callback = function() vim.bo.filetype = "borg" end,
 })
 
--- Markdown: wrap nicely
+-- Markdown: soft wrap (no hard line breaks)
 au("FileType", {
-  pattern = "markdown",
+  pattern = { "markdown", "html" },
   callback = function()
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true
-    vim.opt_local.textwidth = 72
+    vim.opt_local.textwidth = 0
     vim.opt_local.list = false
+    vim.opt_local.formatoptions:remove("t")
   end,
 })
 
