@@ -1,102 +1,138 @@
 #!/bin/bash
+# Claude Code status line
+# Line 1: user@host:path [session]
+# Line 2: Model ▓▓▓░░░░░░░ pct% | duration | (branch status) | +add/-rm
 
-# Read JSON input
 input=$(cat)
 
-# Extract values from JSON
-cwd=$(echo "$input" | jq -r '.workspace.current_dir')
+# ── Extract JSON fields ──────────────────────────────────────────
+model=$(echo "$input" | jq -r '.model.display_name // "?"')
+cwd=$(echo "$input" | jq -r '.workspace.current_dir // "~"')
 session_name=$(echo "$input" | jq -r '.session_name // empty')
+ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
+lines_add=$(echo "$input" | jq -r '.cost.total_lines_added // 0')
+lines_rm=$(echo "$input" | jq -r '.cost.total_lines_removed // 0')
+duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
+rate_5h=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 
-# Get username and hostname
-username=$(whoami)
-hostname=$(hostname -s)
-
-# ANSI color codes
+# ── Colors ────────────────────────────────────────────────────────
 reset="\033[0m"
 bold="\033[1m"
-blue="\033[34m"
-cyan="\033[36m"
+dim="\033[2m"
+green="\033[32m"
 yellow="\033[33m"
+red="\033[31m"
+cyan="\033[36m"
+blue="\033[34m"
+magenta="\033[35m"
 
-# Determine user@host color: magenta for root, red for SSH, green for local
+# ── user@host color (green local, red ssh, magenta root) ─────────
 if [ "${UID:-$(id -u)}" -eq 0 ]; then
-    user_color="\033[35m"   # magenta for root
+    uc="$magenta"
 elif [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
-    user_color="\033[31m"   # red for SSH
+    uc="$red"
 else
-    user_color="\033[32m"   # green for local
+    uc="$green"
 fi
 
-# Collapse working directory (fishy style: abbreviate all but last component)
+# ── Collapse working directory (fish-style) ──────────────────────
 collapse_wd() {
     local wd="$1"
-    # Replace home with ~
-    if [[ "$wd" == "$HOME"* ]]; then
-        wd="~${wd#$HOME}"
-    fi
-
-    # If path has multiple components, collapse all but the last
+    [[ "$wd" == "$HOME"* ]] && wd="~${wd#$HOME}"
     if [[ "$wd" == */* ]]; then
         local IFS='/'
-        local parts=($wd)
-        local result=""
-
+        local parts=($wd) result=""
         for ((i=0; i<${#parts[@]}-1; i++)); do
-            local part="${parts[$i]}"
-            if [[ "$part" == .* ]] && [[ ${#part} -gt 1 ]]; then
-                result+="${part:0:2}/"
-            elif [[ -n "$part" ]]; then
-                result+="${part:0:1}/"
+            local p="${parts[$i]}"
+            if [[ "$p" == .* && ${#p} -gt 1 ]]; then result+="${p:0:2}/"
+            elif [[ -n "$p" ]]; then result+="${p:0:1}/"
             fi
         done
-        result+="${parts[${#parts[@]}-1]}"
-        echo "$result"
+        echo "${result}${parts[${#parts[@]}-1]}"
     else
         echo "$wd"
     fi
 }
+short_wd=$(collapse_wd "$cwd")
 
-collapsed_wd=$(collapse_wd "$cwd")
-
-# Get git branch and status (matching sefk theme symbols: % + * ~ ! ?)
+# ── Git info (green clean parens, red dirty braces — matches PS1) ─
 git_info=""
 if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
-    branch=$(git -C "$cwd" --no-optional-locks symbolic-ref --short HEAD 2>/dev/null || git -C "$cwd" --no-optional-locks rev-parse --short HEAD 2>/dev/null)
+    branch=$(git -C "$cwd" --no-optional-locks symbolic-ref --short HEAD 2>/dev/null \
+          || git -C "$cwd" --no-optional-locks rev-parse --short HEAD 2>/dev/null)
     if [ -n "$branch" ]; then
         status=$(git -C "$cwd" --no-optional-locks status --porcelain 2>/dev/null)
+        flags=""
+        echo "$status" | grep -q "^??" && flags+="%"
+        echo "$status" | grep -q "^A"  && flags+="+"
+        echo "$status" | grep -q "^ M\|^M" && flags+="*"
+        echo "$status" | grep -q "^R"  && flags+="~"
+        echo "$status" | grep -q "^ D\|^D" && flags+="!"
 
-        git_status=""
-        if echo "$status" | grep -q "^??"; then git_status+="%"; fi
-        if echo "$status" | grep -q "^A"; then git_status+="+"; fi
-        if echo "$status" | grep -q "^ M\|^M"; then git_status+="*"; fi
-        if echo "$status" | grep -q "^R"; then git_status+="~"; fi
-        if echo "$status" | grep -q "^ D\|^D"; then git_status+="!"; fi
-        if echo "$status" | grep -q "^U"; then git_status+="?"; fi
-
-        if [ -n "$git_status" ]; then
-            git_info=" ${cyan}(${branch} ${git_status})${reset}"
+        if [ -n "$flags" ]; then
+            git_info=" ${red}{${branch} ${flags}}${reset}"
         else
-            git_info=" ${cyan}(${branch})${reset}"
+            git_info=" ${green}(${branch})${reset}"
         fi
     fi
 fi
 
-# Add session name if present
-session_info=""
-if [ -n "$session_name" ]; then
-    session_info=" [${session_name}]"
-fi
-
-# Get tmux session name
+# ── Tmux prefix ──────────────────────────────────────────────────
 tmux_prefix=""
-if [ -n "$TMUX" ]; then
-    tmux_session=$(tmux display-message -p '#S' 2>/dev/null)
-    if [ -n "$tmux_session" ]; then
-        tmux_prefix="${blue}[${tmux_session}]${reset} "
-    fi
+#if [ -n "$TMUX" ]; then
+#    ts=$(tmux display-message -p '#S' 2>/dev/null)
+#    [ -n "$ts" ] && tmux_prefix="${dim}${blue}[${ts}]${reset} "
+#fi
+
+# ── Session name ─────────────────────────────────────────────────
+#session_info=""
+#[ -n "$session_name" ] && session_info=" ${dim}[${session_name}]${reset}"
+
+# ── Context bar ──────────────────────────────────────────────────
+[ -z "$ctx_pct" ] || [ "$ctx_pct" = "null" ] && ctx_pct=0
+bar_width=10
+filled=$((ctx_pct * bar_width / 100))
+empty=$((bar_width - filled))
+
+if [ "$ctx_pct" -ge 90 ]; then bar_color="$red"
+elif [ "$ctx_pct" -ge 70 ]; then bar_color="$yellow"
+else bar_color="$green"
 fi
 
-# Build the statusline: user@host:path git_info session_info
-# Matches sefk theme: green/red/magenta user@host, yellow bold path, cyan git
-printf "%b${user_color}${bold}%s${reset}@${user_color}%s${reset}:${yellow}${bold}%s${reset}%b%s" \
-    "$tmux_prefix" "$username" "$hostname" "$collapsed_wd" "$git_info" "$session_info"
+bar=""
+[ "$filled" -gt 0 ] && printf -v f "%${filled}s" && bar="${f// /▓}"
+[ "$empty" -gt 0 ] && printf -v e "%${empty}s" && bar="${bar}${e// /░}"
+
+# ── Lines changed ────────────────────────────────────────────────
+lines_info="${green}+${lines_add}${reset}/${red}-${lines_rm}${reset}"
+
+# ── Duration ─────────────────────────────────────────────────────
+dur_sec=$((duration_ms / 1000))
+dur_min=$((dur_sec / 60))
+dur_hr=$((dur_min / 60))
+if [ "$dur_hr" -gt 0 ]; then
+    dur_fmt="${dur_hr}h$((dur_min % 60))m"
+elif [ "$dur_min" -gt 0 ]; then
+    dur_fmt="${dur_min}m$((dur_sec % 60))s"
+else
+    dur_fmt="${dur_sec}s"
+fi
+
+# ── Rate limit (if available) ────────────────────────────────────
+rate_info=""
+#if [ -n "$rate_5h" ]; then
+#    rate_pct=$(printf '%.0f' "$rate_5h")
+#    if [ "$rate_pct" -ge 80 ]; then rate_c="$red"
+#    elif [ "$rate_pct" -ge 50 ]; then rate_c="$yellow"
+#    else rate_c="$dim"
+#    fi
+#    rate_info=" ${dim}|${reset} ${rate_c}5h:${rate_pct}%%${reset}"
+#fi
+
+# ── Line 1: identity + location ───────────────────────────────────
+printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}\n" \
+    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd"
+
+# ── Line 2: model + context bar + duration + git + lines ─────────
+printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b\n" \
+    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$git_info" "$lines_info"

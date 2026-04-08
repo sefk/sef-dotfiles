@@ -15,3 +15,5 @@ keybind = shift+page_up=scroll_page_up
 keybind = shift+page_down=scroll_page_down
 
 split-divider-color=yellow
+
+command = ~/.config/ghostty/start-tmux.sh

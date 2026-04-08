@@ -1,24 +1,18 @@
 {
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "WebSearch",
       "WebFetch",
-
       "Bash(bash /Users/sefk/.claude/statusline-command.sh)",
-
       "Skill(commit-commands:commit)",
       "Bash(gh:*)",
-
       "Bash(xcodebuild:*)",
       "Bash(python3:*)",
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(mysql:*)",
-
       "Bash(sed:*)",
       "Bash(touch:*)",
-
       "Bash(tail:*)",
       "Bash(head:*)",
       "Bash(awk:*)",
@@ -34,7 +28,6 @@
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(mv:*)",
-
       "Bash(sleep:*)",
       "Bash(echo:*)",
       "Bash(wait:*)",
@@ -43,7 +36,8 @@
       "Bash(env:*)",
       "Bash(export:*)",
       "Bash(printf:*)"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "statusLine": {
     "type": "command",
@@ -58,7 +52,9 @@
   "sandbox": {
     "network": {},
     "filesystem": {
-      "allowWrite": ["/tmp"]
+      "allowWrite": [
+        "/tmp"
+      ]
     }
   },
   "effortLevel": "medium",
