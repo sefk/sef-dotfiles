@@ -11,8 +11,7 @@
 ## Minimize the number of approvals
 
 * Use `auto` permissions mode when possible
-* Use sandbox mode
-* Within the sandbox, allow commands like `bash`, `grep`, `sed`, and `python` without permissions checks
+* Sandbox is disabled (causes issues with local database connections and other dev tools)
 * Prefer writing local scripts to heredocs. Use temp directories in this order
   `./.tmp/`,
   `./tmp`, 

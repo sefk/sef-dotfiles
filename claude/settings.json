@@ -50,12 +50,7 @@
     "code-review@claude-plugins-official": false
   },
   "sandbox": {
-    "network": {},
-    "filesystem": {
-      "allowWrite": [
-        "/tmp"
-      ]
-    }
+    "enabled": false
   },
   "effortLevel": "high",
   "voiceEnabled": true
