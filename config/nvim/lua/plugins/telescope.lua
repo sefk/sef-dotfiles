@@ -16,6 +16,7 @@ return {
 
       telescope.setup({
         defaults = {
+          preview = { treesitter = false },
           mappings = {
             i = {
               ["<C-u>"] = false,
