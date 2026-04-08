@@ -72,5 +72,5 @@ function _tmux_session_prefix {
 		echo "%{$fg[blue]%}[${s}]%{$reset_color%} "
 	fi
 }
-PROMPT='${ZSH_ESSEMBEH_PREFIX}$(_tmux_session_prefix)%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{%B$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%b%} $(zsh_essembeh_gitstatus)%(!.#.>) '
+PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} $(zsh_essembeh_gitstatus)%(!.#.>) '
 RPROMPT="%(?..%{$fg[red]%}%?%{$reset_color%})"
