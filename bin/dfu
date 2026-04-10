@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""Pretty disk usage summary from df, with collapsed devices and color bars."""
+
+import re
+import subprocess
+
+
+# Mount points to ignore (matched as substrings against the mount path)
+IGNORE_MOUNTS = [
+    "/System/Volumes/VM",
+    "/System/Volumes/Preboot",
+    "/System/Volumes/Update",
+    "/System/Volumes/xarts",
+    "/System/Volumes/iSCPreboot",
+    "/System/Volumes/Hardware",
+    "/dev",
+    "auto_home",
+    "CoreSimulator",
+    ".timemachine",
+]
+
+# Device prefixes to ignore
+IGNORE_DEVS = [
+    "devfs",
+    "map ",
+]
+
+
+def human(kb):
+    """Format kilobytes as human-readable."""
+    for unit in ["K", "M", "G", "T"]:
+        if abs(kb) < 1024:
+            return f"{kb:.1f}{unit}"
+        kb /= 1024
+    return f"{kb:.1f}P"
+
+
+def bar(pct, width=30):
+    """Colored usage bar. Green=plenty, yellow=getting full, red=<10% free."""
+    filled = round(pct / 100 * width)
+    empty = width - filled
+    if pct >= 90:
+        color = "\033[31m"  # red
+    elif pct >= 70:
+        color = "\033[33m"  # yellow
+    else:
+        color = "\033[32m"  # green
+    reset = "\033[0m"
+    return f"{color}{'█' * filled}{'░' * empty}{reset}"
+
+
+def apfs_base(dev):
+    """Extract APFS container base: /dev/disk3s1 and /dev/disk3s3s1 both → disk3."""
+    m = re.match(r"/dev/(disk\d+)", dev)
+    return m.group(1) if m else dev
+
+
+def should_ignore(dev, mount):
+    if any(pat in dev for pat in IGNORE_DEVS):
+        return True
+    if any(pat in mount for pat in IGNORE_MOUNTS):
+        return True
+    if mount == "/dev":
+        return True
+    return False
+
+
+def main():
+    result = subprocess.run(["df", "-Pk"], capture_output=True, text=True)
+    lines = result.stdout.strip().split("\n")[1:]  # skip header
+
+    # Parse into entries
+    parsed = []
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 6:
+            continue
+        # Find the numeric columns from the right side
+        # Format: Filesystem  1024-blocks  Used  Available  Capacity  Mounted-on
+        # Device name may contain spaces (e.g. "map auto_home")
+        mount = " ".join(parts[5:])
+        try:
+            total_kb = int(parts[-5])
+            used_kb = int(parts[-4])
+            avail_kb = int(parts[-3])
+        except (ValueError, IndexError):
+            continue
+        dev = " ".join(parts[:-5])
+
+        if total_kb == 0 or should_ignore(dev, mount):
+            continue
+
+        parsed.append({
+            "dev": dev,
+            "total": total_kb,
+            "used": used_kb,
+            "avail": avail_kb,
+            "mount": mount,
+        })
+
+    # Collapse APFS volumes that share a container (same disk base).
+    # They report the same total/avail, so pick the best label and
+    # sum used across volumes.
+    containers = {}
+    non_apfs = []
+    for e in parsed:
+        base = apfs_base(e["dev"])
+        if base == e["dev"]:
+            # Not an APFS /dev/diskN device (e.g. SMB share)
+            non_apfs.append(e)
+        else:
+            if base not in containers:
+                containers[base] = {
+                    "total": e["total"],
+                    "avail": e["avail"],
+                    "used": 0,
+                    "mounts": [],
+                }
+            c = containers[base]
+            c["used"] += e["used"]
+            c["mounts"].append(e["mount"])
+
+    entries = []
+    for base, c in containers.items():
+        # Pick a display name: prefer "/" if present, else shortest mount
+        mounts = sorted(c["mounts"], key=lambda m: (m != "/", len(m)))
+        label = mounts[0]
+        note = f"(+{len(mounts) - 1} mounts)" if len(mounts) > 1 else ""
+        entries.append({
+            "mount": label,
+            "note": note,
+            "total": c["total"],
+            "used": c["used"],
+            "avail": c["avail"],
+        })
+
+    for e in non_apfs:
+        entries.append({
+            "mount": e["mount"],
+            "total": e["total"],
+            "used": e["used"],
+            "avail": e["avail"],
+            "note": "",
+        })
+
+    if not entries:
+        print("No filesystems to display.")
+        return
+
+    # Sort: local mounts first, network mounts last
+    entries.sort(key=lambda e: (e["mount"].startswith("/Volumes"), "//" in e["mount"], e["mount"]))
+
+    # Print
+    name_w = max(len(e["mount"]) for e in entries)
+    name_w = max(name_w, 10)
+    name_w = min(name_w, 40)
+
+    hdr = f"{'Mount':<{name_w}}  {'Size':>6}  {'Used':>6}  {'Avail':>6}  {'Use%':>4}"
+    print(f"\033[1m{hdr}\033[0m")
+
+    for e in entries:
+        pct = round(e["used"] / e["total"] * 100) if e["total"] else 0
+        mount = e["mount"]
+        if len(mount) > name_w:
+            mount = "…" + mount[-(name_w - 1):]
+        note = f"  {e['note']}" if e.get("note") else ""
+        print(
+            f"{mount:<{name_w}}  {human(e['total']):>6}  {human(e['used']):>6}  "
+            f"{human(e['avail']):>6}  {pct:>3}%  {bar(pct)}{note}"
+        )
+
+
+if __name__ == "__main__":
+    main()
