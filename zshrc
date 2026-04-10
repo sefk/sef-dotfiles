@@ -234,10 +234,7 @@ eval "$(zoxide init zsh)"
 
 export GOG_ACCOUNT=sefklon@gmail.com
 
-~/bin/tmux-attach-test
-
 export PATH="$PATH:/opt/homebrew/opt/postgresql@18/bin"
-
 
 # pnpm -- I modified to put at the end, thank you very much
 export PNPM_HOME="/Users/sefk/Library/pnpm"

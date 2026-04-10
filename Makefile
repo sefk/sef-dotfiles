@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh
+FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
@@ -31,7 +31,7 @@ OMZ_THEME_LINKS        = $(addprefix ~/.,$(OMZ_THEMES_TO_LINK))
 CLAUDE_FILES_TO_LINK   = $(sort $(wildcard claude/*))
 CLAUDE_DEEP_LINKS      = $(patsubst claude/%,~/.claude/%,$(CLAUDE_FILES_TO_LINK))
 
-all: ~/bin ~/.ssh/config $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS)
+all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS)
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -65,6 +65,12 @@ $(FILE_LINKS): $(HOME)/.%: %
 	if [ -e $@ ]; then false; fi
 	if [ ! -e ~/.ssh ]; then mkdir ~/.ssh; fi
 	cp sshconfig $@
+
+~/.ssh/rc: ssh_rc
+	if [ ! -e ~/.ssh ]; then mkdir ~/.ssh; fi
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	ln -s $(LINK_TARGET_PREFIX)/ssh_rc $@
 	
 $(SECRETS_FILE):
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
