@@ -4,6 +4,11 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# SSH agent: maintain a stable symlink so tmux sessions always find the agent
+if [ -z "$TMUX" ] && [ -n "$SSH_AUTH_SOCK" ] && [ "$SSH_AUTH_SOCK" != "$HOME/.ssh/auth_sock" ]; then
+    ln -sf "$SSH_AUTH_SOCK" "$HOME/.ssh/auth_sock"
+fi
+
 # SEF (TOP) BEGIN
 
 # Homebrew at the start to override system-supported things
