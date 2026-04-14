@@ -6,6 +6,7 @@ local opt = vim.opt
 
 -- Display
 opt.number = true
+opt.relativenumber = true
 opt.ruler = true
 opt.wrap = true
 opt.linebreak = true
