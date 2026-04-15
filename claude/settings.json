@@ -1,43 +1,26 @@
 {
   "permissions": {
     "allow": [
+      "Bash",
       "WebSearch",
       "WebFetch",
-      "Bash(bash /Users/sefk/.claude/statusline-command.sh)",
-      "Skill(commit-commands:commit)",
-      "Bash(gh:*)",
-      "Bash(xcodebuild:*)",
-      "Bash(python3:*)",
-      "Bash(node:*)",
-      "Bash(npm:*)",
-      "Bash(mysql:*)",
-      "Bash(sed:*)",
-      "Bash(touch:*)",
-      "Bash(tail:*)",
-      "Bash(head:*)",
-      "Bash(awk:*)",
-      "Bash(cat:*)",
-      "Bash(grep:*)",
-      "Bash(find:*)",
-      "Bash(ls:*)",
-      "Bash(wc:*)",
-      "Bash(sort:*)",
-      "Bash(uniq:*)",
-      "Bash(cut:*)",
-      "Bash(tr:*)",
-      "Bash(mkdir:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)",
-      "Bash(sleep:*)",
-      "Bash(echo:*)",
-      "Bash(wait:*)",
-      "Bash(date:*)",
-      "Bash(which:*)",
-      "Bash(env:*)",
-      "Bash(export:*)",
-      "Bash(printf:*)"
+      "Skill(commit-commands:commit)"
     ],
     "defaultMode": "auto"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/sefk/.claude/hooks/allow-readonly-bash.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
     "type": "command",
@@ -54,5 +37,6 @@
   },
   "effortLevel": "high",
   "voiceEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true
 }
