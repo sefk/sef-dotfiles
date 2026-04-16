@@ -55,20 +55,6 @@ return {
     end,
   },
 
-  -- Auto-close brackets/quotes
-  {
-    "windwp/nvim-autopairs",
-    event = "InsertEnter",
-    config = function()
-      require("nvim-autopairs").setup()
-    end,
-  },
-
-  -- Git commands (:Git, :Gdiffsplit, :Gblame, etc.)
-  {
-    "tpope/vim-fugitive",
-    cmd = { "Git", "Gdiffsplit", "Gblame", "Gread", "Gwrite", "GBrowse" },
-  },
 
   -- Terminal in a split/float (replaces vimux)
   {
