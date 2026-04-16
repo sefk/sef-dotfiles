@@ -71,7 +71,8 @@ au("FileType", {
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true
     vim.opt_local.textwidth = 0
-    vim.opt_local.list = false
+    vim.opt_local.list = true
+    vim.opt_local.listchars = { trail = "·" }
     vim.opt_local.formatoptions:remove("t")
     vim.opt_local.spell = true
   end,
@@ -118,6 +119,11 @@ au("BufReadPost", {
 au({ "BufLeave", "FocusLost" }, {
   callback = function() vim.cmd("silent! wall") end,
 })
+
+-- Poll for external file changes every 5 seconds
+vim.fn.timer_start(5000, function()
+  vim.cmd("silent! checktime")
+end, { ["repeat"] = -1 })
 
 -- Disable LSP diagnostic signs/virtual text (too noisy for code)
 vim.diagnostic.config({ signs = false, virtual_text = false, underline = false })
