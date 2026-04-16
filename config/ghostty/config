@@ -11,8 +11,8 @@ theme = Adventure
 # Needed to fix ssh issues: https://ghostty.org/docs/help/terminfo
 shell-integration-features = ssh-terminfo
 keybind = shift+enter=text:\x1b\r
-keybind = shift+page_up=scroll_page_up
-keybind = shift+page_down=scroll_page_down
+keybind = shift+page_up=unbind
+keybind = shift+page_down=unbind
 
 split-divider-color=yellow
 
