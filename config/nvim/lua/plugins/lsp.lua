@@ -73,18 +73,18 @@ return {
     end,
   },
 
-  -- Completion: blink.cmp (fast, modern replacement for nvim-cmp)
-  {
-    "saghen/blink.cmp",
-    version = "*",
-    dependencies = { "rafamadriz/friendly-snippets" },
-    opts = {
-      keymap = { preset = "default" },
-      appearance = { use_nvim_cmp_as_default = false },
-      sources = {
-        default = { "lsp", "path", "snippets", "buffer" },
-      },
-      signature = { enabled = true },
-    },
-  },
+  -- Completion: blink.cmp (disabled — too noisy for prose editing)
+  -- {
+  --   "saghen/blink.cmp",
+  --   version = "*",
+  --   dependencies = { "rafamadriz/friendly-snippets" },
+  --   opts = {
+  --     keymap = { preset = "default" },
+  --     appearance = { use_nvim_cmp_as_default = false },
+  --     sources = {
+  --       default = { "lsp", "path", "snippets", "buffer" },
+  --     },
+  --     signature = { enabled = true },
+  --   },
+  -- },
 }

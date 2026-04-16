@@ -65,7 +65,7 @@ au({ "BufRead", "BufNewFile" }, {
   callback = function() vim.bo.filetype = "borg" end,
 })
 
--- Markdown: soft wrap (no hard line breaks)
+-- Markdown: soft wrap (no hard line breaks) + spell check
 au("FileType", {
   pattern = { "markdown", "html" },
   callback = function()
@@ -74,6 +74,7 @@ au("FileType", {
     vim.opt_local.textwidth = 0
     vim.opt_local.list = false
     vim.opt_local.formatoptions:remove("t")
+    vim.opt_local.spell = true
   end,
 })
 
@@ -119,8 +120,9 @@ au({ "BufLeave", "FocusLost" }, {
   callback = function() vim.cmd("silent! wall") end,
 })
 
--- Disable LSP diagnostic signs/virtual text (too noisy coming from plain vim)
+-- Disable LSP diagnostic signs/virtual text (too noisy for code)
 vim.diagnostic.config({ signs = false, virtual_text = false, underline = false })
+
 
 -- Transparent background: inherit terminal black
 vim.api.nvim_set_hl(0, "Normal",     { bg = "none", ctermbg = "none" })
@@ -129,5 +131,5 @@ vim.api.nvim_set_hl(0, "NonText",    { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "LineNr",     { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "SignColumn", { bg = "none", ctermbg = "none" })
 
--- Spell highlight (match vimrc: hi SpellBad ctermbg=136)
-vim.api.nvim_set_hl(0, "SpellBad", { ctermbg = 136 })
+-- Spell highlight: red undercurl (uses tmux undercurl passthrough)
+vim.api.nvim_set_hl(0, "SpellBad", { undercurl = true, sp = "#ff4444", ctermbg = 136 })
