@@ -35,8 +35,8 @@
   "sandbox": {
     "enabled": false
   },
-  "effortLevel": "xhigh",
-  "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "high",
+  "voiceEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true
+  "skipDangerousModePermissionPrompt": true
 }
