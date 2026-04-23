@@ -140,6 +140,9 @@ else
     export EDITOR=vim
 fi
 
+# less: preserve ANSI colors from piped input (e.g. `ag --color foo | less`)
+export LESS=-R
+
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
 

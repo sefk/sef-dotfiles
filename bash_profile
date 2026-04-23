@@ -10,6 +10,9 @@ else
 fi
 bind '"jk":"\e"'
 
+# less: preserve ANSI colors from piped input (e.g. `ag --color foo | less`)
+export LESS=-R
+
 function test_and_source {
     if [ -e "$1" ]; then
         source "$1"
