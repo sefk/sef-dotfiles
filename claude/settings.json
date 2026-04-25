@@ -38,5 +38,19 @@
   "effortLevel": "xhigh",
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Starting processes (foreground or background) such as dev servers, build watchers, test runners, daemons, etc.",
+      "Monitoring processes that are running: checking status, inspecting logs, polling for output, listing process state.",
+      "Killing or signaling processes that Claude itself started in this session (e.g. via run_in_background, nohup &, spawned children). Includes SIGTERM/SIGKILL on those PIDs and stopping their background tasks."
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Killing or signaling processes that Claude did NOT start in this session. This includes the user's own running processes, editors, terminals, system daemons, and processes started by other tools or other Claude sessions. If unsure whether Claude started a given PID, treat it as not-started and ask first."
+    ]
+  }
 }
