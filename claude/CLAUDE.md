@@ -8,16 +8,20 @@
 - Use sub-agents for parallel work when tasks are independent (research, searching, running tests alongside other work).
 - When finished with a task, run the relevant tests or build step before saying "done." If something fails, fix it. Then let me test too before committing or pushing. For complex bash operations, break them into simple sequential commands rather than nested pipes.
 
+When monitoring long-running tasks, especially with production / other servers:
+- Poll for forward progress and watch log files rather than sleep and wait for a positive outcome.
+- Predict how long a task will take beforehand and then measure progress against that prediction. If something is taking much longer than predicted, investigate and consider another approach.
+
 ## Minimize the number of approvals
 
 * Use `auto` permissions mode when possible
-* Sandbox is disabled (causes issues with local database connections and other dev tools)
 * Prefer writing local scripts to heredocs. Use temp directories in this order
   `./.tmp/`,
   `./tmp`, 
   `/tmp`.
 * Since the `gh` command often triggers warnings, prefer the github MCP when available
 * Prefer calling tools individually instead of batching them up into chained "bash" tool call.
+* You are allowed to stop processes that you create
 
 ## Version Control
 
