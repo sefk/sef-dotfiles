@@ -28,8 +28,8 @@ return {
       pcall(telescope.load_extension, "fzf")
 
       local map = vim.keymap.set
-      -- <C-p> as muscle-memory replacement for ctrlp
-      map("n", "<C-p>",      builtin.find_files,  { desc = "Find files" })
+      -- <C-p> searches file contents (filenames appear in results)
+      map("n", "<C-p>",      builtin.live_grep,   { desc = "Live grep" })
       map("n", "<leader>ff", builtin.find_files,  { desc = "Find files" })
       -- Live grep replaces :Ack / ag
       map("n", "<leader>fg", builtin.live_grep,   { desc = "Live grep" })
