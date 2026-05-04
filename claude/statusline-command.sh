@@ -14,6 +14,7 @@ lines_add=$(echo "$input" | jq -r '.cost.total_lines_added // 0')
 lines_rm=$(echo "$input" | jq -r '.cost.total_lines_removed // 0')
 duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 rate_5h=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+rate_7d=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
 
 # ── Colors ────────────────────────────────────────────────────────
 reset="\033[0m"
@@ -118,21 +119,30 @@ else
     dur_fmt="${dur_sec}s"
 fi
 
-# ── Rate limit (if available) ────────────────────────────────────
+# ── Rate limits (Pro/Max only — empty on first turn or free accounts) ─
+rate_color() {
+    local pct="$1"
+    if [ "$pct" -ge 80 ]; then echo "$red"
+    elif [ "$pct" -ge 50 ]; then echo "$yellow"
+    else echo "$dim"
+    fi
+}
 rate_info=""
-#if [ -n "$rate_5h" ]; then
-#    rate_pct=$(printf '%.0f' "$rate_5h")
-#    if [ "$rate_pct" -ge 80 ]; then rate_c="$red"
-#    elif [ "$rate_pct" -ge 50 ]; then rate_c="$yellow"
-#    else rate_c="$dim"
-#    fi
-#    rate_info=" ${dim}|${reset} ${rate_c}5h:${rate_pct}%%${reset}"
-#fi
+if [ -n "$rate_5h" ]; then
+    p5=$(printf '%.0f' "$rate_5h")
+    c5=$(rate_color "$p5")
+    rate_info=" ${dim}|${reset} ${c5}5h:${p5}%${reset}"
+fi
+if [ -n "$rate_7d" ]; then
+    p7=$(printf '%.0f' "$rate_7d")
+    c7=$(rate_color "$p7")
+    rate_info="${rate_info} ${c7}7d:${p7}%${reset}"
+fi
 
 # ── Line 1: identity + location ───────────────────────────────────
 printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}\n" \
     "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd"
 
-# ── Line 2: model + context bar + duration + git + lines ─────────
-printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b\n" \
-    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$git_info" "$lines_info"
+# ── Line 2: model + context bar + duration + git + lines + quota ─
+printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b%b\n" \
+    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$git_info" "$lines_info" "$rate_info"
