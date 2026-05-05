@@ -1,12 +1,10 @@
 #!/bin/sh
-# Start a tmux session named after the current directory.
-# Falls back to default numbering if the name is taken.
+# Start (or attach to) a tmux session named after the current directory.
+# On detach, fall through to a login shell instead of closing the window,
+# so you can ssh out without nesting tmux.
 
 TMUX=/opt/homebrew/bin/tmux
 name="${PWD##*/}"
 
-if "$TMUX" has-session -t "$name" 2>/dev/null; then
-    exec "$TMUX" new-session
-else
-    exec "$TMUX" new-session -s "$name"
-fi
+"$TMUX" new-session -A -s "$name"
+exec $SHELL -l

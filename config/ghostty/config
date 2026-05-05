@@ -14,6 +14,10 @@ keybind = shift+enter=text:\x1b\r
 keybind = shift+page_up=unbind
 keybind = shift+page_down=unbind
 
+# Allow remote apps (e.g. tmux on studio over ssh) to set the Mac clipboard via OSC 52.
+clipboard-write = allow
+clipboard-read = ask
+
 split-divider-color=yellow
 
 command = ~/.config/ghostty/start-tmux.sh
