@@ -1,0 +1,7 @@
+\setenv PSQL_PAGER pspg
+\setenv PAGER pspg
+\pset border 2
+\pset linestyle unicode
+\pset null '∅'
+\pset pager_min_lines 10
+\x auto
