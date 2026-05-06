@@ -56,3 +56,12 @@ function vpn {
     return 1
 }
 
+# Repair this shell's connection to a working ssh-agent without restarting tmux.
+# `find-ssh-agent` calls the script in ~/bin and evals the export it prints so the
+# new SSH_AUTH_SOCK lands in this shell. See `command find-ssh-agent --help`.
+function find-ssh-agent {
+    local out
+    out=$(command find-ssh-agent "$@") || return $?
+    eval "$out"
+}
+

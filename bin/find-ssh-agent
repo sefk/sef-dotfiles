@@ -1,0 +1,150 @@
+#!/bin/bash
+# find-ssh-agent - reconnect this shell (and the tmux session) to a working ssh-agent.
+#
+# Usage:
+#   eval "$(find-ssh-agent)"            # repair current shell
+#   eval "$(find-ssh-agent /path/sock)" # use a specific socket
+#   find-ssh-agent -n                   # dry run, just report what's working
+#
+# What it does:
+#   1. Probes several places (launchd on macOS, tmux env, /tmp/ssh-*, etc.)
+#     for a socket that ssh-add can talk to.
+#   2. Updates ~/.ssh/auth_sock and ~/.ssh/ssh_auth_sock symlinks so all
+#     existing tmux panes (which already point at those stable paths)
+#     start working immediately.
+#   3. Refreshes tmux's session-level SSH_AUTH_SOCK so new panes inherit
+#     the right value.
+#   4. Prints `export SSH_AUTH_SOCK=...` on stdout so the caller can `eval`
+#     to fix the current shell.
+
+set -u
+
+dry_run=0
+explicit=""
+for arg in "$@"; do
+    case "$arg" in
+        -n|--dry-run) dry_run=1 ;;
+        -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*) echo "find-ssh-agent: unknown flag $arg" >&2; exit 2 ;;
+        *) explicit="$arg" ;;
+    esac
+done
+
+agent_works() {
+    # Stale sockets accept connect() but never reply, so ssh-add will hang
+    # without a timeout. macOS doesn't ship `timeout(1)`; fall back to perl.
+    local rc
+    if command -v timeout >/dev/null 2>&1; then
+        SSH_AUTH_SOCK="$1" timeout 2 ssh-add -l >/dev/null 2>&1
+        rc=$?
+    elif command -v gtimeout >/dev/null 2>&1; then
+        SSH_AUTH_SOCK="$1" gtimeout 2 ssh-add -l >/dev/null 2>&1
+        rc=$?
+    else
+        SSH_AUTH_SOCK="$1" perl -e 'alarm 2; exec @ARGV' ssh-add -l >/dev/null 2>&1
+        rc=$?
+    fi
+    # 0 = has keys, 1 = reachable but empty -- both mean the socket works.
+    # Anything else (2 = unreachable, 124/142 = timeout) is a dead socket.
+    [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ]
+}
+
+managed_link="$HOME/.ssh/auth_sock"
+managed_link2="$HOME/.ssh/ssh_auth_sock"
+
+candidates=()
+[ -n "$explicit" ] && candidates+=("$explicit")
+
+# Current shell's SSH_AUTH_SOCK (skip if it's our managed symlink, which would
+# just loop back through the resolution logic).
+if [ -n "${SSH_AUTH_SOCK:-}" ] && [ "$SSH_AUTH_SOCK" != "$managed_link" ] && [ "$SSH_AUTH_SOCK" != "$managed_link2" ]; then
+    candidates+=("$SSH_AUTH_SOCK")
+fi
+
+# macOS launchd-managed agent (works only when set with `launchctl setenv`).
+if command -v launchctl >/dev/null 2>&1; then
+    sock=$(launchctl getenv SSH_AUTH_SOCK 2>/dev/null)
+    [ -n "$sock" ] && candidates+=("$sock")
+fi
+
+# macOS Keychain SSH agent: per-user Listener under /var/run/com.apple.launchd.*
+if [ -d /var/run ]; then
+    while IFS= read -r sock; do
+        candidates+=("$sock")
+    done < <(find /var/run -maxdepth 2 -name Listeners -type s -user "$(id -un)" 2>/dev/null)
+fi
+
+# tmux's session env (may have been refreshed by a recent ssh attach)
+if [ -n "${TMUX:-}" ] && command -v tmux >/dev/null 2>&1; then
+    sock=$(tmux show-environment SSH_AUTH_SOCK 2>/dev/null | sed -n 's/^SSH_AUTH_SOCK=//p')
+    [ -n "$sock" ] && candidates+=("$sock")
+fi
+
+# ssh-forwarded sockets that ~/.ssh/rc may have stashed
+if [ -d "$HOME/.ssh/agent" ]; then
+    while IFS= read -r sock; do
+        candidates+=("$sock")
+    done < <(find "$HOME/.ssh/agent" -maxdepth 1 -type s 2>/dev/null)
+fi
+
+# Standard forwarded-agent locations (Linux + most Unixes)
+while IFS= read -r sock; do
+    candidates+=("$sock")
+done < <(find /tmp -maxdepth 2 -type s -name 'agent.*' -user "$(id -un)" 2>/dev/null)
+
+# Resolve a path through symlinks. macOS readlink lacks -f so do it by hand.
+# Bails out on self-loops or chains longer than 8 hops.
+resolve_link() {
+    local p="$1" prev="" n=0
+    while [ -L "$p" ] && [ "$n" -lt 8 ]; do
+        local target
+        target=$(readlink "$p")
+        case "$target" in
+            /*) p="$target" ;;
+            *)  p="$(dirname "$p")/$target" ;;
+        esac
+        if [ "$p" = "$prev" ]; then
+            return 1   # self-loop
+        fi
+        prev="$p"
+        n=$((n + 1))
+    done
+    echo "$p"
+}
+
+found=""
+for sock in "${candidates[@]}"; do
+    # Don't consider our own managed symlinks -- following them would mean
+    # repointing them at themselves.
+    case "$sock" in
+        "$managed_link"|"$managed_link2") sock=$(resolve_link "$sock") ;;
+    esac
+    [ -S "$sock" ] || continue
+    if agent_works "$sock"; then
+        found="$sock"
+        break
+    fi
+done
+
+if [ -z "$found" ]; then
+    echo "find-ssh-agent: no working ssh-agent found among ${#candidates[@]} candidates" >&2
+    for c in "${candidates[@]}"; do echo "  - $c" >&2; done
+    exit 1
+fi
+
+if [ "$dry_run" -eq 1 ]; then
+    echo "find-ssh-agent: would use $found" >&2
+    SSH_AUTH_SOCK="$found" ssh-add -l >&2 || true
+    exit 0
+fi
+
+ln -sf "$found" "$HOME/.ssh/auth_sock"
+ln -sf "$found" "$HOME/.ssh/ssh_auth_sock"
+
+if [ -n "${TMUX:-}" ]; then
+    tmux set-environment SSH_AUTH_SOCK "$HOME/.ssh/auth_sock" 2>/dev/null || true
+fi
+
+echo "find-ssh-agent: using $found" >&2
+SSH_AUTH_SOCK="$found" ssh-add -l >&2 || true
+echo "export SSH_AUTH_SOCK='$HOME/.ssh/auth_sock';"
