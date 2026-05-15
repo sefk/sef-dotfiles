@@ -67,8 +67,8 @@ fi
 function _tmux_session_prefix {
 	if [[ -n "$TMUX" ]]; then
 		local s=$(tmux display-message -p '#S' 2>/dev/null)
-		echo "%{$fg[blue]%}[${s}]%{$reset_color%} "
+		echo "%{$fg_bold[blue]%}[${s[1,2]}]%{$reset_color%} "
 	fi
 }
-PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} $(zsh_essembeh_gitstatus)%(!.#.>) '
+PROMPT='$(_tmux_session_prefix)${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} $(zsh_essembeh_gitstatus)%(!.#.>) '
 RPROMPT="%(?..%{$fg[red]%}%?%{$reset_color%})"
