@@ -22,7 +22,8 @@ case "$pick" in
     "(no tmux)") exit 0 ;;
     "(new session)")
         if [ -n "$IN_TMUX" ]; then
-            "$TMUX_CMD" new-session -d && "$TMUX_CMD" switch-client -n
+            new=$("$TMUX_CMD" new-session -dP -F '#{session_name}') \
+                && "$TMUX_CMD" switch-client -t "$new"
         else
             exec "$TMUX_CMD" new-session
         fi
