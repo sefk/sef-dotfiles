@@ -1,6 +1,10 @@
-## Work style
+## Preferences
 
-<!-- this section largely cribbed from jinpa -->
+- Python
+- Django
+- uv
+
+## Work style
 
 - For simple, obvious, non-destructive tasks: just do it without asking for confirmation.
 - For anything non-trivial, ambiguous, or destructive: show a brief plan first and wait for approval before starting.
