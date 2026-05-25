@@ -23,17 +23,12 @@ def human(b):
 
 
 def bar(pct, width=30):
-    """Colored usage bar. Green=small share, yellow=large, red=dominant."""
+    """Relative-size bar. Always green — share-of-postgres isn't a health metric."""
     filled = round(pct / 100 * width)
     empty = width - filled
-    if pct >= 75:
-        color = "\033[31m"  # red
-    elif pct >= 40:
-        color = "\033[33m"  # yellow
-    else:
-        color = "\033[32m"  # green
+    green = "\033[32m"
     reset = "\033[0m"
-    return f"{color}{'█' * filled}{'░' * empty}{reset}"
+    return f"{green}{'█' * filled}{'░' * empty}{reset}"
 
 
 QUERY = """
