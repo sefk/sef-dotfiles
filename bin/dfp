@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Pretty Postgres disk usage by database, with color bars.
+
+Any extra arguments are passed through to psql, e.g.:
+    dfp                    # use libpq defaults (PGHOST, PGUSER, ...)
+    dfp -h db.example.com -U me
+    dfp service=prod       # connection service file entry
+"""
+
+import os
+import subprocess
+import sys
+
+
+def human(b):
+    """Format bytes as human-readable."""
+    b = float(b)
+    for unit in ["B", "K", "M", "G", "T"]:
+        if abs(b) < 1024:
+            return f"{b:.1f}{unit}"
+        b /= 1024
+    return f"{b:.1f}P"
+
+
+def bar(pct, width=30):
+    """Colored usage bar. Green=small share, yellow=large, red=dominant."""
+    filled = round(pct / 100 * width)
+    empty = width - filled
+    if pct >= 75:
+        color = "\033[31m"  # red
+    elif pct >= 40:
+        color = "\033[33m"  # yellow
+    else:
+        color = "\033[32m"  # green
+    reset = "\033[0m"
+    return f"{color}{'█' * filled}{'░' * empty}{reset}"
+
+
+QUERY = """
+SELECT d.datname,
+       pg_database_size(d.datname),
+       pg_catalog.pg_get_userbyid(d.datdba),
+       CASE WHEN d.datistemplate THEN 't' ELSE 'f' END
+  FROM pg_database d
+ ORDER BY pg_database_size(d.datname) DESC
+"""
+
+
+def main():
+    psql_args = sys.argv[1:]
+
+    # Default to the "postgres" maintenance DB if the caller didn't pick one
+    # and PGDATABASE isn't set — otherwise psql tries $USER and usually fails.
+    has_db = (
+        "PGDATABASE" in os.environ
+        or any(a == "-d" or a.startswith("--dbname") for a in psql_args)
+        or any(a.startswith("-d") and len(a) > 2 for a in psql_args)
+    )
+    if not has_db:
+        psql_args = ["-d", "postgres", *psql_args]
+
+    cmd = [
+        "psql",
+        "-X",            # ignore .psqlrc
+        "-A",            # unaligned
+        "-t",            # tuples only
+        "-F", "\t",      # tab field separator
+        "-c", QUERY,
+        *psql_args,
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        print("dfp: psql not found in PATH", file=sys.stderr)
+        sys.exit(127)
+
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        sys.exit(result.returncode)
+
+    rows = []
+    for line in result.stdout.strip().split("\n"):
+        if not line:
+            continue
+        parts = line.split("\t")
+        if len(parts) < 4:
+            continue
+        name, size, owner, is_template = parts[0], parts[1], parts[2], parts[3]
+        try:
+            size = int(size)
+        except ValueError:
+            continue
+        rows.append({
+            "name": name,
+            "size": size,
+            "owner": owner,
+            "template": is_template == "t",
+        })
+
+    if not rows:
+        print("No databases found.")
+        return
+
+    total = sum(r["size"] for r in rows) or 1
+
+    def display_name(r):
+        return f"{r['name']} (tmpl)" if r["template"] else r["name"]
+
+    name_w = max(len(display_name(r)) for r in rows)
+    name_w = max(name_w, 8)
+    owner_w = max(len(r["owner"]) for r in rows)
+    owner_w = max(owner_w, 5)
+
+    hdr = (
+        f"{'Database':<{name_w}}  {'Owner':<{owner_w}}  "
+        f"{'Size':>7}  {'Share':>5}"
+    )
+    print(f"\033[1m{hdr}\033[0m")
+
+    for r in rows:
+        pct = r["size"] / total * 100
+        name = display_name(r)
+        if len(name) > name_w:
+            name = name[: name_w - 1] + "…"
+        print(
+            f"{name:<{name_w}}  {r['owner']:<{owner_w}}  "
+            f"{human(r['size']):>7}  {pct:>4.1f}%  {bar(pct)}"
+        )
+
+    print(f"\n\033[1mTotal:\033[0m {human(total)} across {len(rows)} database(s)")
+
+
+if __name__ == "__main__":
+    main()
