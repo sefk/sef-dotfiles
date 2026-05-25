@@ -52,12 +52,14 @@
 	excludesfile = ~/.cvsignore
 	editor = nvim
 	precomposeunicode = true
+	pager = delta
 
 [github]
 	user = sefk
 
 [merge]
 	tool = opendiff
+	conflictstyle = zdiff3
 
 [push]
 	default = current
@@ -67,3 +69,9 @@
 	token = !security find-internet-password -a sefk -s github.com -l 'ghi token' -w
 [oh-my-zsh]
 	hide-status = 1
+[delta]
+	side-by-side = true
+	line-numbers = true
+	navigate = true
+[interactive]
+	diffFilter = delta --color-only
