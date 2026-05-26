@@ -20,4 +20,5 @@ clipboard-read = ask
 
 split-divider-color=yellow
 
-command = ~/.config/ghostty/start-tmux.sh
+# uncomment this to start every shell in tmux
+# command = ~/.config/ghostty/start-tmux.sh

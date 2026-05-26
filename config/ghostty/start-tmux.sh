@@ -8,9 +8,11 @@
 TMUX=/opt/homebrew/bin/tmux
 name="${PWD##*/}"
 
-if "$TMUX" has-session -t "=$name" 2>/dev/null && \
-   [ "$("$TMUX" display-message -p -t "=$name" '#{session_attached}')" -gt 0 ]; then
-    exec $SHELL -l
+if "$TMUX" has-session -t "=$name" 2>/dev/null; then
+    attached=$("$TMUX" display-message -p -t "=$name" '#{session_attached}' 2>/dev/null)
+    if [ "${attached:-0}" -gt 0 ]; then
+        exec $SHELL -l
+    fi
 fi
 
 "$TMUX" new-session -A -s "$name"
