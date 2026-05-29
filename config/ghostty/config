@@ -22,3 +22,4 @@ split-divider-color=yellow
 
 # uncomment this to start every shell in tmux
 # command = ~/.config/ghostty/start-tmux.sh
+

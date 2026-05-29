@@ -1,7 +1,25 @@
-\setenv PSQL_PAGER pspg
-\setenv PAGER pspg
-\pset border 2
-\pset linestyle unicode
-\pset null '∅'
-\pset pager_min_lines 10
-\x auto
+\set QUIET 1
+
+-- Claude Code (and other agents) set CLAUDECODE=1 in the shell environment.
+-- Pull it into a psql variable so we can branch interactive vs. automated use.
+\getenv claudecode CLAUDECODE
+
+\if :{?claudecode}
+  -- Automated / debugging use: keep output plain and easy to parse.
+  \pset pager off
+  \pset null ''
+  \pset linestyle ascii
+  \pset border 1
+  \x off
+\else
+  -- Interactive use: the nice stuff.
+  \setenv PSQL_PAGER pspg
+  \setenv PAGER pspg
+  \pset border 2
+  \pset linestyle unicode
+  \pset null '∅'
+  \pset pager_min_lines 10
+  \x auto
+\endif
+
+\unset QUIET
