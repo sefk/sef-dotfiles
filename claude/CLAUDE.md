@@ -38,6 +38,8 @@ Git policies
 
 Use the `gh` command line utility to update issues on GitHub. Claude doesn't need permissions to read or write issues using `gh issues`.
 
+When adding comments to pull requests and issues, make it clear that this comment is authored by Claude Code, since it will be presented under sefk credentials. This is not necessary for commit messages as those already have co-author attribution.
+
 ## Engineering Rules
 
 Work carefully
