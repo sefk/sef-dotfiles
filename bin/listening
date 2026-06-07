@@ -1,19 +1,34 @@
 #!/usr/bin/env bash
 
-# listening <port> -- show what, if anything, is listening on a TCP port.
+# listening [port] -- show what's listening on TCP ports.
+#
+#   listening <port>   what (if anything) is listening on that port (any user)
+#   listening          all listeners owned by me (incl. brew services like
+#                      ollama, mysql, postgres) -- not the whole machine
+#
 # Wrapper around lsof.
 
 set -euo pipefail
 
+# -nP   no name/port resolution (faster, raw IPs and port numbers)
+# -a    AND the selection criteria (otherwise lsof ORs -u with -i)
+
+if [ $# -eq 0 ]; then
+    out=$(lsof -nP -a -u "$(whoami)" -iTCP -sTCP:LISTEN 2>/dev/null || true)
+    if [ -z "$out" ]; then
+        echo "You have nothing listening on any TCP port."
+        exit 1
+    fi
+    echo "$out"
+    exit 0
+fi
+
 if [ $# -ne 1 ] || ! [[ $1 =~ ^[0-9]+$ ]]; then
-    echo "usage: listening <port>" >&2
+    echo "usage: listening [port]" >&2
     exit 1
 fi
 
 port=$1
-
-# -nP    no name/port resolution (faster, shows raw IPs and port numbers)
-# -iTCP  TCP only,  -sTCP:LISTEN  in LISTEN state
 out=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
 
 if [ -z "$out" ]; then
