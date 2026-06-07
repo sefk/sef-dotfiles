@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# listening <port> -- show what, if anything, is listening on a TCP port.
+# Wrapper around lsof.
+
+set -euo pipefail
+
+if [ $# -ne 1 ] || ! [[ $1 =~ ^[0-9]+$ ]]; then
+    echo "usage: listening <port>" >&2
+    exit 1
+fi
+
+port=$1
+
+# -nP    no name/port resolution (faster, shows raw IPs and port numbers)
+# -iTCP  TCP only,  -sTCP:LISTEN  in LISTEN state
+out=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+
+if [ -z "$out" ]; then
+    echo "Nothing is listening on port $port."
+    exit 1
+fi
+
+echo "$out"
