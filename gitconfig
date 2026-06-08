@@ -12,6 +12,11 @@
     logla = log --decorate --oneline --all --graph
     dt = difftool
     difft = difftool
+    # Default diffs use delta (unified). These opt in to difftastic's
+    # syntax-aware diff for the cases it's good at (refactors, moved code);
+    # avoid it on big string/data literals, where it prints the whole literal.
+    dft = "!git -c diff.external=difft -c core.pager='less -R' show --ext-diff"
+    dftl = "!git -c diff.external=difft -c core.pager='less -R' log -p --ext-diff"
     conflicts = !git ls-files -u | cut -f 2 | sort -u
     track = "!f() { ([ $# -eq 2 ] && ( echo \"Setting tracking for branch \" $1 \" -> \" $2;git branch --set-upstream $1 $2; ) || ( git for-each-ref --format=\"local: %(refname:short) <--sync--> remote: %(upstream:short)\" refs/heads && echo --Remotes && git remote -v)); }; f"
 
@@ -70,7 +75,9 @@
 [oh-my-zsh]
 	hide-status = 1
 [delta]
-	side-by-side = true
+	# unified, not side-by-side -- side-by-side doesn't fit a narrow terminal.
+	# Keeps syntax highlighting, line numbers, and word-level intra-line diffs.
+	side-by-side = false
 	line-numbers = true
 	navigate = true
 [interactive]
