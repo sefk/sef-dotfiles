@@ -61,5 +61,6 @@
       "Killing or signaling processes that Claude did NOT start in this session. This includes the user's own running processes, editors, terminals, system daemons, and processes started by other tools or other Claude sessions. If unsure whether Claude started a given PID, treat it as not-started and ask first."
     ]
   },
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "model": "claude-fable-5[1m]"
 }
