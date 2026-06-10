@@ -14,6 +14,7 @@ IGNORE_MOUNTS = [
     "/System/Volumes/iSCPreboot",
     "/System/Volumes/Hardware",
     "/dev",
+    "/proc",
     "auto_home",
     "CoreSimulator",
     ".timemachine",
