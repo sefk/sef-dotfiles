@@ -139,10 +139,17 @@ if [ -n "$rate_7d" ]; then
     rate_info="${rate_info} ${c7}7d:${p7}%${reset}"
 fi
 
+# ── Today's spend across agents (agentsview; ollama is unpriced/free) ─
+spend_info=""
+if command -v agentsview >/dev/null 2>&1; then
+    spend=$(agentsview usage statusline --no-sync 2>/dev/null)
+    [ -n "$spend" ] && spend_info=" ${dim}|${reset} ${dim}${spend}${reset}"
+fi
+
 # ── Line 1: identity + location ───────────────────────────────────
 printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}\n" \
     "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd"
 
 # ── Line 2: model + context bar + duration + git + lines + quota ─
-printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b%b\n" \
-    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$git_info" "$lines_info" "$rate_info"
+printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b%b%b\n" \
+    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$git_info" "$lines_info" "$rate_info" "$spend_info"

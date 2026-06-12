@@ -15,10 +15,12 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc
+FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
+LAUNCHD_AGENTS_TO_LINK = $(sort $(wildcard launchd/*.plist))
+LAUNCHD_AGENT_LINKS    = $(patsubst launchd/%,~/Library/LaunchAgents/%,$(LAUNCHD_AGENTS_TO_LINK))
 
 # Dependencies that will end up with symlinks
 # Relies on "sort" to also remove dups
@@ -31,7 +33,7 @@ OMZ_THEME_LINKS        = $(addprefix ~/.,$(OMZ_THEMES_TO_LINK))
 CLAUDE_FILES_TO_LINK   = $(sort $(wildcard claude/*))
 CLAUDE_DEEP_LINKS      = $(patsubst claude/%,~/.claude/%,$(CLAUDE_FILES_TO_LINK))
 
-all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS)
+all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS)
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -86,6 +88,14 @@ $(SERVICES_DIR):
 	if [ $(shell uname) == Darwin ]; then \
 		rsync -rupEv osx_services/ $(SERVICES_DIR); \
 	fi
+
+# launchd user agents: symlink each plist into ~/Library/LaunchAgents/.
+# After linking a new one, load it: launchctl bootstrap gui/$(id -u) <plist>
+~/Library/LaunchAgents/%: launchd/%
+	mkdir -p $(dir $@)
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 # Deep links for ~/.claude/: link each file directly to the claude/ subdir in the repo.
 ~/.claude/%: $(LINK_TARGET_PREFIX)/claude/%
