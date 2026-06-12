@@ -30,10 +30,12 @@ CONFIG_SUBDIRS_TO_LINK = $(sort $(wildcard config/*))
 CONFIG_SUBDIR_LINKS    = $(addprefix ~/.,$(CONFIG_SUBDIRS_TO_LINK))
 OMZ_THEMES_TO_LINK     = $(sort $(wildcard oh-my-zsh/custom/themes/*))
 OMZ_THEME_LINKS        = $(addprefix ~/.,$(OMZ_THEMES_TO_LINK))
+OMZ_COMPLETIONS_TO_LINK = $(sort $(wildcard oh-my-zsh/custom/completions/*))
+OMZ_COMPLETION_LINKS    = $(addprefix ~/.,$(OMZ_COMPLETIONS_TO_LINK))
 CLAUDE_FILES_TO_LINK   = $(sort $(wildcard claude/*))
 CLAUDE_DEEP_LINKS      = $(patsubst claude/%,~/.claude/%,$(CLAUDE_FILES_TO_LINK))
 
-all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS)
+all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS)
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -59,6 +61,14 @@ $(FILE_LINKS): $(HOME)/.%: %
 	ln -s $(LINK_TARGET_PREFIX)/bin $@
 
 ~/.oh-my-zsh/custom/themes/%: oh-my-zsh/custom/themes/%
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	ln -s $(LINK_TARGET_PREFIX)/$< $@
+
+# zsh completions (omz adds custom/completions to fpath). After adding a new
+# one, refresh the compdump: rm -f ~/.zcompdump* && exec zsh
+~/.oh-my-zsh/custom/completions/%: oh-my-zsh/custom/completions/%
+	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
