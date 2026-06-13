@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Compact info for the tmux status bar: "<branch><dirty> · <short-path>".
+# Given the active pane's directory; falls back to just the path when not a
+# git repo. Called from status-right via #(~/bin/tmux-pane-info '#{pane_current_path}').
+set -u
+
+dir="${1:-$HOME}"
+[ -d "$dir" ] || dir="$HOME"
+
+# fish-style short path: abbreviate every component except the last.
+case "$dir" in
+    "$HOME")   short="~" ;;
+    "$HOME"/*) short="~${dir#"$HOME"}" ;;
+    *)         short="$dir" ;;
+esac
+IFS=/ read -ra parts <<<"$short"
+n=${#parts[@]}; out=""
+for i in "${!parts[@]}"; do
+    p="${parts[$i]}"
+    if [ "$i" -eq "$((n-1))" ] || [ -z "$p" ]; then out+="$p"
+    elif [[ "$p" == .* ]]; then out+="${p:0:2}"
+    else out+="${p:0:1}"; fi
+    [ "$i" -lt "$((n-1))" ] && out+="/"
+done
+short="$out"
+
+# git branch (+ "*" if the working tree is dirty).
+branch=$(git -C "$dir" symbolic-ref --short HEAD 2>/dev/null \
+       || git -C "$dir" rev-parse --short HEAD 2>/dev/null)
+if [ -n "$branch" ]; then
+    dirty=""
+    [ -n "$(git -C "$dir" status --porcelain 2>/dev/null | head -1)" ] && dirty="*"
+    printf '%s%s · %s' "$branch" "$dirty" "$short"
+else
+    printf '%s' "$short"
+fi
