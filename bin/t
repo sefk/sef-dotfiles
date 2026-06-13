@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # tmux session picker via fzf
 
 TMUX_CMD="${TMUX_CMD:-tmux}"
@@ -10,12 +10,34 @@ if [ -n "$TMUX" ]; then
 fi
 
 sessions=$("$TMUX_CMD" list-sessions -F '#S' 2>/dev/null)
-choices=$(printf '(new session)\n%s\n(no tmux)' "$sessions")
+
+# Prefix each session with a swatch in its own color (@bordercolor, set by
+# ~/bin/tmux-border-color). Session names have no spaces, so the name is the
+# token after the last space when we read the selection back.
+choices=$(
+    printf '(new session)\n'
+    printf '%s\n' "$sessions" | while IFS= read -r s; do
+        [ -n "$s" ] || continue
+        hex=$("$TMUX_CMD" show-option -qv -t "$s" @bordercolor)
+        case "$hex" in
+            \#??????)
+                r=$((16#${hex:1:2})); g=$((16#${hex:3:2})); b=$((16#${hex:5:2}))
+                printf '\033[38;2;%d;%d;%dm●\033[0m %s\n' "$r" "$g" "$b" "$s" ;;
+            *)  printf '  %s\n' "$s" ;;
+        esac
+    done
+    printf '(no tmux)\n'
+)
 
 prompt="attach tmux> "
 [ -n "$IN_TMUX" ] && prompt="switch from \"$current\" to tmux> "
 
-pick=$(echo "$choices" | fzf --height=~20 --reverse --prompt="$prompt")
+pick=$(echo "$choices" | fzf --ansi --height=~20 --reverse --prompt="$prompt")
+# Strip the color swatch prefix to recover the bare session name.
+case "$pick" in
+    "(new session)"|"(no tmux)"|"") : ;;
+    *) pick=${pick##* } ;;
+esac
 
 case "$pick" in
     "") exit 0 ;;

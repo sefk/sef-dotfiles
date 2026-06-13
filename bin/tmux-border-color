@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# tmux-border-color — single source of truth for a tmux session's color.
+#
+# Each session has ONE setting, the @wincolor option:
+#   empty     -> color derived from the session name (the default)
+#   a name    -> red orange yellow green teal cyan blue purple magenta pink
+#   #rrggbb   -> an exact color
+# Everything else is rendered from it into three options the tmux config and
+# the `t` picker consume:
+#   @bordercolor      active pane border + status-bar background
+#   @bordercolor_dim  inactive pane border
+#   @bordertext       readable fg (black/white) for text on the bar
+#
+# Subcommands:
+#   resolve [session]       re-render one session from its @wincolor (default: current)
+#   --all                   re-render every session (used by hooks + config reload)
+#   set <value> [session]   set @wincolor (name / #hex / auto) then re-render
+#   get [session]           print "<value-or-auto> <#hex>"
+# A bare "[session]" argument is an alias for "resolve [session]".
+set -euo pipefail
+
+cur() { tmux display-message -p '#{session_name}'; }
+opt() { tmux show-option -qv -t "$1" "$2"; }   # session option value ("" if unset)
+
+# HSL (H 0-360, S/L 0-1) -> #rrggbb
+hsl() {
+    awk -v h="$1" -v s="$2" -v l="$3" 'function abs(v){return v<0?-v:v} BEGIN{
+        c=(1-abs(2*l-1))*s; hp=h/60.0; x=c*(1-abs((hp-int(hp/2)*2)-1)); m=l-c/2;
+        if(hp<1){r=c;g=x;b=0} else if(hp<2){r=x;g=c;b=0} else if(hp<3){r=0;g=c;b=x}
+        else if(hp<4){r=0;g=x;b=c} else if(hp<5){r=x;g=0;b=c} else {r=c;g=0;b=x}
+        printf "#%02x%02x%02x",(r+m)*255,(g+m)*255,(b+m)*255 }'
+}
+# hue -> "#rrggbb textcolor": bright color plus a readable fg for text on it
+bright_fg() {
+    awk -v h="$1" -v s=0.65 -v l=0.60 'function abs(v){return v<0?-v:v} BEGIN{
+        c=(1-abs(2*l-1))*s; hp=h/60.0; x=c*(1-abs((hp-int(hp/2)*2)-1)); m=l-c/2;
+        if(hp<1){r=c;g=x;b=0} else if(hp<2){r=x;g=c;b=0} else if(hp<3){r=0;g=c;b=x}
+        else if(hp<4){r=0;g=x;b=c} else if(hp<5){r=x;g=0;b=c} else {r=c;g=0;b=x}
+        R=(r+m)*255; G=(g+m)*255; B=(b+m)*255;
+        printf "#%02x%02x%02x %s",R,G,B,(0.299*R+0.587*G+0.114*B>140?"black":"white") }'
+}
+hue() { echo $(( $(printf %s "$1" | cksum | cut -d' ' -f1) % 360 )); }
+# Known color name -> hue; anything else is hashed so it still gets a color.
+named_hue() {
+    case "$1" in
+        red) echo 0;;   orange) echo 30;;  yellow) echo 60;;
+        green) echo 120;; teal) echo 165;; cyan) echo 180;;
+        blue) echo 220;; purple|violet) echo 270;; magenta) echo 300;;
+        pink) echo 330;; *) hue "$1";;
+    esac
+}
+
+render() {  # session bright dim text
+    tmux set-option -t "$1" @bordercolor     "$2"
+    tmux set-option -t "$1" @bordercolor_dim "$3"
+    tmux set-option -t "$1" @bordertext      "$4"
+}
+
+resolve() {
+    local sess="$1" val bright dim text h r g b lum
+    val=$(opt "$sess" @wincolor)
+    case "$val" in
+        "")                       # default: derive from the session name
+            h=$(hue "$sess"); read -r bright text <<<"$(bright_fg "$h")"
+            dim=$(hsl "$h" 0.45 0.32) ;;
+        \#??????)                 # exact hex: darken for dim, contrast for text
+            bright="$val"
+            r=$((16#${val:1:2})); g=$((16#${val:3:2})); b=$((16#${val:5:2}))
+            dim=$(printf '#%02x%02x%02x' $((r/2)) $((g/2)) $((b/2)))
+            lum=$(((299*r+587*g+114*b)/1000)); { [ "$lum" -gt 140 ] && text=black; } || text=white ;;
+        *)                        # named (or arbitrary string -> hashed)
+            h=$(named_hue "$val"); read -r bright text <<<"$(bright_fg "$h")"
+            dim=$(hsl "$h" 0.45 0.32) ;;
+    esac
+    render "$sess" "$bright" "$dim" "$text"
+}
+
+set_color() {
+    local val="$1" sess="$2"
+    case "$val" in auto|default) val="";; esac
+    tmux set-option -t "$sess" @wincolor "$val"
+    resolve "$sess"
+}
+
+case "${1:-}" in
+    --all)
+        while IFS= read -r s; do [ -n "$s" ] && resolve "$s"; done \
+            < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
+        tmux refresh-client 2>/dev/null || true ;;
+    resolve) resolve "${2:-$(cur)}"; tmux refresh-client 2>/dev/null || true ;;
+    set)     set_color "${2:-}" "${3:-$(cur)}"; tmux refresh-client 2>/dev/null || true ;;
+    get)     s="${2:-$(cur)}"; v=$(opt "$s" @wincolor); echo "${v:-auto} $(opt "$s" @bordercolor)" ;;
+    *)       resolve "${1:-$(cur)}"; tmux refresh-client 2>/dev/null || true ;;
+esac

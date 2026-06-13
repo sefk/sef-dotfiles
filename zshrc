@@ -255,3 +255,22 @@ esac
 # the gh command doesn't play nicely with some escape sequences.
 # https://github.com/cli/cli/issues/544
 export GH_EDITOR=${EDITOR:-vim}
+
+# Show or set the current tmux window's color (the single @wincolor setting;
+# see ~/bin/tmux-border-color). No arg prints the current color; a value sets
+# it (red green blue …, a #rrggbb, or `auto` to go back to the name-derived
+# default). NB: Claude's /color can't be set from outside, so this changes the
+# tmux side only — the reverse (Claude /color -> tmux) is handled by the
+# statusline.
+color() {
+    if [ -z "$TMUX" ]; then
+        echo "color: not in a tmux session" >&2
+        return 1
+    fi
+    if [ $# -eq 0 ]; then
+        local info; info=$(tmux-border-color get)
+        echo "window color: ${info%% *} (${info##* })"
+    else
+        tmux-border-color set "$1"
+    fi
+}

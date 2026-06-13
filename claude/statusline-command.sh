@@ -146,6 +146,21 @@ if command -v agentsview >/dev/null 2>&1; then
     [ -n "$spend" ] && spend_info=" ${dim}|${reset} ${dim}${spend}${reset}"
 fi
 
+# ── Mirror Claude's /color into this tmux session's color ────────────
+# /color writes "agentColor":"<name>" into the transcript. Apply it only when
+# it actually changes (tracked in @claude_seen) so a manual `color` command or
+# a tmux rename stays put instead of being overwritten every refresh.
+if [ -n "$TMUX" ] && [ -x "$HOME/bin/tmux-border-color" ]; then
+    transcript=$(echo "$input" | jq -r '.transcript_path // empty')
+    if [ -n "$transcript" ] && [ -f "$transcript" ]; then
+        agentcolor=$(grep -oE '"agentColor":"[^"]*"' "$transcript" 2>/dev/null | tail -1 | cut -d'"' -f4)
+        if [ -n "$agentcolor" ] && [ "$agentcolor" != "$(tmux show-option -qv @claude_seen)" ]; then
+            "$HOME/bin/tmux-border-color" set "$agentcolor" >/dev/null 2>&1
+            tmux set-option -q @claude_seen "$agentcolor" 2>/dev/null
+        fi
+    fi
+fi
+
 # ── Line 1: identity + location ───────────────────────────────────
 printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}\n" \
     "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd"
