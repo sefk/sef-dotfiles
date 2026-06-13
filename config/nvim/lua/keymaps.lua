@@ -26,6 +26,7 @@ map("n", "Q", "gwip", { silent = true })
 -- Window management
 map("n", "<leader>,", ":wincmd w<CR>")
 map("n", "<leader>2", ":split<CR>", { silent = true })
+map("n", "<leader>@", ":vsplit<CR>", { silent = true })
 map("n", "<leader>1", ":wincmd j<CR>:close<CR>", { silent = true })
 map("n", "<leader>0", ":close<CR>", { silent = true })
 
