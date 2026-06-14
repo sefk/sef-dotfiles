@@ -1,3 +1,9 @@
+## Preferences
+
+- Python
+- Django
+- uv
+
 ## Work style
 
 <!-- this section largely cribbed from jinpa -->
@@ -15,11 +21,13 @@ When monitoring long-running tasks, especially with production / other servers:
 ## Minimize the number of approvals
 
 * Use `auto` permissions mode when possible
+* Bash permissions are also guarded by a PreToolUse hook (`~/.claude/hooks/allow-readonly-bash.sh`) that blocks dangerous commands
+* Sandbox is disabled (causes issues with local database connections and other dev tools)
 * Prefer writing local scripts to heredocs. Use temp directories in this order
   `./.tmp/`,
   `./tmp`, 
   `/tmp`.
-* Since the `gh` command often triggers warnings, prefer the github MCP when available
+* Since the `gh` command often triggers warnings, prefer the GitHub MCP when available
 * Prefer calling tools individually instead of batching them up into chained "bash" tool call.
 * You are allowed to stop processes that you create
 
@@ -30,11 +38,12 @@ Use Git for version control hosted at GitHub.
 Git policies
 
 - I prefer Claude to suggest commit messages. I'd like an opportunity to edit the commit message before it's done, but usually I'll accept Claude's suggestion.
-- I always want to review changes before push.
+- When doing multiple changes concurrently, commit each change separately.
+- I always want to review changes before push; I'll push to GitHub myself.
+- I'll do pull requests myself.
 - Claude can always `git fetch`.
 - Claude can do fast-forward only merges.
-- Never rebase.
-- When doing multiple changes concurrently, commit each change separately.
+- Never rebase changes that have already been pushed to GitHub.
 
 Use the `gh` command line utility to update issues on GitHub. Claude doesn't need permissions to read or write issues using `gh issues`.
 
@@ -56,3 +65,4 @@ Work effectively
 Keep things tidy
 
 - When making changes that affect README files or other docs, update them proactively. Include those changes in same commit.
+- When writing markdown, use reference-style links instead of inline links.
