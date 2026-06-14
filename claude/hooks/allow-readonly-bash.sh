@@ -34,8 +34,10 @@ if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*git\s+rebase(\s|$)'; then
   echo "$ASK"; exit 0
 fi
 
-# ── 2. Dangerous gh commands (writes/public actions) → prompt ───────
-if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*gh\s+(pr|issue)\s+(create|close|merge|edit|delete|comment|reopen|review)(\s|$)'; then
+# ── 2. Dangerous gh commands (merge/delete only) → prompt ──────────
+# create/close/comment/edit/reopen/review auto-allow; merge & delete
+# are the hard-to-undo ones worth confirming.
+if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*gh\s+(pr|issue)\s+(merge|delete)(\s|$)'; then
   echo "$ASK"; exit 0
 fi
 
