@@ -274,3 +274,14 @@ color() {
         tmux-border-color set "$1"
     fi
 }
+
+# `brew upgrade` swaps the agentsview binary on disk but the launchd daemon
+# keeps running the old one in memory (stale cost estimates etc). Kick it after
+# any upgrade so it re-execs the new binary. Idempotent + near-instant.
+brew() {
+    command brew "$@"
+    local rc=$?
+    [[ "$1" == upgrade ]] && \
+        launchctl kickstart -k "gui/$(id -u)/com.sefk.agentsview" 2>/dev/null
+    return $rc
+}

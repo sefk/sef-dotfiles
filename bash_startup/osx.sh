@@ -47,7 +47,18 @@ if [ $(uname -s) == "Darwin" ]; then
     # nice little doohickey to provide unified interface to clipboard.
     # seen here: https://news.ycombinator.com/item?id=10143143
     function clip() {
-        [ -t 0 ] && pbpaste || pbcopy 
+        [ -t 0 ] && pbpaste || pbcopy
+    }
+
+    # `brew upgrade` swaps the agentsview binary on disk but the launchd daemon
+    # keeps running the old one in memory (stale cost estimates etc). Kick it
+    # after any upgrade so it re-execs the new binary. Idempotent + instant.
+    brew() {
+        command brew "$@"
+        local rc=$?
+        [[ "$1" == upgrade ]] && \
+            launchctl kickstart -k "gui/$(id -u)/com.sefk.agentsview" 2>/dev/null
+        return $rc
     }
 
 fi
