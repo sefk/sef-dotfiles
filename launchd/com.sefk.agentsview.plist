@@ -11,6 +11,8 @@
 		<string>/opt/homebrew/bin/agentsview</string>
 		<string>serve</string>
 		<string>--no-browser</string>
+		<string>--host</string>
+		<string>0.0.0.0</string>
 		<string>--port</string>
 		<string>8088</string>
 	</array>
