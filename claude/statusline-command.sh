@@ -78,6 +78,20 @@ if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
     fi
 fi
 
+# ── DataTalk dev-DB badge ─────────────────────────────────────────
+# Warn (in every project) when the DataTalk dev stack points at a cloud DB —
+# the state that let a stray migrate hit prod (#434). Read the marker file
+# directly (pure bash, no subprocess) so this stays free on the hot statusline
+# path; mirrors `scripts/db_target.sh statusline` (#437).
+db_badge=""
+dt_override="$HOME/src/biglocalnews/datatalk/.env.dbtarget"
+if [ -f "$dt_override" ]; then
+    case "$(sed -n 's/^# dbtarget: //p' "$dt_override")" in
+        prod)    db_badge=" ${red}${bold}DTPROD${reset}" ;;
+        staging) db_badge=" ${yellow}${bold}DTSTAGE${reset}" ;;
+    esac
+fi
+
 # ── Tmux prefix ──────────────────────────────────────────────────
 tmux_prefix=""
 #if [ -n "$TMUX" ]; then
@@ -140,9 +154,17 @@ if [ -n "$rate_7d" ]; then
 fi
 
 # ── Today's spend across agents (agentsview; ollama is unpriced/free) ─
+# Only call agentsview when its daemon is actually reachable. A wedged/syncing
+# daemon makes every CLI call hang; without this gate each statusline render
+# spawns a doomed `agentsview` that piles up and (pre-timeout) could kill the
+# whole line. The /dev/tcp probe is a built-in, sub-ms, spawns nothing; the
+# `timeout` is a backstop for the call itself. Self-heals when the daemon is up.
 spend_info=""
-if command -v agentsview >/dev/null 2>&1; then
-    spend=$(agentsview usage statusline --no-sync 2>/dev/null)
+agentsview_port="${AGENTSVIEW_PORT:-8088}"
+if command -v agentsview >/dev/null 2>&1 \
+   && (exec 3<>"/dev/tcp/127.0.0.1/${agentsview_port}") 2>/dev/null; then
+    exec 3>&- 3<&- 2>/dev/null
+    spend=$(timeout 2 agentsview usage statusline --no-sync 2>/dev/null)
     [ -n "$spend" ] && spend_info=" ${dim}|${reset} ${dim}${spend}${reset}"
 fi
 
@@ -161,9 +183,9 @@ if [ -n "$TMUX" ] && [ -x "$HOME/bin/tmux-border-color" ]; then
     fi
 fi
 
-# ── Line 1: identity + location ───────────────────────────────────
-printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}\n" \
-    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd"
+# ── Line 1: identity + location (+ DataTalk DB badge) ─────────────
+printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}%b\n" \
+    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd" "$db_badge"
 
 # ── Line 2: model + context bar + duration + git + lines + quota ─
 printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b%b%b\n" \

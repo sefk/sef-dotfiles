@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# tmux status badge warning when the DataTalk dev stack is pointed at a cloud DB.
+# Empty when local (the safe default); a colored DTSTAGE / DTPROD otherwise.
+# Single source of truth is the repo tool: scripts/db_target.sh statusline (#437).
+set -u
+
+repo="${DATATALK_REPO:-$HOME/src/biglocalnews/datatalk}"
+tool="$repo/scripts/db_target.sh"
+[ -x "$tool" ] || exit 0
+
+case "$("$tool" statusline 2>/dev/null)" in
+  DTPROD)  printf '#[fg=colour231,bg=colour160,bold] DTPROD #[default]' ;;
+  DTSTAGE) printf '#[fg=colour16,bg=colour178,bold] DTSTAGE #[default]' ;;
+  *)       : ;;  # local: no badge
+esac
