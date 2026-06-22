@@ -285,3 +285,6 @@ brew() {
         launchctl kickstart -k "gui/$(id -u)/com.sefk.agentsview" 2>/dev/null
     return $rc
 }
+
+# Use Homebrew sqlite (readline-enabled, Tab completion) ahead of system sqlite
+export PATH="/opt/homebrew/opt/sqlite/bin:$PATH"
