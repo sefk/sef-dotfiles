@@ -8,6 +8,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -31,7 +32,8 @@
     "github@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
     "code-review@claude-plugins-official": false,
-    "railway@railway-skills": true
+    "railway@railway-skills": true,
+    "frontend-design@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "railway-skills": {
@@ -44,7 +46,7 @@
   "sandbox": {
     "enabled": false
   },
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
@@ -61,6 +63,5 @@
       "Killing or signaling processes that Claude did NOT start in this session. This includes the user's own running processes, editors, terminals, system daemons, and processes started by other tools or other Claude sessions. If unsure whether Claude started a given PID, treat it as not-started and ask first."
     ]
   },
-  "voiceEnabled": true,
-  "model": "claude-fable-5[1m]"
+  "voiceEnabled": true
 }
