@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Pretty disk usage for PostgreSQL and MySQL databases, with a shared bar scale.
+
+Connection is controlled entirely by environment variables:
+  PostgreSQL: PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE, etc.
+  MySQL:      MYSQL_HOST, MYSQL_TCP_PORT, MYSQL_USER, MYSQL_PWD, etc.
+
+Each engine gets its own section; bars are scaled to the global maximum
+across both engines so you can visually compare sizes.
+"""
+
+import os
+import subprocess
+import sys
+
+
+def human(b):
+    b = float(b)
+    for unit in ["B", "K", "M", "G", "T"]:
+        if abs(b) < 1024:
+            return f"{b:.1f}{unit}"
+        b /= 1024
+    return f"{b:.1f}P"
+
+
+def bar(size, max_size, width=30):
+    """Bar scaled to global maximum across all engines."""
+    pct = size / max_size * 100 if max_size else 0
+    filled = round(pct / 100 * width)
+    empty = width - filled
+    green = "\033[32m"
+    reset = "\033[0m"
+    return f"{green}{'█' * filled}{'░' * empty}{reset}"
+
+
+PG_QUERY = """
+SELECT d.datname,
+       pg_database_size(d.datname)
+  FROM pg_database d
+ WHERE NOT d.datistemplate
+ ORDER BY pg_database_size(d.datname) DESC
+"""
+
+MYSQL_QUERY = (
+    "SELECT table_schema, COALESCE(SUM(data_length + index_length), 0) "
+    "FROM information_schema.tables "
+    "WHERE table_schema NOT IN ('information_schema','performance_schema','sys') "
+    "GROUP BY table_schema "
+    "ORDER BY SUM(data_length + index_length) DESC"
+)
+
+
+def fetch_postgres():
+    pg_args = [] if "PGDATABASE" in os.environ else ["-d", "postgres"]
+    cmd = ["psql", "-X", "-A", "-t", "-F", "\t", "-c", PG_QUERY, *pg_args]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        return None
+    if result.returncode != 0:
+        return None
+    rows = []
+    for line in result.stdout.strip().split("\n"):
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        try:
+            rows.append({"name": parts[0], "size": int(parts[1])})
+        except ValueError:
+            continue
+    return rows or None
+
+
+def fetch_mysql():
+    cmd = ["mysql", "--batch", "-N", "-e", MYSQL_QUERY, "information_schema"]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        return None
+    if result.returncode != 0:
+        return None
+    rows = []
+    for line in result.stdout.strip().split("\n"):
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        try:
+            rows.append({"name": parts[0], "size": int(parts[1])})
+        except ValueError:
+            continue
+    return rows or None
+
+
+def print_section(title, rows, max_size):
+    total = sum(r["size"] for r in rows)
+    name_w = max((len(r["name"]) for r in rows), default=8)
+    name_w = max(name_w, 8)
+    name_w = min(name_w, 40)
+
+    bold, reset, dim = "\033[1m", "\033[0m", "\033[2m"
+    print(f"{bold}{title}{reset}")
+    hdr = f"  {'Database':<{name_w}}  {'Size':>7}  {'Share':>5}"
+    print(f"{dim}{hdr}{reset}")
+
+    for r in rows:
+        pct = r["size"] / total * 100 if total else 0
+        name = r["name"]
+        if len(name) > name_w:
+            name = name[:name_w - 1] + "…"
+        print(
+            f"  {name:<{name_w}}  {human(r['size']):>7}  {pct:>4.1f}%  {bar(r['size'], max_size)}"
+        )
+    print(f"  {dim}Total: {human(total)} across {len(rows)} database(s){reset}")
+
+
+def main():
+    pg_rows = fetch_postgres()
+    my_rows = fetch_mysql()
+
+    all_rows = (pg_rows or []) + (my_rows or [])
+    if not all_rows:
+        print(
+            "dfdb: no databases found — is postgres or mysql running and accessible?",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    max_size = max(r["size"] for r in all_rows) or 1
+
+    sections = []
+    if pg_rows:
+        sections.append(("PostgreSQL", pg_rows))
+    if my_rows:
+        sections.append(("MySQL", my_rows))
+
+    for i, (title, rows) in enumerate(sections):
+        if i:
+            print()
+        print_section(title, rows, max_size)
+
+
+if __name__ == "__main__":
+    main()
