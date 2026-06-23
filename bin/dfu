@@ -126,7 +126,7 @@ def main():
         # Pick a display name: prefer "/" if present, else shortest mount
         mounts = sorted(c["mounts"], key=lambda m: (m != "/", len(m)))
         label = mounts[0]
-        note = f"(+{len(mounts) - 1} mounts)" if len(mounts) > 1 else ""
+        note = ""
         entries.append({
             "mount": label,
             "note": note,
@@ -156,7 +156,7 @@ def main():
     name_w = max(name_w, 10)
     name_w = min(name_w, 40)
 
-    hdr = f"{'Mount':<{name_w}}  {'Size':>6}  {'Used':>6}  {'Avail':>6}  {'Use%':>4}"
+    hdr = f"{'Mount':<{name_w}}  {'Size':>7}  {'Used':>7}  {'Avail':>7}  {'Use%':>4}"
     print(f"\033[1m{hdr}\033[0m")
 
     for e in entries:
@@ -166,8 +166,8 @@ def main():
             mount = "…" + mount[-(name_w - 1):]
         note = f"  {e['note']}" if e.get("note") else ""
         print(
-            f"{mount:<{name_w}}  {human(e['total']):>6}  {human(e['used']):>6}  "
-            f"{human(e['avail']):>6}  {pct:>3}%  {bar(pct)}{note}"
+            f"{mount:<{name_w}}  {human(e['total']):>7}  {human(e['used']):>7}  "
+            f"{human(e['avail']):>7}  {pct:>3}%  {bar(pct)}{note}"
         )
 
 
