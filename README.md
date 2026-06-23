@@ -29,3 +29,12 @@ export RESUME_ADDRESS="street<br>city, state, zip<br>phone<br>"
 
 TODO - Maybe all this gitconfig stuff shouldn't be universal? Hm. - Consider
 adding submodule stuff to the makefile. That somehow seems wrong though.
+
+## Things to set up on new machines
+
+Longer time to use a screenshot
+
+```
+defaults write com.apple.screencaptureui "thumbnailExpiration" -float 20 && killall SystemUIServer
+```
+
