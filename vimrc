@@ -53,7 +53,20 @@ cmap w!! w !sudo tee > /dev/null %
 
 " Misc useful leader commands
 nnoremap <leader>ts :set spell!<CR>
-nnoremap <leader>z 1z=
+
+function! SpellSuggestPopup()
+  let l:word = expand('<cword>')
+  let l:suggestions = spellsuggest(l:word, 15)
+  if empty(l:suggestions)
+    echo 'No suggestions for: ' . l:word
+    return
+  endif
+  call popup_menu(l:suggestions, {
+    \ 'title': ' ' . l:word . ' ',
+    \ 'callback': {id, idx -> idx > 0 ? execute('normal! "_ciw' . l:suggestions[idx - 1] . "\<Esc>") : ''},
+    \ })
+endfunction
+nnoremap <leader>z :call SpellSuggestPopup()<CR>
 nnoremap <leader>fp !ipfmt 72<CR>
 nnoremap <leader>q gqip
 
