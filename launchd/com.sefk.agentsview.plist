@@ -15,6 +15,9 @@
 		<string>0.0.0.0</string>
 		<string>--port</string>
 		<string>8088</string>
+		<!-- Trust the LAN hostname origin so studio:8088 isn't Forbidden. -->
+		<string>--public-url</string>
+		<string>http://studio:8088</string>
 	</array>
 
 	<key>RunAtLoad</key>
