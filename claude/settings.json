@@ -46,6 +46,7 @@
   "sandbox": {
     "enabled": false
   },
+  "cleanupPeriodDays": 3650,
   "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
   "remoteControlAtStartup": true,
