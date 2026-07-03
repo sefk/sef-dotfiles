@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.sefk.claude-nightly</string>
+
+	<!-- Overnight datatalk test run; Claude triages failures into a
+	     GitHub issue. Studio only (script guards on hostname). -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/sefk/bin/claude-nightly.sh</string>
+	</array>
+
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>4</integer>
+		<key>Minute</key>
+		<integer>30</integer>
+	</dict>
+
+	<key>RunAtLoad</key>
+	<false/>
+
+	<!-- launchd starts with a minimal PATH; the script also sets its own. -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/Users/sefk/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/sefk/Library/Logs/claude-nightly.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/sefk/Library/Logs/claude-nightly.log</string>
+</dict>
+</plist>
