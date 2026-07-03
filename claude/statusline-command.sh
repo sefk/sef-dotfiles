@@ -7,6 +7,7 @@ input=$(cat)
 
 # ── Extract JSON fields ──────────────────────────────────────────
 model=$(echo "$input" | jq -r '.model.display_name // "?"')
+model_id=$(echo "$input" | jq -r '.model.id // ""')
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // "~"')
 session_name=$(echo "$input" | jq -r '.session_name // empty')
 ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
@@ -109,8 +110,15 @@ bar_width=10
 filled=$((ctx_pct * bar_width / 100))
 empty=$((bar_width - filled))
 
-if [ "$ctx_pct" -ge 90 ]; then bar_color="$red"
-elif [ "$ctx_pct" -ge 70 ]; then bar_color="$yellow"
+# On 1M-context models the used_percentage denominator is 1M, and everything
+# past 200k (20%) bills at the 2x long-context premium — warn much earlier.
+if [[ "$model_id" == *"[1m]"* || "$model" == *"[1m]"* ]]; then
+    warn_pct=20; crit_pct=50
+else
+    warn_pct=70; crit_pct=90
+fi
+if [ "$ctx_pct" -ge "$crit_pct" ]; then bar_color="$red"
+elif [ "$ctx_pct" -ge "$warn_pct" ]; then bar_color="$yellow"
 else bar_color="$green"
 fi
 
