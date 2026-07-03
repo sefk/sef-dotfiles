@@ -4,5 +4,6 @@ bash_secret
 .DS_Store
 *.spl
 *.swp
-.claude
+.claude/*
+!.claude/settings.json
 lazy-lock.json
