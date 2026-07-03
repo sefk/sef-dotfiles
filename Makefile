@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd
+FILE_EXCLUDES          = README README.md CLAUDE.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
@@ -45,24 +45,24 @@ all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_TH
 # but not as specific
 ~/.config/%: config/%
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	if [ ! -e ~/.config ]; then mkdir ~/.config; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 # Static pattern only (avoids ~/.% matching deep paths like ~/.claude/CLAUDE.md and creating circular deps)
 $(FILE_LINKS): $(HOME)/.%: %
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 ~/bin:
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm -r $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/bin $@
 
 ~/.oh-my-zsh/custom/themes/%: oh-my-zsh/custom/themes/%
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 # zsh completions (omz adds custom/completions to fpath). After adding a new
@@ -70,7 +70,7 @@ $(FILE_LINKS): $(HOME)/.%: %
 ~/.oh-my-zsh/custom/completions/%: oh-my-zsh/custom/completions/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 ~/.ssh/config:
@@ -81,7 +81,7 @@ $(FILE_LINKS): $(HOME)/.%: %
 ~/.ssh/rc: ssh_rc
 	if [ ! -e ~/.ssh ]; then mkdir ~/.ssh; fi
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/ssh_rc $@
 	
 $(SECRETS_FILE):
@@ -89,9 +89,11 @@ $(SECRETS_FILE):
 
 # only remove secrets file if it exists but is empty, i.e. likely that this makefile
 # created it
+# Plain rm (no -r): every target here is a symlink; if one is somehow a real
+# directory, failing beats recursively deleting its contents.
 clean:
-	-rm -r $(RMFLAG) $(LINKS)
-	-rm -r $(RMFLAG) $(OLD_FILES)
+	-rm $(RMFLAG) $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(CLAUDE_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/bin
+	-rm $(RMFLAG) $(addprefix $(HOME)/,$(OLD_FILES))
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
 $(SERVICES_DIR):
@@ -104,14 +106,14 @@ $(SERVICES_DIR):
 ~/Library/LaunchAgents/%: launchd/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 # Deep links for ~/.claude/: link each file directly to the claude/ subdir in the repo.
 ~/.claude/%: $(LINK_TARGET_PREFIX)/claude/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
-	if [ -e $@ ] && [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
 	ln -s $< $@
 
 .PHONY: $(SERVICES_DIR)
