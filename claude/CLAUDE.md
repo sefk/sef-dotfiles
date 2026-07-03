@@ -12,7 +12,7 @@
 - For anything non-trivial, ambiguous, or destructive: show a brief plan first and wait for approval before starting.
 - Keep responses concise. No trailing summaries, no restating what you just did.
 - Use sub-agents for parallel work when tasks are independent (research, searching, running tests alongside other work).
-- When finished with a task, run the relevant tests or build step before saying "done." If something fails, fix it. Then let me test too before committing or pushing. For complex bash operations, break them into simple sequential commands rather than nested pipes.
+- When finished with a task, run the relevant tests or build step before saying "done." If something fails, fix it. I get a chance to test and review before anything is merged to master or pushed. For complex bash operations, break them into simple sequential commands rather than nested pipes.
 
 When monitoring long-running tasks, especially with production / other servers:
 - Poll for forward progress and watch log files rather than sleep and wait for a positive outcome.
@@ -37,9 +37,10 @@ Use Git for version control hosted at GitHub.
 
 Git policies
 
-- I prefer Claude to suggest commit messages. I'd like an opportunity to edit the commit message before it's done, but usually I'll accept Claude's suggestion.
+- Commit autonomously at natural checkpoints (task complete, tests pass) — don't ask first and don't wait for me to say "commit this". Write a good message and just commit.
+- Multi-step or exploratory work goes on a working branch, not master; I review, squash, and merge working branches myself. A small self-contained change may be committed directly on the current branch.
 - When doing multiple changes concurrently, commit each change separately.
-- I always want to review changes before push; I'll push to GitHub myself.
+- Never push; I review and push to GitHub myself.
 - I'll do pull requests myself.
 - Claude can always `git fetch`.
 - Claude can do fast-forward only merges.
@@ -56,6 +57,7 @@ Work carefully
 - If there are tests, run them before considering work done.
 - When making code changes, look for tests and fix them while making changes.
 - When writing new features, write new tests.
+- Verify visible changes by looking at them before saying "done": screenshot web UI with a headless browser, `tmux capture-pane` for TUI/CLI output. Never claim a visual fix works without having seen it.
 
 Work effectively
 
