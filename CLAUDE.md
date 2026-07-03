@@ -16,7 +16,9 @@ instructions live in the global `claude/CLAUDE.md` (deep-linked to
   Claude Code config.
 - `bash_secret` is **not** checked in but is treated as a link target (special
   create/cleanup logic in the Makefile). It defines things like
-  `RESUME_ADDRESS`.
+  `RESUME_ADDRESS` and `RESTIC_PASSWORD` (encrypts the nightly
+  `bin/claude-backup.sh` restic repo — also keep a copy in a password
+  manager; without it the backups are unreadable).
 - vim plugins are git submodules — run `git submodule init && git submodule
   update` before anything else.
 - When setting up a new host, consider adding its hostname to the static list in

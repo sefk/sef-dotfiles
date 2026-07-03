@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.sefk.claude-backup</string>
+
+	<!-- Nightly restic backup of ~/.claude session data to the Synology.
+	     If the machine is asleep at 03:30, launchd runs it on next wake. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/sefk/bin/claude-backup.sh</string>
+	</array>
+
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>3</integer>
+		<key>Minute</key>
+		<integer>30</integer>
+	</dict>
+
+	<key>RunAtLoad</key>
+	<false/>
+
+	<!-- launchd starts with a minimal PATH; the script also sets its own. -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/sefk/Library/Logs/claude-backup.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/sefk/Library/Logs/claude-backup.log</string>
+</dict>
+</plist>
