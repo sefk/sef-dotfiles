@@ -46,6 +46,10 @@ test_and_source /usr/share/autojump/autojump.sh
 test_and_source /Users/sefk/.autojump/etc/profile.d/autojump.sh
 autoload -U compinit && compinit -u
 
+# claude-local: Claude Code against local Ollama (bash gets this via the
+# bash_startup loop; zsh doesn't source bash_startup, so pick it up here)
+test_and_source ~/.bash_startup/claude.sh
+
 # SEF (TOP) END
 
 # Set name of the theme to load --- if set to "random", it will
