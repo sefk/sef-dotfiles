@@ -23,4 +23,12 @@ return {
       { "<leader>mr", "<cmd>RenderMarkdown toggle<cr>", desc = "Render markdown toggle", ft = "markdown" },
     },
   },
+
+  -- Table editing: cell navigation, auto-align, row/column insert/move/delete
+  {
+    "SCJangra/table-nvim",
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    ft = { "markdown" },
+    opts = {},
+  },
 }
