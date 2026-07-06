@@ -18,6 +18,7 @@ return {
     opts = {
       render_modes = true,                  -- render in every mode, including insert
       anti_conceal = { enabled = false },   -- keep the cursor's line rendered too
+      pipe_table = { enabled = false },     -- table-wrap.nvim owns table rendering instead
     },
     keys = {
       { "<leader>mr", "<cmd>RenderMarkdown toggle<cr>", desc = "Render markdown toggle", ft = "markdown" },
@@ -30,5 +31,20 @@ return {
     dependencies = { "nvim-treesitter/nvim-treesitter" },
     ft = { "markdown" },
     opts = {},
+  },
+
+  -- Display-only wide-table preview: wraps long cell content and enforces
+  -- column width caps via extmarks, without touching the source buffer
+  {
+    "ice345/markdown-table-wrap.nvim",
+    ft = { "markdown" },
+    opts = {
+      min_col_width = 8,
+      max_col_width = 40,
+    },
+    keys = {
+      { "<leader>mw", "<cmd>MarkdownTableTogglePreview<cr>", desc = "Toggle wrapped table preview", ft = "markdown" },
+      { "<leader>mW", "<cmd>MarkdownTableFloatPreview<cr>", desc = "Float wrapped table preview", ft = "markdown" },
+    },
   },
 }
