@@ -166,6 +166,10 @@ bindkey -v
 bindkey "^R" history-incremental-search-backward
 bindkey "^[/" history-incremental-search-backward
 
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey -M vicmd v edit-command-line
+
 test_and_source ~/.bash_secret
 test_and_source ~/.zsh_secret
 
