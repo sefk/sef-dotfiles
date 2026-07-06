@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.sefk.llmster</string>
+
+	<!-- `lms daemon up` starts llmster in the background and exits; the
+	     daemon then persists on its own, so this only needs to fire once
+	     per login rather than being kept alive by launchd. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/sefk/.lmstudio/bin/lms</string>
+		<string>daemon</string>
+		<string>up</string>
+	</array>
+
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<false/>
+
+	<!-- launchd starts with a minimal PATH; give lms a sane one. -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/Users/sefk/.lmstudio/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/sefk/.lmstudio/llmster-launchd.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/sefk/.lmstudio/llmster-launchd.log</string>
+</dict>
+</plist>

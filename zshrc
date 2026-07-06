@@ -206,6 +206,9 @@ PATH="$PATH:$PYTHON_BIN_PATH"
 PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 PATH="$PATH:/usr/local/sbin"
 
+# llmster / lms CLI (headless LM Studio)
+PATH="$PATH:$HOME/.lmstudio/bin"
+
 case $(uname -n) in
   *google.com) test_and_source ~/.zshrc-google;;
 esac
