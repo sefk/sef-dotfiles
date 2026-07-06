@@ -166,6 +166,11 @@ bindkey -v
 bindkey "^R" history-incremental-search-backward
 bindkey "^[/" history-incremental-search-backward
 
+# fzf: fuzzy history search (overrides ^R above), file/dir pickers (^T, Alt-C)
+if command -v fzf &>/dev/null; then
+    source <(fzf --zsh)
+fi
+
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey -M vicmd v edit-command-line
@@ -296,3 +301,8 @@ brew() {
 
 # Use Homebrew sqlite (readline-enabled, Tab completion) ahead of system sqlite
 export PATH="/opt/homebrew/opt/sqlite/bin:$PATH"
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/sefk/.lmstudio/bin"
+# End of LM Studio CLI section
+
