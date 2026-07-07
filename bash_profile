@@ -90,3 +90,8 @@ if [ `uname` == "Darwin" ]; then
   alias tailscale="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 fi
 
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/sefk/.lmstudio/bin"
+# End of LM Studio CLI section
+

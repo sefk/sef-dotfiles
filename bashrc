@@ -8,3 +8,8 @@ if [ -f '/usr/local/google/home/sefk/google-cloud-sdk/path.bash.inc' ]; then sou
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/usr/local/google/home/sefk/google-cloud-sdk/completion.bash.inc' ]; then source '/usr/local/google/home/sefk/google-cloud-sdk/completion.bash.inc'; fi
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/Users/sefk/.lmstudio/bin"
+# End of LM Studio CLI section
+
