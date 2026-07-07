@@ -1,3 +1,132 @@
+# 2026-07-07
+
+Session goal: optimize performance and correctness of the LM Studio local
+stack, tune pi, survey what else is worth running. Everything below measured
+on this machine (M1 Max Mac Studio, 64GB) against the MLX build of
+`qwen/qwen3.6-35b-a3b` at 262144 context.
+
+## Measured baselines
+
+- **Decode: ~29 tok/s.** Fine for interactive agent use.
+- **Cold prefill: ~500 tok/s at 32k prompt, ~400 tok/s at 69k.** This is
+  the real bottleneck: a 32k-token prompt costs ~60s, 69k costs ~3min
+  before the first output token. Claude Code's system prompt + tools alone
+  is ~15-25k tokens.
+- **KV prefix caching works, and it's what makes agent use viable at all:**
+  - Identical 32k prompt: 63.5s cold → 2.1s repeat (OpenAI endpoint).
+  - The cache holds **multiple prefixes** — alternated two distinct ~20k
+    prompts A/B/A/B; both repeats came back in 1.4s. So claude-local and
+    pi can share one loaded model without evicting each other's cache.
+  - The **Anthropic `/v1/messages` endpoint caches too**: 69k-token system
+    prompt, 171.8s cold → 1.3s repeat, with `cache_read_input_tokens:
+    68864` reported in usage. (Older LM Studio 0.4.x had a bug where this
+    endpoint dropped the cache on every Claude Code message, fixed in
+    0.4.15 May 2026; this llmster build — v0.0.18+1 — demonstrably has the
+    fix.)
+  - Upshot: append-only conversations pay prefill once, then ~1-2s per
+    turn of prompt processing. The enemy is anything that breaks the
+    prefix (mid-conversation system-prompt edits, compaction rewrites).
+    One caveat from LM Studio's bug tracker: KV cache may be silently
+    discarded after long idle even while the model stays loaded — if
+    turn 2 after a lunch break re-prefills, that's why.
+
+## Tool calling re-validated under LM Studio: works
+
+The ollama-era concern (qwen3-coder:30b flat-out broken, doubts carried
+over) does **not** reproduce on LM Studio's serving stack. Smoke-tested
+qwen3.6-35b-a3b on both endpoints with a weather-tool schema:
+
+- OpenAI `/v1/chat/completions`: proper `tool_calls` array, valid JSON
+  args, `finish_reason: tool_calls`.
+- Anthropic `/v1/messages`: proper `tool_use` content block,
+  `stop_reason: tool_use`.
+
+## pi tuning (config changed in `pi/models.json`, deep-linked to live)
+
+Researched pi's actual models.json schema from the repo docs
+([models.md], [custom-provider.md], [compaction.md]). Two real problems
+found in the old minimal config:
+
+1. **`contextWindow` defaults to 128000 when undeclared** — pi would have
+   auto-compacted at half the model's actual 262144 window. Compaction
+   triggers at `contextWindow - reserveTokens` (reserveTokens default
+   16384). Now declared: `"contextWindow": 262144, "maxTokens": 32768`
+   (maxTokens previously defaulted to 16384).
+2. **`reasoning` defaults to false** — which made
+   `defaultThinkingLevel: "medium"` in settings.json completely inert.
+   Now `"reasoning": true` with `"compat": { "thinkingFormat":
+   "qwen-chat-template" }` (the format pi documents for local
+   Qwen-compatible servers).
+
+Also added the compat flags pi's docs recommend for local
+OpenAI-compatible servers: `supportsDeveloperRole: false`,
+`supportsReasoningEffort: false`. models.json is hot-reloaded, no restart
+needed. Verified end-to-end with `pi --print`.
+
+Other pi facts worth knowing:
+
+- pi also supports `"api": "anthropic-messages"` and could point at LM
+  Studio's `/v1/messages` instead — no documented benefit over
+  openai-completions, and openai-completions is the default path; not
+  switched.
+- Compaction is tunable in settings.json:
+  `"compaction": { "reserveTokens": ..., "keepRecentTokens": ... }`
+  (defaults 16384 / 20000). Manual `/compact [instructions]` exists.
+- No temperature field in the model schema — sampling is client-side or
+  LM Studio per-model defaults.
+
+## Performance levers evaluated (mostly dead ends, one real one)
+
+- **Speculative decoding: skip.** Broken on LM Studio's 0.4.x MLX engine
+  (batched-mode `SpeculativeDecodingNotSupportedError`, issue open since
+  Feb 2026) — and independent benchmarks show it's break-even-to-slower
+  on A3B MoE anyway (draft/verifier cost ratio too high with only 3B
+  active params; the hybrid delta-net layers make rewinds expensive).
+- **MTP (multi-token prediction): real 1.5-2x decode gains on Qwen3.6,
+  but** only via special MTP-GGUF builds on the llama.cpp engine (not
+  MLX), one vLLM-side report of tool-calling regressions under MTP, and
+  the 35B-A3B GGUF had a KV-cache-reuse bug (hybrid SSM layers → full
+  re-prefill every request). For prefix-cache-heavy agent use, **staying
+  on MLX is the right call**; decode isn't the bottleneck, prefill is.
+- **Flash attention:** already on by default for Metal. Nothing to do.
+- **KV cache quantization:** GGUF/llama.cpp-only load option, not exposed
+  via `lms` CLI at all (only GUI/SDK). Not applicable to the MLX build.
+- **The one real lever: keep the model resident and the cache warm.**
+  `lms load` **without `--ttl` pins the model indefinitely**; JIT loads
+  (triggered by a request hitting an unloaded model) get the 60-min idle
+  TTL from `jitModelTTL` in settings.json, and JIT loads reportedly
+  ignore per-model default load params. So: explicitly `lms load
+  qwen/qwen3.6-35b-a3b --context-length 262144 --gpu max -y` after boot
+  rather than letting JIT do it. It's loaded (pinned) that way right now.
+  TODO: consider adding this to the llmster launchd plist as a post-start
+  step so it survives reboots.
+
+## Model landscape check (mid-2026, 64GB Apple Silicon)
+
+- **Qwen3.6-35B-A3B remains the consensus default** for this hardware
+  class and agentic/tool use (e.g. MCPMark 37.0 vs Gemma-4-26B-A4B's
+  18.1). No urgent reason to move.
+- **Worth a bake-off: Qwen3-Coder-Next 80B-A3B** — ~35-40GB at Q4, same
+  3B-active decode speed class, 256k context, purpose-built for agentic
+  coding (SWE-rebench Pass@5 64.6%, #1 at release). The most credible
+  upgrade candidate; would replace, not join, the 35B on 64GB.
+- **qwen3.6-27b dense (already on disk):** ~3-4x slower decode, higher
+  per-token quality. Keep as the hard-problem fallback model.
+- **Not viable on 64GB:** gpt-oss-120b (~66GB, no context headroom),
+  Kimi K2.x, DeepSeek V4 family, big GLM-5.x. gpt-oss-20b fits but is a
+  tier below Qwen3.6 for agentic coding.
+- **MLX vs GGUF 2026 reality:** controlled comparisons show single-digit
+  throughput differences trading wins by workload — format choice should
+  follow features (prefix-cache reliability → MLX here), not speed folklore.
+- Memory guidance: keep total model+KV under ~70% of RAM (~45GB) for
+  comfort. The 37.75GB model at full 262k context is at the edge —
+  `sysctl kern.memorystatus_vm_pressure_level` said healthy under load,
+  but watch it if anything else big runs alongside.
+
+[models.md]: https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/models.md
+[custom-provider.md]: https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/custom-provider.md
+[compaction.md]: https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/compaction.md
+
 # 2026-07-06
 
 ## Why move off ollama
