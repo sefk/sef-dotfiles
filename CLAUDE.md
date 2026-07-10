@@ -13,7 +13,11 @@ instructions live in the global `claude/CLAUDE.md` (deep-linked to
 - `claude/*` is deep-linked file-by-file into `~/.claude/` (see
   `CLAUDE_DEEP_LINKS` in the Makefile). So `claude/CLAUDE.md` becomes the global
   instructions and `claude/settings.json` / `claude/hooks/` become the global
-  Claude Code config.
+  Claude Code config. `pi/*` and `herdr/*` follow the same file-by-file
+  deep-link pattern (`~/.pi/agent/` and `~/.config/herdr/`). File-level linking
+  is deliberate: those dirs also hold runtime state (sockets, logs, sessions)
+  that must **not** land in the repo, so only the checked-in files are linked —
+  for herdr that's just `config.toml`.
 - `bash_secret` is **not** checked in but is treated as a link target (special
   create/cleanup logic in the Makefile). It defines things like
   `RESUME_ADDRESS` and `RESTIC_PASSWORD` (encrypts the nightly

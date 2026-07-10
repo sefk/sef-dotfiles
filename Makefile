@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md CLAUDE.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi
+FILE_EXCLUDES          = README README.md CLAUDE.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
@@ -36,8 +36,10 @@ CLAUDE_FILES_TO_LINK   = $(sort $(wildcard claude/*))
 CLAUDE_DEEP_LINKS      = $(patsubst claude/%,~/.claude/%,$(CLAUDE_FILES_TO_LINK))
 PI_FILES_TO_LINK       = $(sort $(wildcard pi/*))
 PI_DEEP_LINKS          = $(patsubst pi/%,~/.pi/agent/%,$(PI_FILES_TO_LINK))
+HERDR_FILES_TO_LINK    = $(sort $(wildcard herdr/*))
+HERDR_DEEP_LINKS       = $(patsubst herdr/%,~/.config/herdr/%,$(HERDR_FILES_TO_LINK))
 
-all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS)
+all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS)
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -94,7 +96,7 @@ $(SECRETS_FILE):
 # Plain rm (no -r): every target here is a symlink; if one is somehow a real
 # directory, failing beats recursively deleting its contents.
 clean:
-	-rm $(RMFLAG) $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/bin
+	-rm $(RMFLAG) $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/bin
 	-rm $(RMFLAG) $(addprefix $(HOME)/,$(OLD_FILES))
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
@@ -122,6 +124,16 @@ $(SERVICES_DIR):
 # Excludes auth.json (secrets), bin/ (vendored fd/rg), npm/ (extension package
 # state), sessions/ (transcripts) -- none of those are checked in.
 ~/.pi/agent/%: $(LINK_TARGET_PREFIX)/pi/%
+	mkdir -p $(dir $@)
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	ln -s $< $@
+
+# Deep links for ~/.config/herdr/: link each file directly to the herdr/ subdir
+# in the repo. Only config.toml is checked in -- the sockets, logs, session.json,
+# and agent-detection state that herdr writes into this dir are runtime state and
+# stay out of the repo. File-level linking (not a whole-dir symlink) keeps them out.
+~/.config/herdr/%: $(LINK_TARGET_PREFIX)/herdr/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
 	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
