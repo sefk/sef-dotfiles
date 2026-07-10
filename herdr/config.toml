@@ -4,6 +4,9 @@ onboarding = false
 prefix = "ctrl+a"
 previous_workspace = "shift+left"    # tmux S-Left
 next_workspace     = "shift+right"   # tmux S-Right
+cycle_pane_next    = "prefix+a"      # ctrl+a then a cycles panes (double ctrl+a is
+                                     # reserved by herdr for send-literal-prefix)
+split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 
 [theme]
 name = "terminal"                    # inherits the outer terminal (ghostty) palette
