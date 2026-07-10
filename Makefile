@@ -142,8 +142,10 @@ $(SERVICES_DIR):
 	ln -s $< $@
 
 # Deep links for ~/.codex/: link each checked-in codex file into place. Only
-# hand-authored config is tracked -- AGENTS.md (global instructions), hooks.json,
-# and the herdr integration hook. NOT config.toml (codex rewrites it at runtime
+# hand-authored config is tracked -- AGENTS.md, hooks.json, and the herdr
+# integration hook. codex/AGENTS.md is itself a symlink to the shared
+# config/agents/GLOBAL.md (codex can't @import like Claude does, so it reads the
+# shared instructions through the link). NOT config.toml (codex rewrites it at runtime
 # with machine-specific trust entries, marketplace hashes, and absolute app
 # paths), auth.json (secrets), or the sqlite DBs / sessions/ / plugins/ / cache/
 # that also live under ~/.codex. File-level linking keeps all that out of the repo.
