@@ -4,9 +4,30 @@ onboarding = false
 prefix = "ctrl+a"
 previous_workspace = "shift+left"    # tmux S-Left
 next_workspace     = "shift+right"   # tmux S-Right
-cycle_pane_next    = "prefix+a"      # ctrl+a then a cycles panes (double ctrl+a is
-                                     # reserved by herdr for send-literal-prefix)
 split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
+
+# prefix+arrows mirror the default prefix+{hjkl} pane focus. herdr actions take a
+# single key each, so the arrows are added as custom commands hitting the pane CLI
+# rather than as a second value on focus_pane_*.
+[[keys.command]]
+key = "prefix+left"
+type = "shell"
+command = "herdr pane focus --direction left --current"
+
+[[keys.command]]
+key = "prefix+right"
+type = "shell"
+command = "herdr pane focus --direction right --current"
+
+[[keys.command]]
+key = "prefix+up"
+type = "shell"
+command = "herdr pane focus --direction up --current"
+
+[[keys.command]]
+key = "prefix+down"
+type = "shell"
+command = "herdr pane focus --direction down --current"
 
 [theme]
 name = "terminal"                    # inherits the outer terminal (ghostty) palette
