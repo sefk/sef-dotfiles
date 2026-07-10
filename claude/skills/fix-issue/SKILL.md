@@ -17,12 +17,26 @@ commits, working branch for multi-step work, never push).
    decision is on the record. Trivial fixes skip the comment.
 3. **Branch** — multi-step work goes on `issue-<N>-<short-slug>`; a small
    self-contained fix may land on the current branch.
-4. **Implement** — make the change. Add or update tests per the engineering
-   rules; update any README/docs the change affects in the same commit.
+4. **Implement** — directly, or delegated:
+   - **Delegate when well-scoped**: if after Read/Plan the fix has a clear
+     acceptance test, known target files, and no open design decisions,
+     farm implementation off to a subagent — the project's `dev` agent if
+     one is listed, otherwise `general-purpose`. Always pass
+     `model: "sonnet"` explicitly (implementer agents without model
+     frontmatter inherit the expensive session model). The prompt must be
+     self-contained: issue number and summary, the agreed approach, target
+     files, branch to work on, test commands, and project constraints from
+     CLAUDE.md (e.g. formatting before `git add`). Have it implement and
+     commit; you review the diff afterward.
+   - **Do it yourself** when scoping is fuzzy, the fix spans design
+     decisions, or a delegated attempt misses twice — don't loop.
+   - Either way: add or update tests per the engineering rules; update any
+     README/docs the change affects in the same commit.
 5. **Verify** — run the project's test suite (fast loop while iterating,
    full suite at the end; check the project CLAUDE.md for the commands).
    For visible changes, look at the result (screenshot / capture-pane)
-   before calling it fixed.
+   before calling it fixed. If implementation was delegated, verify in the
+   main session anyway — don't take the subagent's word that tests pass.
 6. **Commit** — one commit per logical change; reference `#<N>` in the
    message body.
 7. **Close the loop** — comment on the issue with what changed, files
