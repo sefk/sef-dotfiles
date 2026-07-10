@@ -1,14 +1,24 @@
 onboarding = false
 
-[ui.toast]
-delivery = "herdr"
-
 [keys]
 prefix = "ctrl+a"
+previous_workspace = "shift+left"    # tmux S-Left
+next_workspace     = "shift+right"   # tmux S-Right
 
 [theme]
-name = "terminal"
+name = "terminal"                    # inherits the outer terminal (ghostty) palette
 auto_switch = false
 
 [ui]
 show_agent_labels_on_pane_borders = true
+agent_panel_sort = "priority"        # attention queue for concurrent agents
+hide_tab_bar_when_single_tab = true  # workspaces are mostly single-tab
+
+[ui.toast]
+delivery = "system"                  # macOS desktop notification when herdr isn't focused
+
+[session]
+resume_agents_on_restore = true      # resume agent conversations after a server restart
+
+[experimental]
+pane_history = true                  # scrollback survives full server restarts
