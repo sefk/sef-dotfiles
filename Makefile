@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md CLAUDE.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr
+FILE_EXCLUDES          = README README.md CLAUDE.md AGENTS.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
