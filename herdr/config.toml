@@ -6,8 +6,15 @@ previous_workspace = "shift+left"    # tmux S-Left
 next_workspace     = "shift+right"   # tmux S-Right
 split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 
+# pane focus on prefix+arrows (native actions, so they forward over --remote).
+# Reassigning these unmaps the herdr default prefix+{hjkl}.
+focus_pane_left    = "prefix+left"
+focus_pane_down    = "prefix+down"
+focus_pane_up      = "prefix+up"
+focus_pane_right   = "prefix+right"
+
 [theme]
-name = "terminal"                    # inherits the outer terminal (ghostty) palette
+name = "gruvbox"
 auto_switch = false
 
 [ui]
