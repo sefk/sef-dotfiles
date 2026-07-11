@@ -313,8 +313,10 @@ alias jpp=json_pp
 
 # studio-mosh: attach to studio's herdr over mosh (roaming + local echo, the
 # tmux-over-mosh feel). herdr runs server-side on studio; mosh ships the TUI.
-# The login shell (-lc) makes sure herdr is on PATH under mosh-server. Not the
-# same as `herdr --remote studio`, which tunnels herdr's protocol over ssh with
-# a local client — that path can't use mosh.
+# The login shell (-lc) makes sure herdr is on PATH under mosh-server.
+#
+# Bare `herdr` attaches the *default* persistent session — the same one the
+# `studio` alias (herdr --remote studio) reaches. `--session studio` would be a
+# *separate* named session, so it'd never reattach to your real work.
 alias studio="herdr --remote studio"
-alias studio-mosh='mosh studio -- zsh -lc "herdr --session studio"'
+alias studio-mosh='mosh studio -- zsh -lc "herdr"'
