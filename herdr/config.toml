@@ -8,10 +8,11 @@ split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 
 # pane focus on prefix+arrows (native actions, so they forward over --remote).
 # Reassigning these unmaps the herdr default prefix+{hjkl}.
-focus_pane_left    = "prefix+left"
-focus_pane_down    = "prefix+down"
-focus_pane_up      = "prefix+up"
-focus_pane_right   = "prefix+right"
+# Disabling to try keeping my home keys
+# focus_pane_left    = "prefix+left"
+# focus_pane_down    = "prefix+down"
+# focus_pane_up      = "prefix+up"
+# focus_pane_right   = "prefix+right"
 cycle_pane_next    = "prefix+a"      # C-a a round-robins panes (double-prefix C-a C-a is reserved)
 
 [theme]
