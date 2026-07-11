@@ -310,3 +310,10 @@ export PATH="$PATH:/Users/sefk/.lmstudio/bin"
 # End of LM Studio CLI section
 
 alias jpp=json_pp
+
+# studio-mosh: attach to studio's herdr over mosh (roaming + local echo, the
+# tmux-over-mosh feel). herdr runs server-side on studio; mosh ships the TUI.
+# The login shell (-lc) makes sure herdr is on PATH under mosh-server. Not the
+# same as `herdr --remote studio`, which tunnels herdr's protocol over ssh with
+# a local client — that path can't use mosh.
+alias studio-mosh='mosh studio -- zsh -lc "herdr --session studio"'
