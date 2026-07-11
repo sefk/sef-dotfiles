@@ -309,3 +309,4 @@ export PATH="/opt/homebrew/opt/sqlite/bin:$PATH"
 export PATH="$PATH:/Users/sefk/.lmstudio/bin"
 # End of LM Studio CLI section
 
+alias jpp=json_pp
