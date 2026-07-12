@@ -71,7 +71,33 @@ behavioural fixes, update any docs the change touches, run the project's
 tests before calling it done. Commit per the git policy (one commit per
 logical change; a working branch if this turns into multi-step work).
 
-## 5. Report
+## 5. Harvest insights
+
+Some findings are worth more than their fix: they reveal a mistake-shape
+that will recur — e.g. "new prompt recipes keep omitting guardrails the
+prompt states elsewhere", not "this recipe lacked a coverage date". Capture
+those in the reviewed repo's `docs/REVIEW-INSIGHTS.md`. A finding qualifies
+whether it was fixed, deferred, or even dismissed, as long as the *pattern*
+generalizes. Most reviews yield nothing — skip this step rather than force
+an entry.
+
+- Group by `## <theme>` headings, one dated bullet per insight:
+  `- 2026-07-12 — <one-line insight> (<file>, codex <short-session-id>)`
+- Dedup: if an existing theme covers it, add a bullet under that heading —
+  never a near-duplicate heading.
+- If the file doesn't exist, create it with a short preamble explaining the
+  staging-area/promotion mechanics below.
+- Commit the update as its own commit (git policy applies).
+
+**Promotion — the point of the file.** When a theme reaches ~3 entries, flag
+it in the report and propose promoting it, in order of preference: (a) a rule
+in the repo's CLAUDE.md / AGENTS.md so the generator stops making the
+mistake, (b) an automated check (lint, test, CI), (c) a tracked issue for
+genuinely open work. Don't promote without the user's go-ahead. After
+promotion, collapse the theme to a single line noting where it went — the
+file is a staging area, not an archive.
+
+## 6. Report
 
 Concise, no filler:
 
@@ -80,5 +106,7 @@ Concise, no filler:
 - **Needs your call** — each judgment-call finding with Codex's reasoning and
   your take, so the user can decide fast.
 - **Dismissed** — one line each for rejected findings.
+- **Insights** — themes appended to `docs/REVIEW-INSIGHTS.md`, and any theme
+  now at promotion threshold with your proposed promotion. Omit if none.
 
 If nothing was actionable, say so plainly.
