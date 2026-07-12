@@ -49,17 +49,20 @@ commits, working branch for multi-step work, never push).
      rejected, per that skill) → address the clear-cut ones, plus any
      judgment call that genuinely bears on whether the issue is solved,
      adding/adjusting tests for behavioural fixes → re-run the tests →
-     commit the round's changes → re-review. Repeat until Codex raises no
-     clear-cut findings and concurs the issue is resolved, or ~2–3 rounds
-     pass without converging.
+     amend the round's changes into the fix commit (it's all unpushed, so
+     amending keeps the fix one clean commit instead of stacking "address
+     codex finding" commits — matters most on the default branch, which has
+     no squash-on-merge) → re-review. Repeat until Codex raises no clear-cut
+     findings and concurs the issue is resolved, or ~2–3 rounds pass without
+     converging.
    - **Escape hatch — escalate, don't override.** If after a couple of rounds
      Codex still won't agree the problem is solved (or its remaining
      objection is a judgment call you disagree with), stop and escalate to
      the user with both positions. Don't silently close the issue over
      Codex's objection, and don't loop indefinitely — overriding Codex is the
      user's call, not yours.
-6. **Commit** — one commit per logical change; reference `#<N>` in the
-   message body.
+6. **Commit** — one commit per logical change; append (`#<N>)` at the end of the
+   message subject line and in the body.
 7. **Close the loop** — comment on the issue with what changed, files
    touched, branch name, and test results, marked as authored by Claude
    Code. If commits are on an unpushed local branch, say so. Close the
