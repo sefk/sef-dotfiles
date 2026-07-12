@@ -37,16 +37,21 @@ commits, working branch for multi-step work, never push).
    For visible changes, look at the result (screenshot / capture-pane)
    before calling it fixed. If implementation was delegated, verify in the
    main session anyway — don't take the subagent's word that tests pass.
-   - **Codex must concur too.** Once your own tests pass, get a second
-     opinion from Codex: invoke the `codex-review` skill scoped to the whole
-     fix — `/codex-review --base <default-branch>` — so Codex judges the
-     entire branch diff, not just the last uncommitted slice. Then loop:
+   - **Codex must concur too.** Once your own tests pass, commit the fix so
+     far, then get a second opinion from Codex: invoke the `codex-review`
+     skill with no explicit scope (`/codex-review`) and let it auto-detect —
+     whole-branch diff on a feature branch, or commits-ahead-of-origin when
+     the fix landed on the default branch. (Committing first is what lets
+     auto-detect cover the entire fix rather than just the last uncommitted
+     slice; don't hardcode `--base <default-branch>`, which reviews nothing
+     when you're already on that branch.) Then loop:
      triage its findings against the diff (clear-cut / judgment-call /
      rejected, per that skill) → address the clear-cut ones, plus any
      judgment call that genuinely bears on whether the issue is solved,
      adding/adjusting tests for behavioural fixes → re-run the tests →
-     re-review. Repeat until Codex raises no clear-cut findings and concurs
-     the issue is resolved, or ~2–3 rounds pass without converging.
+     commit the round's changes → re-review. Repeat until Codex raises no
+     clear-cut findings and concurs the issue is resolved, or ~2–3 rounds
+     pass without converging.
    - **Escape hatch — escalate, don't override.** If after a couple of rounds
      Codex still won't agree the problem is solved (or its remaining
      objection is a judgment call you disagree with), stop and escalate to
