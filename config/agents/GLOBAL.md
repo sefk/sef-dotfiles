@@ -59,6 +59,15 @@ Use the `gh` command line utility to update issues on GitHub. You don't need per
 
 When adding comments to pull requests and issues, make it clear the comment is authored by you — name yourself specifically (e.g. Claude or Codex), since it will be presented under sefk credentials. This is not necessary for commit messages, as those already carry co-author attribution naming the actual tool.
 
+## Reviewing changes in hunk
+
+When I have a `hunk` session open (a review-first terminal diff viewer) and ask
+you — Claude or Codex — to review changes, don't dump the review into chat.
+Load the hunk review skill (`hunk skill path` prints its location) and leave
+inline comments in the live session via `hunk session comment ...`, beside the
+code they describe. The TUI is mine; drive it only through `hunk session *`.
+Launch: I run `hunk diff --watch` (or `/diff --hunk`).
+
 ## Engineering Rules
 
 Work carefully
