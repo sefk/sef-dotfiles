@@ -1,7 +1,8 @@
 #!/bin/bash
 # Claude Code status line
-# Line 1: user@host:path [session]
-# Line 2: Model ▓▓▓░░░░░░░ pct% | duration | (branch status) | +add/-rm
+# Line 1: user@host:path (branch status) [DB badge]
+# Line 2: Model ▓▓▓░░░░░░░ pct% | duration | +add/-rm | cc 5h/7d cx 5h/7d | $spend
+#   cc = Claude, cx = Codex — both shown as quota USED% (same direction).
 
 input=$(cat)
 
@@ -141,7 +142,12 @@ else
     dur_fmt="${dur_sec}s"
 fi
 
-# ── Rate limits (Pro/Max only — empty on first turn or free accounts) ─
+# ── Rate limits — quota USED, same direction for Claude and Codex ─────
+# Both tools report the same two windows: 5h and 7d. Claude's percentages
+# arrive in the harness input JSON; Codex's come from the newest session
+# rollout that carries a token_count snapshot (primary=300min=5h,
+# secondary=10080min=7d). Rendered as one " | "-delimited group: cc=Claude,
+# cx=Codex. Each is a USED percentage, so higher = closer to the cap.
 rate_color() {
     local pct="$1"
     if [ "$pct" -ge 80 ]; then echo "$red"
@@ -149,17 +155,47 @@ rate_color() {
     else echo "$dim"
     fi
 }
-rate_info=""
+
+# Claude (Pro/Max only — empty on first turn or free accounts)
+claude_rl=""
 if [ -n "$rate_5h" ]; then
     p5=$(printf '%.0f' "$rate_5h")
     c5=$(rate_color "$p5")
-    rate_info=" ${dim}|${reset} ${c5}5h:${p5}%${reset}"
+    claude_rl="${dim}cc${reset} ${c5}5h:${p5}%${reset}"
 fi
 if [ -n "$rate_7d" ]; then
     p7=$(printf '%.0f' "$rate_7d")
     c7=$(rate_color "$p7")
-    rate_info="${rate_info} ${c7}7d:${p7}%${reset}"
+    [ -z "$claude_rl" ] && claude_rl="${dim}cc${reset}"
+    claude_rl="${claude_rl} ${c7}7d:${p7}%${reset}"
 fi
+
+# Codex — account-global snapshot from its newest session rollout. Read from
+# EOF (tail -r) so a big active log stays cheap on this hot path; scan a few
+# newest files since a just-started session may not have a snapshot yet. The
+# numbers are as-of the last Codex turn (there's no live query without an API
+# call — same as Claude's, which are as-of the last turn here).
+codex_rl=""
+codex_sessions="$HOME/.codex/sessions"
+if [ -d "$codex_sessions" ]; then
+    for f in $(ls -t "$codex_sessions"/*/*/*/rollout-*.jsonl 2>/dev/null | head -8); do
+        line=$(tail -r "$f" 2>/dev/null | grep -m1 '"rate_limits":{')
+        [ -z "$line" ] && continue
+        read -r cx5 cx7 <<<"$(printf '%s' "$line" | jq -r '.payload.rate_limits | "\(.primary.used_percent) \(.secondary.used_percent)"' 2>/dev/null)"
+        case "$cx5" in ''|null) continue ;; esac
+        q5=$(printf '%.0f' "$cx5"); d5=$(rate_color "$q5")
+        q7=$(printf '%.0f' "$cx7"); d7=$(rate_color "$q7")
+        codex_rl="${dim}cx${reset} ${d5}5h:${q5}%${reset} ${d7}7d:${q7}%${reset}"
+        break
+    done
+fi
+
+# Assemble whichever tools reported into one " | "-prefixed group.
+limits_info=""
+for part in "$claude_rl" "$codex_rl"; do
+    [ -n "$part" ] && limits_info="${limits_info:+$limits_info }${part}"
+done
+[ -n "$limits_info" ] && limits_info=" ${dim}|${reset} ${limits_info}"
 
 # ── Today's spend across agents (agentsview; ollama is unpriced/free) ─
 # Only call agentsview when its daemon is actually reachable. A wedged/syncing
@@ -191,10 +227,10 @@ if [ -n "$TMUX" ] && [ -x "$HOME/bin/tmux-border-color" ]; then
     fi
 fi
 
-# ── Line 1: identity + location (+ DataTalk DB badge) ─────────────
-printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}%b\n" \
-    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd" "$db_badge"
+# ── Line 1: identity + location + git branch (+ DataTalk DB badge) ─
+printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}%b%b\n" \
+    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd" "$git_info" "$db_badge"
 
-# ── Line 2: model + context bar + duration + git + lines + quota ─
-printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset}%b %b%b%b\n" \
-    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$git_info" "$lines_info" "$rate_info" "$spend_info"
+# ── Line 2: model + context bar + duration + lines + quota + spend ─
+printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset} %b%b%b\n" \
+    "$model" "$bar_color" "$bar" "$ctx_pct" "$dur_fmt" "$lines_info" "$limits_info" "$spend_info"
