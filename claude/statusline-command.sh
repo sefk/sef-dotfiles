@@ -9,6 +9,11 @@ input=$(cat)
 # ── Extract JSON fields ──────────────────────────────────────────
 model=$(echo "$input" | jq -r '.model.display_name // "?"')
 model_id=$(echo "$input" | jq -r '.model.id // ""')
+# Compact the model label: drop the "1M context" suffix — Opus has only one
+# context tier today, so it adds width without disambiguating. The 1M-aware
+# context thresholds below key off model_id ("…[1m]"), not this string.
+model=${model% (1M context)}
+model=${model%\[1m\]}
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // "~"')
 session_name=$(echo "$input" | jq -r '.session_name // empty')
 ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)
