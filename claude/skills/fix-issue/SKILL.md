@@ -37,6 +37,22 @@ commits, working branch for multi-step work, never push).
    For visible changes, look at the result (screenshot / capture-pane)
    before calling it fixed. If implementation was delegated, verify in the
    main session anyway — don't take the subagent's word that tests pass.
+   - **Codex must concur too.** Once your own tests pass, get a second
+     opinion from Codex: invoke the `codex-review` skill scoped to the whole
+     fix — `/codex-review --base <default-branch>` — so Codex judges the
+     entire branch diff, not just the last uncommitted slice. Then loop:
+     triage its findings against the diff (clear-cut / judgment-call /
+     rejected, per that skill) → address the clear-cut ones, plus any
+     judgment call that genuinely bears on whether the issue is solved,
+     adding/adjusting tests for behavioural fixes → re-run the tests →
+     re-review. Repeat until Codex raises no clear-cut findings and concurs
+     the issue is resolved, or ~2–3 rounds pass without converging.
+   - **Escape hatch — escalate, don't override.** If after a couple of rounds
+     Codex still won't agree the problem is solved (or its remaining
+     objection is a judgment call you disagree with), stop and escalate to
+     the user with both positions. Don't silently close the issue over
+     Codex's objection, and don't loop indefinitely — overriding Codex is the
+     user's call, not yours.
 6. **Commit** — one commit per logical change; reference `#<N>` in the
    message body.
 7. **Close the loop** — comment on the issue with what changed, files
