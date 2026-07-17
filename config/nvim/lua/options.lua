@@ -136,5 +136,15 @@ vim.api.nvim_set_hl(0, "NonText",    { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "LineNr",     { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "SignColumn", { bg = "none", ctermbg = "none" })
 
--- Spell highlight: red undercurl (uses tmux undercurl passthrough)
-vim.api.nvim_set_hl(0, "SpellBad", { undercurl = true, sp = "#ff4444", ctermbg = 136 })
+opt.termguicolors = true
+
+-- Spell highlight: red undercurl. herdr's frame protocol carries the undercurl
+-- *style* but drops the underline *color* (its CellData has no ul-color field),
+-- so under herdr the curl inherits the cell foreground and renders white. To get
+-- a red squiggle there, colour the foreground red too; in plain Ghostty keep the
+-- nicer white-text / red-underline look via `sp`.
+if vim.env.HERDR_PANE_ID then
+  vim.api.nvim_set_hl(0, "SpellBad", { undercurl = true, fg = "#ff4444", sp = "#ff4444", ctermfg = 9 })
+else
+  vim.api.nvim_set_hl(0, "SpellBad", { undercurl = true, sp = "#ff4444", ctermbg = 136 })
+end

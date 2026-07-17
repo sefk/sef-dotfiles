@@ -4,6 +4,19 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# Ghostty and herdr both render undercurl but advertise TERM=xterm-256color,
+# which lacks the Smulx/Setulc caps nvim needs for red-squiggle spell/diagnostic
+# highlighting. Promote to Ghostty's terminfo (which has them). herdr is a
+# persistent server, so its panes inherit the *server's* TERM_PROGRAM, not the
+# current client's — don't rely on TERM_PROGRAM; also accept HERDR_PANE_ID.
+# Local only, and only when xterm-ghostty terminfo is actually installed
+# (SSH targets may not have it).
+if [ "$TERM" = "xterm-256color" ] && [ -z "$SSH_CONNECTION" ] \
+   && { [ "$TERM_PROGRAM" = "ghostty" ] || [ -n "$HERDR_PANE_ID" ]; } \
+   && infocmp xterm-ghostty >/dev/null 2>&1; then
+    export TERM=xterm-ghostty
+fi
+
 # SSH agent: maintain a stable symlink so tmux sessions always find the agent
 if [ -z "$TMUX" ] && [ -n "$SSH_AUTH_SOCK" ] && [ "$SSH_AUTH_SOCK" != "$HOME/.ssh/auth_sock" ]; then
     ln -sf "$SSH_AUTH_SOCK" "$HOME/.ssh/auth_sock"
