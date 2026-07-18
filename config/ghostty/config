@@ -10,7 +10,10 @@ theme = Adventure
 
 # Needed to fix ssh issues: https://ghostty.org/docs/help/terminfo
 shell-integration-features = ssh-terminfo
-keybind = shift+enter=text:\x1b\r
+# Let Ghostty's native Kitty keyboard protocol send a real shift+enter
+# (CSI-u) so TUIs like pi map it to newline. The old `text:\x1b\r` rewrite
+# turned shift+enter into alt+enter, which pi reads as "queue follow-up".
+# keybind = shift+enter=text:\x1b\r
 keybind = shift+page_up=unbind
 keybind = shift+page_down=unbind
 
