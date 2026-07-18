@@ -13,7 +13,8 @@ split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 # focus_pane_down    = "prefix+down"
 # focus_pane_up      = "prefix+up"
 # focus_pane_right   = "prefix+right"
-cycle_pane_next    = "prefix+a"      # C-a a round-robins panes (double-prefix C-a C-a is reserved)
+cycle_pane_next     = "alt+tab"        # direct chord, no prefix needed; ctrl+tab/ctrl+shift+tab left alone for ghostty's native tab cycling
+cycle_pane_previous = "alt+shift+tab"
 
 [theme]
 name = "gruvbox"
