@@ -7,7 +7,7 @@
  *
  * Inspired by Claude Code's built-in statusline (claude/statusline-command.sh):
  *   ~/s/sef-dotfiles (main)
- *   [Sonnet] ↑15.2k ↓1.2k ▓▓▓░░░░░░░ 32% | 4m12s | +12/-3
+ *   [Sonnet] ↑15.2k ↓1.2k ▓▓▓░░░░░░░ 32% | 4m | +12/-3
  */
 
 import { execSync } from "node:child_process";
@@ -64,12 +64,10 @@ function collapseCwd(cwd: string): string {
 }
 
 function formatDuration(ms: number): string {
-	const sec = Math.floor(ms / 1000);
-	const min = Math.floor(sec / 60);
+	const min = Math.floor(ms / 60_000);
 	const hr = Math.floor(min / 60);
 	if (hr > 0) return `${hr}h${min % 60}m`;
-	if (min > 0) return `${min}m${sec % 60}s`;
-	return `${sec}s`;
+	return `${min}m`;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -86,7 +84,7 @@ export default function (pi: ExtensionAPI) {
 			};
 			const unsub = footerData.onBranchChange(refreshGitStatus);
 			const gitInterval = setInterval(refreshGitStatus, 5000);
-			const clockInterval = setInterval(() => tui.requestRender(), 1000);
+			const clockInterval = setInterval(() => tui.requestRender(), 60_000);
 
 			return {
 				dispose: () => {
