@@ -10,8 +10,18 @@
       },
       "models": [
         {
+          "id": "qwen/qwen3.6-27b",
+          "name": "qwen/qwen3.6-27b",
+          "reasoning": true,
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "compat": {
+            "thinkingFormat": "qwen-chat-template"
+          }
+        },
+        {
           "id": "qwen/qwen3.6-35b-a3b",
-          "name": "Qwen3.6 35B",
+          "name": "qwen/qwen3.6-35b-a3b",
           "reasoning": true,
           "contextWindow": 262144,
           "maxTokens": 32768,
