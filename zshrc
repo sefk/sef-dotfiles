@@ -318,6 +318,9 @@ brew() {
 # Use Homebrew sqlite (readline-enabled, Tab completion) ahead of system sqlite
 export PATH="/opt/homebrew/opt/sqlite/bin:$PATH"
 
+# for cloud-sql-proxy
+export PATH="$PATH:/opt/homebrew/share/google-cloud-sdk/bin"
+
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/sefk/.lmstudio/bin"
 # End of LM Studio CLI section
