@@ -65,3 +65,23 @@ function find-ssh-agent {
     eval "$out"
 }
 
+# On shell startup, check whether SSH_AUTH_SOCK is actually reachable and
+# repair it via find-ssh-agent if not. Never blocks startup -- any failure
+# (missing tool, no working agent found) just prints a short warning.
+if command -v find-ssh-agent >/dev/null 2>&1; then
+    _ssh_agent_ok=0
+    if [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ]; then
+        if command -v timeout >/dev/null 2>&1; then
+            SSH_AUTH_SOCK="$SSH_AUTH_SOCK" timeout 2 ssh-add -l >/dev/null 2>&1
+        else
+            SSH_AUTH_SOCK="$SSH_AUTH_SOCK" perl -e 'alarm 2; exec @ARGV' ssh-add -l >/dev/null 2>&1
+        fi
+        rc=$?
+        [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ] && _ssh_agent_ok=1
+    fi
+    if [ "$_ssh_agent_ok" -eq 0 ]; then
+        find-ssh-agent >/dev/null 2>&1 || echo "warning: can't find/attach to ssh agent" >&2
+    fi
+    unset _ssh_agent_ok rc
+fi
+

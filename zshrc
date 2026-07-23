@@ -63,6 +63,10 @@ autoload -U compinit && compinit -u
 # bash_startup loop; zsh doesn't source bash_startup, so pick it up here)
 test_and_source ~/.bash_startup/claude.sh
 
+# ssh-agent auto-repair + vpn helper (bash gets this via the bash_startup
+# loop; zsh doesn't source bash_startup, so pick it up here)
+test_and_source ~/.bash_startup/ssh-vpn.sh
+
 # SEF (TOP) END
 
 # Set name of the theme to load --- if set to "random", it will
