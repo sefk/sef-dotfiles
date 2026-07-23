@@ -1,0 +1,26 @@
+#!/bin/bash
+# Build the parked herdr resumable-QUIC branch (see docs/herdr-quic.md in
+# sef-dotfiles). As of 2026-07 this FAILS on macOS 26.5: zig 0.15.2 can't
+# link against the 26.5 SDK, and libghostty-vt rejects zig 0.16. Run this
+# again after fixing the zig situation (or use: nix develop -c cargo build
+# --release, which uses the flake's own zig + Apple SDK).
+set -euo pipefail
+
+WORKTREE="$HOME/src/herdr-worktrees/resumable-quic"
+ZIG_0_15="$HOME/.local/zig-aarch64-macos-0.15.2/zig"
+
+[ -d "$WORKTREE" ] || { echo "worktree missing: $WORKTREE (see docs/herdr-quic.md)"; exit 1; }
+
+export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
+[ -x "$ZIG_0_15" ] && export ZIG="$ZIG_0_15"
+
+cd "$WORKTREE"
+if [ -f flake.nix ] && command -v nix >/dev/null 2>&1; then
+  exec nix develop -c cargo build --release
+fi
+cargo build --release
+echo
+echo "binary: $WORKTREE/target/release/herdr"
+echo "NOTE: this binary bumps herdr's wire protocol — don't point it at a"
+echo "stable server. Clear inherited overrides when testing inside herdr:"
+echo "  env -u HERDR_SOCKET_PATH -u HERDR_CLIENT_SOCKET_PATH $WORKTREE/target/release/herdr --version"
