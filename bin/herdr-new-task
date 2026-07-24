@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# herdr-new-task -- scaffold a task workspace in Herdr with one keystroke.
+#
+# Bound to Ctrl-A n (prefix+n) via a `[[keys.command]]` popup in herdr/config.toml.
+# Herdr runs this inside an interactive popup pane, so `read` has a real TTY, and
+# injects HERDR_BIN_PATH plus HERDR_ACTIVE_PANE_CWD (the cwd of the pane you were
+# on when you hit the key).
+#
+# It prompts for a task name and directory, then builds:
+#   - a workspace labelled with the task name, cwd'd to the chosen dir
+#   - claude in the left (root) pane, session renamed to the task name
+#   - a plain shell in the right pane, same cwd
+#
+# Not `set -e`: on failure we want to print a message and pause so the popup
+# doesn't vanish before you can read it.
+set -uo pipefail
+
+herdr="${HERDR_BIN_PATH:-herdr}"
+
+# --- gather input --------------------------------------------------------------
+
+default_dir="${HERDR_ACTIVE_PANE_CWD:-$PWD}"
+[[ -d "$default_dir" ]] || default_dir="$HOME"
+
+printf '\n  new task\n  ────────\n\n'
+
+read -r -p "  task name: " name
+name="${name#"${name%%[![:space:]]*}"}"   # ltrim
+name="${name%"${name##*[![:space:]]}"}"   # rtrim
+if [[ -z "$name" ]]; then
+  printf '\n  cancelled (no name).\n'
+  sleep 1
+  exit 0
+fi
+
+read -r -e -p "  directory [$default_dir]: " dir
+dir="${dir:-$default_dir}"
+dir="${dir/#\~/$HOME}"
+if [[ ! -d "$dir" ]]; then
+  printf '\n  no such directory: %s\n' "$dir"
+  sleep 2
+  exit 1
+fi
+
+# --- build the workspace -------------------------------------------------------
+
+printf '\n  creating workspace "%s" in %s ...\n' "$name" "$dir"
+
+created=$("$herdr" workspace create --label "$name" --cwd "$dir" --focus)
+if [[ $? -ne 0 || -z "$created" ]]; then
+  printf '  workspace create failed.\n'
+  sleep 2
+  exit 1
+fi
+
+root_pane=$(printf '%s' "$created" | jq -r '.result.root_pane.pane_id // empty')
+if [[ -z "$root_pane" ]]; then
+  printf '  could not read root pane id from response.\n'
+  sleep 2
+  exit 1
+fi
+
+# Right pane: a plain shell for CLI work, same cwd. Keep focus on the root
+# (left) pane so claude lands there.
+"$herdr" pane split "$root_pane" --direction right --cwd "$dir" --no-focus >/dev/null 2>&1 \
+  || printf '  (warning: could not split a right pane)\n'
+
+# Left pane (root): launch claude and name the session after the task.
+printf '  starting claude (up to ~30s) ...\n'
+if "$herdr" agent start claude --kind claude --pane "$root_pane" >/dev/null 2>&1; then
+  "$herdr" agent rename "$root_pane" "$name" >/dev/null 2>&1 \
+    || printf '  (warning: could not rename claude session)\n'
+else
+  printf '  (claude did not start; left pane is a shell in %s)\n' "$dir"
+  sleep 2
+fi
+
+printf '  done.\n'
+sleep 1

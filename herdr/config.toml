@@ -33,3 +33,17 @@ resume_agents_on_restore = true      # resume agent conversations after a server
 
 [experimental]
 pane_history = true                  # scrollback survives full server restarts
+
+# Custom command keybinds. Fully-qualified [[keys.command]] so position doesn't
+# matter (kept at the end to leave the [keys] scalar block clean).
+#
+# prefix+n (Ctrl-A n): scaffold a task workspace -- prompts for a name + dir in a
+# popup, then builds a named workspace with claude (left) + shell (right), cwd set.
+# Script: bin/herdr-new-task (symlinked into ~/bin).
+[[keys.command]]
+key = "prefix+n"
+type = "popup"
+command = "herdr-new-task"
+description = "new task workspace"
+width = "70%"
+height = 18
