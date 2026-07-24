@@ -48,6 +48,23 @@ run_in() {
     || printf '  (warning: could not run %s)\n' "$1"
 }
 
+# resolve_dir <input> -- turn user input into a directory path.
+#   empty            -> the default dir
+#   an existing path -> used literally (tilde-expanded; absolute or relative to cwd)
+#   anything else    -> an autojump query (type "datatalk", get the frequent match)
+# On a miss, echoes the original input back so the caller reports "no such directory".
+resolve_dir() {
+  local input="$1"
+  [[ -z "$input" ]] && { printf '%s' "$default_dir"; return; }
+  input="${input/#\~/$HOME}"
+  if [[ -d "$input" ]]; then printf '%s' "$input"; return; fi
+  if command -v autojump >/dev/null 2>&1; then
+    local j; j=$(autojump "$input" 2>/dev/null)
+    if [[ -n "$j" && "$j" != "." && -d "$j" ]]; then printf '%s' "$j"; return; fi
+  fi
+  printf '%s' "$input"
+}
+
 # --- layouts -------------------------------------------------------------------
 # Each takes the root (left) pane id. Splits use --no-focus so focus stays on the
 # root pane, which is where the agent lands.
@@ -116,13 +133,16 @@ if [[ -z "$name" ]]; then
   exit 0
 fi
 
-read -r -e -p "  directory [$default_dir]: " dir
-dir="${dir:-$default_dir}"
-dir="${dir/#\~/$HOME}"
+read -r -e -p "  directory or jump word [$default_dir]: " dir_input
+dir=$(resolve_dir "$dir_input")
 if [[ ! -d "$dir" ]]; then
-  printf '\n  no such directory: %s\n' "$dir"
+  printf '\n  no such directory (and no autojump match): %s\n' "$dir_input"
   sleep 2
   exit 1
+fi
+# Show where a fuzzy jump landed so it never surprises silently.
+if [[ -n "$dir_input" && "$dir" != "${dir_input/#\~/$HOME}" ]]; then
+  printf '  -> %s\n' "$dir"
 fi
 
 printf '\n'
