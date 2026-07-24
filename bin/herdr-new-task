@@ -7,16 +7,98 @@
 # injects HERDR_BIN_PATH plus HERDR_ACTIVE_PANE_CWD (the cwd of the pane you were
 # on when you hit the key).
 #
-# It prompts for a task name and directory, then builds:
-#   - a workspace labelled with the task name, cwd'd to the chosen dir
-#   - claude in the left (root) pane, session renamed to the task name
-#   - a plain shell in the right pane, same cwd
+# Prompts for a task name, a directory, and a layout, then builds the workspace.
+# Agents (claude, pi) are named after the workspace so the sidebar reads cleanly.
+#
+# ADDING A LAYOUT: add a menu line in show_menu(), then a `layout_<key>` function,
+# then one `case` arm in build_layout(). Nothing else needs to change.
 #
 # Not `set -e`: on failure we want to print a message and pause so the popup
 # doesn't vanish before you can read it.
 set -uo pipefail
 
 herdr="${HERDR_BIN_PATH:-herdr}"
+
+# --- herdr helpers -------------------------------------------------------------
+
+# split_pane <pane_id> <right|down> -> echoes the new pane id
+split_pane() {
+  local target="$1" direction="$2" out
+  out=$("$herdr" pane split "$target" --direction "$direction" --cwd "$dir" --no-focus 2>/dev/null) || return 1
+  printf '%s' "$out" | jq -r '.result.pane.pane_id // empty'
+}
+
+# start_agent <kind> <pane_id> -- launches the agent and names it after the task
+start_agent() {
+  local kind="$1" pane="$2"
+  printf '  starting %s (up to ~30s) ...\n' "$kind"
+  if "$herdr" agent start "$kind" --kind "$kind" --pane "$pane" >/dev/null 2>&1; then
+    "$herdr" agent rename "$pane" "$name" >/dev/null 2>&1 \
+      || printf '  (warning: could not rename %s session)\n' "$kind"
+  else
+    printf '  (warning: %s did not start; that pane is a shell in %s)\n' "$kind" "$dir"
+    sleep 2
+  fi
+}
+
+# run_in <pane_id> <command...> -- submits a command line + Enter into a pane
+run_in() {
+  local pane="$1"; shift
+  "$herdr" pane run "$pane" "$@" >/dev/null 2>&1 \
+    || printf '  (warning: could not run %s)\n' "$1"
+}
+
+# --- layouts -------------------------------------------------------------------
+# Each takes the root (left) pane id. Splits use --no-focus so focus stays on the
+# root pane, which is where the agent lands.
+
+# claude left, zsh right
+layout_claude_zsh() {
+  local root="$1"
+  split_pane "$root" right >/dev/null
+  start_agent claude "$root"
+}
+
+# zsh left, zsh right
+layout_zsh_zsh() {
+  local root="$1"
+  split_pane "$root" right >/dev/null
+}
+
+# single zsh
+layout_zsh() {
+  :
+}
+
+# pi left, btop right-top, zsh right-bottom
+layout_pi_btop_zsh() {
+  local root="$1" right
+  right=$(split_pane "$root" right) || { printf '  (warning: right split failed)\n'; return; }
+  # Splitting `right` downward makes `right` the top pane and returns the bottom.
+  split_pane "$right" down >/dev/null
+  run_in "$right" btop
+  start_agent pi "$root"
+}
+
+show_menu() {
+  printf '  layout:\n'
+  printf '    1) claude left, zsh right   (default)\n'
+  printf '    2) zsh left, zsh right\n'
+  printf '    3) zsh\n'
+  printf '    4) pi left, btop right-top, zsh right-bottom\n'
+}
+
+build_layout() {
+  local choice="$1" root="$2"
+  case "$choice" in
+    1) layout_claude_zsh  "$root" ;;
+    2) layout_zsh_zsh     "$root" ;;
+    3) layout_zsh         "$root" ;;
+    4) layout_pi_btop_zsh "$root" ;;
+    *) printf '  unknown layout %s; using default.\n' "$choice"
+       layout_claude_zsh "$root" ;;
+  esac
+}
 
 # --- gather input --------------------------------------------------------------
 
@@ -43,7 +125,12 @@ if [[ ! -d "$dir" ]]; then
   exit 1
 fi
 
-# --- build the workspace -------------------------------------------------------
+printf '\n'
+show_menu
+read -r -p "  choice [1]: " choice
+choice="${choice:-1}"
+
+# --- build ---------------------------------------------------------------------
 
 printf '\n  creating workspace "%s" in %s ...\n' "$name" "$dir"
 
@@ -61,20 +148,7 @@ if [[ -z "$root_pane" ]]; then
   exit 1
 fi
 
-# Right pane: a plain shell for CLI work, same cwd. Keep focus on the root
-# (left) pane so claude lands there.
-"$herdr" pane split "$root_pane" --direction right --cwd "$dir" --no-focus >/dev/null 2>&1 \
-  || printf '  (warning: could not split a right pane)\n'
-
-# Left pane (root): launch claude and name the session after the task.
-printf '  starting claude (up to ~30s) ...\n'
-if "$herdr" agent start claude --kind claude --pane "$root_pane" >/dev/null 2>&1; then
-  "$herdr" agent rename "$root_pane" "$name" >/dev/null 2>&1 \
-    || printf '  (warning: could not rename claude session)\n'
-else
-  printf '  (claude did not start; left pane is a shell in %s)\n' "$dir"
-  sleep 2
-fi
+build_layout "$choice" "$root_pane"
 
 printf '  done.\n'
 sleep 1
