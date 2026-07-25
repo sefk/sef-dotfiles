@@ -338,5 +338,9 @@ alias jpp=json_pp
 # Bare `herdr` attaches the *default* persistent session — the same one the
 # `studio` alias (herdr --remote studio) reaches. `--session studio` would be a
 # *separate* named session, so it'd never reattach to your real work.
-alias studio="herdr --remote studio"
+# --remote-keybindings server: use studio's keybinds for the attach, not the
+# laptop's. Needed for [[keys.command]] custom bindings (e.g. Ctrl-A n new-task),
+# which --remote drops by default since they run on the remote host. Config is
+# dotfiles-synced, so local muscle memory is unchanged.
+alias studio="herdr --remote studio --remote-keybindings server"
 alias studio-mosh='mosh studio -- zsh -lc "herdr"'
