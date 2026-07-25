@@ -13,6 +13,12 @@
  *
  * Actually loading the model is left to LM Studio: with JIT loading enabled
  * (the default) the server loads a model on the first request naming it.
+ *
+ * On a model switch it also unloads every *other* resident LM Studio model, so
+ * the incoming one has the whole memory budget. LM Studio's own
+ * `unloadPreviousJITModelOnLoad` setting only evicts models it JIT-loaded
+ * itself — anything loaded by hand from the UI stays resident and makes the
+ * next load fail the guardrail check with "insufficient system resources".
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -28,6 +34,9 @@ const MODELS_JSON_PATH = join(
   "agent",
   "models.json",
 );
+
+// The lms CLI isn't necessarily on pi's PATH; fall back to its install location.
+const LMS_BIN = join(process.env.HOME ?? "", ".lmstudio", "bin", "lms");
 
 const DEFAULT_CONTEXT_WINDOW = 262144;
 const MAX_TOKENS = 32768;
@@ -55,6 +64,31 @@ function readLmStudioConfig(): ModelsJsonProvider {
     return config.providers?.lmstudio ?? {};
   } catch {
     return {};
+  }
+}
+
+interface LoadedModel {
+  identifier: string;
+}
+
+/**
+ * Unload every resident LM Studio model except `keep`, freeing memory so the
+ * incoming model clears LM Studio's loading guardrails. Best-effort: if the
+ * lms CLI is missing or the server is down, the request just proceeds and LM
+ * Studio reports the real error.
+ */
+async function unloadOthers(pi: ExtensionAPI, keep: string): Promise<void> {
+  try {
+    const listed = await pi.exec(LMS_BIN, ["ps", "--json"], { timeout: 10000 });
+    if (listed.code !== 0) return;
+
+    const loaded = JSON.parse(listed.stdout) as LoadedModel[];
+    for (const model of loaded) {
+      if (model.identifier === keep) continue;
+      await pi.exec(LMS_BIN, ["unload", model.identifier], { timeout: 30000 });
+    }
+  } catch {
+    // lms not installed, server not running, or unexpected output — ignore.
   }
 }
 
@@ -98,5 +132,19 @@ export default function (pi: ExtensionAPI) {
           compat: baseCompat as never,
         }));
     },
+  });
+
+  // Free memory before the next request JIT-loads the selected model. Both
+  // hooks are needed: model_select frees memory the moment you press Ctrl+P,
+  // but it doesn't fire for the model pi starts with (`--model`, or the one
+  // restored from settings), so before_agent_start covers that case.
+  pi.on("model_select", async (event) => {
+    if (event.model.provider !== "lmstudio") return;
+    await unloadOthers(pi, event.model.id);
+  });
+
+  pi.on("before_agent_start", async (_event, ctx) => {
+    if (ctx.model?.provider !== "lmstudio") return;
+    await unloadOthers(pi, ctx.model.id);
   });
 }
