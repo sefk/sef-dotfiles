@@ -1,7 +1,10 @@
 {
-  "defaultModel": "qwen/qwen3.6-35b-a3b",
+  "defaultModel": "qwen/qwen3.6-27b",
   "defaultProvider": "lmstudio",
   "defaultThinkingLevel": "medium",
+  "enabledModels": [
+    "lmstudio/**"
+  ],
   "lastChangelogVersion": "0.82.1",
   "packages": [
     "npm:@ollama/pi-web-search"
