@@ -28,6 +28,16 @@
           "compat": {
             "thinkingFormat": "qwen-chat-template"
           }
+        },
+        {
+          "id": "qwen/qwen3-coder-next",
+          "name": "qwen/qwen3-coder-next",
+          "reasoning": true,
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "compat": {
+            "thinkingFormat": "qwen-chat-template"
+          }
         }
       ]
     }
