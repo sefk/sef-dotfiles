@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+"""herdr-copy-table -- copy the last table from a Herdr pane to the clipboard.
+
+Claude Code (and other TUIs) render markdown tables with box-drawing borders, so
+a plain terminal selection pastes as a mangled mess. This reads the focused
+pane's recent output, finds the LAST box-drawing table, rebuilds clean columns
+(re-joining cells that wrapped across lines), and copies the result.
+
+Clipboard transport is OSC 52 written to this process's stdout. Herdr captures a
+pane child's OSC 52 write and forwards it to the *client* clipboard -- i.e. the
+machine you're attached from, whether that's the local box or a laptop over
+`herdr --remote`. No pbcopy/xclip needed, and it works the same either way.
+
+Bound to a popup keybind (see herdr/config.toml). Run standalone for testing:
+    herdr-copy-table --file sample.txt --format md
+    herdr-copy-table --pane w1P:p1 --format tsv
+"""
+from __future__ import annotations
+
+import argparse
+import base64
+import os
+import subprocess
+import sys
+import time
+
+COL = "│"
+# A border/rule line is composed ONLY of these chars (plus spaces). Requiring the
+# whole line to be box-drawing avoids matching prose that merely mentions "└─┴─┘".
+TOP_SET = set("┌┬┐─ ")
+BOTTOM_SET = set("└┴┘─ ")
+RULE_SET = set("├┼┤─ ")
+
+
+def _is_kind(line: str, charset: set[str]) -> bool:
+    s = line.strip()
+    return bool(s) and set(s) <= charset
+
+
+def is_top(line: str) -> bool:
+    return _is_kind(line, TOP_SET) and "┌" in line
+
+
+def is_bottom(line: str) -> bool:
+    return _is_kind(line, BOTTOM_SET) and "└" in line
+
+
+def is_rule(line: str) -> bool:
+    return _is_kind(line, RULE_SET) and ("├" in line or "┼" in line)
+
+
+def read_pane_text(pane: str, lines: int) -> str:
+    herdr = os.environ.get("HERDR_BIN_PATH", "herdr")
+    out = subprocess.run(
+        [herdr, "pane", "read", pane, "--source", "recent-unwrapped", "--lines", str(lines)],
+        capture_output=True, text=True,
+    )
+    if out.returncode != 0:
+        sys.stderr.write(out.stderr)
+        raise SystemExit(f"pane read failed for {pane}")
+    return out.stdout
+
+
+def iter_table_blocks(lines: list[str]):
+    """Yield (top_idx, bottom_idx) for each top-border ... bottom-border pair."""
+    i, n = 0, len(lines)
+    while i < n:
+        if is_top(lines[i]):
+            j = i + 1
+            while j < n and not is_bottom(lines[j]) and not is_top(lines[j]):
+                j += 1
+            if j < n and is_bottom(lines[j]):
+                yield (i, j)
+                i = j + 1
+                continue
+        i += 1
+
+
+def _valid_table(rows: list[list[str]]) -> bool:
+    return bool(rows) and max((len(r) for r in rows), default=0) >= 2 and any(rows[0])
+
+
+def find_last_table(text: str) -> list[str] | None:
+    """Return the lines of the last VALID box-drawing table, or None.
+
+    Validates each candidate and falls back to earlier ones, so stray box-drawing
+    characters in surrounding output (code, prose) don't produce a bogus match.
+    """
+    lines = text.splitlines()
+    blocks = [lines[t:b + 1] for (t, b) in iter_table_blocks(lines)]
+    for block in reversed(blocks):
+        if _valid_table(parse_rows(block)):
+            return block
+    return None
+
+
+def split_cells(line: str) -> list[str]:
+    """Split a `│ a │ b │` line into cell fragments, dropping outside-border bits."""
+    parts = line.split(COL)
+    # First part is the leading indent, last is trailing space after the final border.
+    return parts[1:-1]
+
+
+def _join_lines(frag_lines: list[list[str]]) -> list[str]:
+    """Merge several physical cell-fragment lines into one row (wrapped cells)."""
+    ncols = max((len(fr) for fr in frag_lines), default=0)
+    out = []
+    for c in range(ncols):
+        frags = [fr[c].strip() for fr in frag_lines if c < len(fr) and fr[c].strip()]
+        out.append(" ".join(frags))
+    return out
+
+
+def parse_rows(block: list[str]) -> list[list[str]]:
+    """Rebuild logical rows from a box-drawing table.
+
+    Rules (`├──┼──┤`) delimit groups. Two table styles exist:
+      - a rule between every row (Claude Code): each group is one logical row, and
+        multi-line cells within a group are joined.
+      - only a header rule (compact/GitHub style): the single data group holds all
+        rows, so each physical line is its own row (no wrap-joining, which would
+        otherwise merge distinct rows).
+    """
+    groups: list[list[list[str]]] = []
+    cur: list[list[str]] = []
+    for line in block:
+        if is_top(line) or is_bottom(line) or is_rule(line):
+            if cur:
+                groups.append(cur)
+                cur = []
+            continue
+        if COL in line:
+            cur.append(split_cells(line))
+    if cur:
+        groups.append(cur)
+    if not groups:
+        return []
+
+    rows = [_join_lines(groups[0])]          # header (joined if it wrapped)
+    data_groups = groups[1:]
+    if len(data_groups) >= 2:                # rule-per-row style
+        rows += [_join_lines(g) for g in data_groups]
+    elif len(data_groups) == 1:              # header-rule-only style
+        rows += [_join_lines([fr]) for fr in data_groups[0]]
+    return rows
+
+
+def to_markdown(rows: list[list[str]]) -> str:
+    if not rows:
+        return ""
+    ncols = max(len(r) for r in rows)
+    rows = [r + [""] * (ncols - len(r)) for r in rows]
+    header, *body = rows
+    out = ["| " + " | ".join(header) + " |",
+           "| " + " | ".join(["---"] * ncols) + " |"]
+    out += ["| " + " | ".join(r) + " |" for r in body]
+    return "\n".join(out)
+
+
+def to_tsv(rows: list[list[str]]) -> str:
+    return "\n".join("\t".join(r) for r in rows)
+
+
+def emit_osc52(payload: str) -> None:
+    b64 = base64.b64encode(payload.encode("utf-8")).decode("ascii")
+    sys.stdout.write(f"\033]52;c;{b64}\a")
+    sys.stdout.flush()
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Copy the last table from a Herdr pane.")
+    ap.add_argument("--format", choices=["md", "tsv"], default="md")
+    ap.add_argument("--pane", default=os.environ.get("HERDR_ACTIVE_PANE_ID", ""))
+    ap.add_argument("--lines", type=int, default=400)
+    ap.add_argument("--file", help="read pane text from a file instead (testing)")
+    ap.add_argument("--no-osc52", action="store_true", help="print result, don't copy (testing)")
+    args = ap.parse_args()
+
+    if args.file:
+        text = open(args.file, encoding="utf-8").read()
+    elif args.pane:
+        text = read_pane_text(args.pane, args.lines)
+    else:
+        sys.stderr.write("no pane: set HERDR_ACTIVE_PANE_ID or pass --pane/--file\n")
+        return 2
+
+    block = find_last_table(text)
+    if not block:
+        print("  no table found in recent output.")
+        time.sleep(1.5)
+        return 1
+
+    rows = parse_rows(block)
+    result = to_markdown(rows) if args.format == "md" else to_tsv(rows)
+
+    if args.no_osc52:
+        print(result)
+        return 0
+
+    emit_osc52(result)
+    ncols = max((len(r) for r in rows), default=0)
+    print(f"  copied {len(rows)} rows x {ncols} cols as {args.format} to clipboard.")
+    time.sleep(1.0)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

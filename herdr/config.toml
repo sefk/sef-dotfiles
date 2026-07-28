@@ -47,3 +47,25 @@ command = "herdr-new-task"
 description = "new task workspace"
 width = "70%"
 height = 18
+
+# prefix+t / prefix+y: copy the last table from the focused pane to the clipboard.
+# herdr-copy-table reads the pane, rebuilds clean columns from the box-drawing
+# render, and emits OSC 52 -- which herdr forwards to the *client* clipboard, so
+# it lands on whatever machine you're attached from (local or laptop over remote).
+#   prefix+t -> markdown (docs, Notion, GitHub, Slack-as-text)
+#   prefix+y -> TSV       (paste straight into Sheets/Excel cells)
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "herdr-copy-table --format md"
+description = "copy last table (markdown)"
+width = "50%"
+height = 4
+
+[[keys.command]]
+key = "prefix+y"
+type = "popup"
+command = "herdr-copy-table --format tsv"
+description = "copy last table (tsv)"
+width = "50%"
+height = 4
