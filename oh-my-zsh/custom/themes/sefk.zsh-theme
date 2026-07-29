@@ -73,5 +73,46 @@ function _prompt_char {
 		echo "%{$fg[white]%}>%{$reset_color%}"
 	fi
 }
-PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} $(zsh_essembeh_gitstatus)$(_prompt_char) '
-RPROMPT="%(?..%{$fg[red]%}%?%{$reset_color%})"
+
+# Inline (not RPROMPT) so copy/paste of a terminal selection never grabs a
+# right-side status code floating past the end of the visible line.
+#
+# Ctrl-Z stops the foreground job with SIGTSTP, which the shell reports as
+# exit status 128+SIGTSTP (146 on macOS). That's not a real command failure —
+# it's a suspend — and it's already conveyed by the jobs segment below, so
+# suppress the red status bracket in exactly that case to avoid double
+# (and misleading) signaling.
+typeset -g _PROMPT_TSTP_STATUS=$(( 128 + $(kill -l TSTP 2>/dev/null || echo -1000) ))
+
+function _prompt_precmd {
+	_PROMPT_LAST_STATUS=$?
+
+	local -a stopped running
+	local j
+	for j in "${(@v)jobstates}"; do
+		case $j in
+			suspended:*) stopped+=(1) ;;
+			running:*)   running+=(1) ;;
+		esac
+	done
+
+	_PROMPT_STATUS_SEG=""
+	if [[ $_PROMPT_LAST_STATUS -ne 0 ]]; then
+		if [[ $_PROMPT_LAST_STATUS -ne $_PROMPT_TSTP_STATUS || ${#stopped} -eq 0 ]]; then
+			_PROMPT_STATUS_SEG="%{$fg[red]%}[$_PROMPT_LAST_STATUS]%{$reset_color%} "
+		fi
+	fi
+
+	# Same color as the git branch segment (ZSH_THEME_GIT_PROMPT_PREFIX) so
+	# the two read as one family of "shell state" info.
+	_PROMPT_JOBS_SEG=""
+	if (( ${#stopped} > 0 || ${#running} > 0 )); then
+		local -a parts
+		(( ${#stopped} > 0 )) && parts+=("${#stopped}z")
+		(( ${#running} > 0 )) && parts+=("${#running}&")
+		_PROMPT_JOBS_SEG="%{$fg[cyan]%}[${(j:,:)parts}]%{$reset_color%} "
+	fi
+}
+precmd_functions+=(_prompt_precmd)
+
+PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} ${_PROMPT_STATUS_SEG}${_PROMPT_JOBS_SEG}$(zsh_essembeh_gitstatus)$(_prompt_char) '

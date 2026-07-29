@@ -28,6 +28,7 @@ Notes on methodology:
 
 import argparse
 import json
+import random
 import shutil
 import statistics
 import subprocess
@@ -48,10 +49,18 @@ LMS_BIN = shutil.which("lms") or str(Path.home() / ".lmstudio" / "bin" / "lms")
 # the response and used for the prefill rate.
 CHARS_PER_TOKEN = 4
 
-FILLER = (
-    "The quick brown fox jumps over the lazy dog while the industrious beaver "
-    "repairs its dam against the rising spring meltwater upstream. "
-)
+# Filler is built by drawing words at random from this pool, seeded per run.
+# A fixed passage with only a varying prefix is NOT enough to defeat the KV
+# cache: two such prompts share thousands of identical trailing tokens, and
+# LM Studio can still reuse most of the prefill, reporting a ttft an order of
+# magnitude too fast. Seeding the body itself guarantees no two runs share
+# anything reusable.
+WORDS = (
+    "river stone quiet ledger amber tunnel govern plaza thicket vanish copper "
+    "marsh bracket signal orchard tidal ferment lattice gasket murmur pivot "
+    "cinder waggon fluent basin trellis harbor kindle nomad splice yonder "
+    "drift kernel opaque brisk furrow candid lumen tessera warp glean sundry"
+).split()
 
 ################################################################################
 # LM Studio plumbing
@@ -85,17 +94,36 @@ def lms(*args):
     return done.stdout if done.returncode == 0 else ""
 
 
-def unload_all():
-    """Unload every resident model so each benchmark starts from a clean slate."""
+def loaded_models():
+    """Ids of models currently resident, or None if lms could not be queried."""
     out = lms("ps", "--json")
     if not out:
-        return
+        return None
     try:
-        loaded = json.loads(out)
-    except json.JSONDecodeError:
+        return [m["identifier"] for m in json.loads(out)]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return None
+
+
+def unload_all(settle=30):
+    """Unload every resident model so each benchmark starts from a clean slate.
+
+    `lms unload` returns before the unload has actually completed, so we poll
+    until nothing is resident. Skipping the poll means the next request can
+    reach a model mid-teardown and fail with "Model has not started
+    loading/has been unloaded."
+    """
+    resident = loaded_models()
+    if not resident:
         return
-    for model in loaded:
-        lms("unload", model["identifier"])
+    for model in resident:
+        lms("unload", model)
+
+    deadline = time.monotonic() + settle
+    while time.monotonic() < deadline:
+        if not loaded_models():
+            return
+        time.sleep(0.5)
 
 
 ################################################################################
@@ -103,21 +131,27 @@ def unload_all():
 
 
 def build_prompt(nonce, prompt_tokens):
-    """A prompt of roughly prompt_tokens, unique to this run.
+    """A prompt of roughly prompt_tokens whose every token is unique to `nonce`.
 
-    The nonce leads so that no prefix is shared with any other run; LM Studio
-    can then never serve part of the prefill from cache.
+    Both the leading marker and the whole body are derived from the nonce, so
+    no two runs share a reusable prefix of any length and LM Studio must do the
+    full prefill every time.
     """
     head = f"[run {nonce}] "
     if prompt_tokens <= 0:
         return head + "Count from 1 to 20, one number per line."
+    rng = random.Random(nonce)
     target = prompt_tokens * CHARS_PER_TOKEN
-    body = (FILLER * (target // len(FILLER) + 1))[:target]
+    words, length = [], 0
+    while length < target:
+        word = rng.choice(WORDS)
+        words.append(word)
+        length += len(word) + 1
     return (
         head
-        + "Read the following passage, then reply with a single short sentence "
-        + "summarising it.\n\n"
-        + body
+        + "Read the following word list, then reply with a single short "
+        + "sentence about it.\n\n"
+        + " ".join(words)
     )
 
 
@@ -160,9 +194,15 @@ def bench_model(model, sizes, runs, max_tokens, verbose):
         label = "short" if size <= 0 else f"{size}tok"
         samples = []
 
-        # Warm-up: loads the model and compiles kernels. Discarded.
+        # Warm-up: loads the model and compiles kernels. Discarded. Retried
+        # once, since a JIT load racing a just-finished unload can fail
+        # transiently even after unload_all() has waited.
         try:
-            one_run(model, build_prompt("warmup", size), max_tokens)
+            try:
+                one_run(model, build_prompt("warmup", size), max_tokens)
+            except urllib.error.HTTPError:
+                time.sleep(2)
+                one_run(model, build_prompt("warmup-retry", size), max_tokens)
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")
             try:
@@ -206,6 +246,16 @@ def bench_model(model, sizes, runs, max_tokens, verbose):
             "ttft": median("ttft"),
             "prefill_tps": median("prefill_tps"),
             "runs": len(samples),
+            # Spread across runs, as a fraction of the median ttft. A healthy
+            # run sits near zero; anything large means the samples disagree,
+            # usually a KV cache hit making one run implausibly fast. Surfaced
+            # so a contaminated median cannot pass for a clean one.
+            "ttft_spread": (
+                (max(s["ttft"] for s in samples) - min(s["ttft"] for s in samples))
+                / median("ttft")
+                if median("ttft")
+                else 0.0
+            ),
         }
 
 
@@ -220,13 +270,23 @@ def print_table(rows):
     width = max(len(r["model"]) for r in rows)
     print(
         f"\n{'model':<{width}}  {'prompt':>7}  {'gen tok/s':>9}  "
-        f"{'ttft':>7}  {'prefill tok/s':>13}  {'runs':>4}"
+        f"{'ttft':>7}  {'prefill tok/s':>13}  {'runs':>4}  {'spread':>7}"
     )
+    suspect = False
     for row in rows:
         prefill = f"{row['prefill_tps']:.0f}" if row["sized"] else "-"
+        flag = "!" if row["ttft_spread"] > 0.25 else " "
+        suspect = suspect or flag == "!"
         print(
             f"{row['model']:<{width}}  {row['size']:>7}  {row['gen_tps']:>9.1f}  "
-            f"{row['ttft']:>6.2f}s  {prefill:>13}  {row['runs']:>4}"
+            f"{row['ttft']:>6.2f}s  {prefill:>13}  {row['runs']:>4}  "
+            f"{row['ttft_spread'] * 100:>6.0f}%{flag}"
+        )
+    if suspect:
+        print(
+            "\n! runs disagree by >25% on ttft -- likely a KV cache hit. "
+            "Re-run with more iterations (-n) before trusting that row.",
+            file=sys.stderr,
         )
 
 
