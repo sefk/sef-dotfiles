@@ -23,6 +23,19 @@ ZSH_THEME_GIT_PROMPT_RENAMED="~"
 ZSH_THEME_GIT_PROMPT_DELETED="!"
 ZSH_THEME_GIT_PROMPT_UNMERGED="?"
 
+
+# Longest the final (non-squashed) path component is allowed to be before
+# its middle gets truncated. Only the last component needs this: every
+# earlier one is already squashed to a letter or two by the loop below.
+typeset -g PROMPT_MAX_LAST_SEGMENT_LEN=${PROMPT_MAX_LAST_SEGMENT_LEN:-30}
+
+function _truncate_middle {
+  local s=$1 maxlen=$2 keep
+  (( ${#s} <= maxlen )) && { echo "$s"; return }
+  keep=$(( (maxlen - 1) / 2 ))
+  echo "${s[1,$keep]}…${s[-$keep,-1]}"
+}
+
 function _fishy_collapsed_wd {
   local i pwd
   pwd=("${(s:/:)PWD/#$HOME/~}")
@@ -35,16 +48,29 @@ function _fishy_collapsed_wd {
       fi
     done
   fi
+  pwd[-1]=$(_truncate_middle "$pwd[-1]" "$PROMPT_MAX_LAST_SEGMENT_LEN")
   echo "${(j:/:)pwd}"
 }
 
 function zsh_essembeh_gitstatus {
 	ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+	local branch="${ref#refs/heads/}"
 	GIT_STATUS=$(git_prompt_status)
 	if [[ -n $GIT_STATUS ]]; then
 		GIT_STATUS=" $GIT_STATUS"
 	fi
-	echo "$ZSH_THEME_GIT_PROMPT_PREFIX${ref#refs/heads/}$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+	# _fishy_collapsed_wd only ever squashes segments *before* the last one
+	# (down to a letter or two); the last segment is always shown in full
+	# (or middle-truncated), never squashed. So comparing against the real
+	# last segment tells us whether the branch name is actually visible in
+	# the path as printed. If so, the branch name would just be repeating
+	# what's already on screen (e.g. a git worktree dir named after its
+	# branch) - collapse it to "()" instead of printing it twice.
+	if [[ "$branch" == "${PWD:t}" ]]; then
+		echo "$ZSH_THEME_GIT_PROMPT_PREFIX$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+	else
+		echo "$ZSH_THEME_GIT_PROMPT_PREFIX$branch$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+	fi
 }
 
 # by default, use green for user@host and no prefix
