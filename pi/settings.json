@@ -3,12 +3,48 @@
   "defaultProvider": "lmstudio",
   "defaultThinkingLevel": "medium",
   "enabledModels": [
-    "lmstudio/**"
+    "lmstudio/**",
+    "localllm-fm/**"
   ],
   "lastChangelogVersion": "0.85.1",
-  "packages": [],
+  "packages": [
+    "npm:pi-localllm-provider"
+  ],
   "theme": "dark",
   "hideThinkingBlock": true,
   "tuiMode": "regular",
-  "showHardwareCursor": true
+  "showHardwareCursor": true,
+  "localllm": {
+    "servers": [
+      {
+        "id": "9yk54x",
+        "name": "fm",
+        "baseUrl": "http://127.0.0.1:1976/v1",
+        "apiKey": "",
+        "apiType": "openai",
+        "models": [
+          {
+            "id": "system",
+            "name": "system",
+            "contextWindow": 32768,
+            "maxTokens": 8192,
+            "reasoning": false,
+            "input": [
+              "text"
+            ]
+          },
+          {
+            "id": "pcc",
+            "name": "pcc",
+            "contextWindow": 32768,
+            "maxTokens": 8192,
+            "reasoning": false,
+            "input": [
+              "text"
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }
