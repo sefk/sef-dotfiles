@@ -72,9 +72,9 @@ map("n", "<leader>s", ":%s/\\<<C-r><C-w>\\>/")
 -- Paste from clipboard
 map("n", "<leader>P", ":set paste<CR>:put  *<CR>:set nopaste<CR>")
 
--- Format options toggle
-map("n", "<leader>a", ":set formatoptions-=a<CR>")
-map("n", "<leader>A", ":set formatoptions+=a<CR>")
+-- Format options toggle (moved off <leader>a/<leader>A, which claudecode owns)
+map("n", "<leader>fa", ":set formatoptions-=a<CR>")
+map("n", "<leader>fA", ":set formatoptions+=a<CR>")
 
 -- Tab management
 map("n", "<leader>tt", ":tabnew<CR>")
