@@ -13,8 +13,8 @@ split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 # focus_pane_down    = "prefix+down"
 # focus_pane_up      = "prefix+up"
 # focus_pane_right   = "prefix+right"
-cycle_pane_next     = "alt+tab"        # direct chord, no prefix needed; ctrl+tab/ctrl+shift+tab left alone for ghostty's native tab cycling
-cycle_pane_previous = "alt+shift+tab"
+cycle_pane_next     = "ctrl+comma"        # direct chord, no prefix needed; ctrl+tab/ctrl+shift+tab left alone for ghostty's native tab cycling
+cycle_pane_previous = "ctrl+shift+comma"
 
 [theme]
 name = "gruvbox"
@@ -22,7 +22,7 @@ auto_switch = false
 
 [ui]
 show_agent_labels_on_pane_borders = true
-agent_panel_sort = "spaces"
+agent_panel_sort = "priority"
 hide_tab_bar_when_single_tab = true  # workspaces are mostly single-tab
 
 [ui.toast]
