@@ -136,6 +136,13 @@ vim.api.nvim_set_hl(0, "NonText",    { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "LineNr",     { bg = "none", ctermbg = "none" })
 vim.api.nvim_set_hl(0, "SignColumn", { bg = "none", ctermbg = "none" })
 
+-- Floats stay opaque and bordered. The built-in colorscheme gives NormalFloat
+-- #07080d, which is indistinguishable from the terminal's own #040404 -- popups
+-- (Lazy, LSP hover, Telescope preview) then have no visible edge against the
+-- transparent buffer behind them.
+vim.api.nvim_set_hl(0, "NormalFloat", { bg = "#161620" })
+vim.api.nvim_set_hl(0, "FloatBorder", { bg = "#161620", fg = "#8cf8f7" })
+
 opt.termguicolors = true
 
 -- Spell highlight: red undercurl. herdr's frame protocol carries the undercurl
