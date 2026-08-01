@@ -28,11 +28,11 @@ split_pane() {
   printf '%s' "$out" | jq -r '.result.pane.pane_id // empty'
 }
 
-# start_agent <kind> <pane_id> -- launches the agent and names it after the task
+# start_agent <kind> <pane_id> [agent_arg...] -- launches the agent and names it after the task
 start_agent() {
-  local kind="$1" pane="$2"
+  local kind="$1" pane="$2"; shift 2
   printf '  starting %s (up to ~30s) ...\n' "$kind"
-  if "$herdr" agent start "$kind" --kind "$kind" --pane "$pane" >/dev/null 2>&1; then
+  if "$herdr" agent start "$kind" --kind "$kind" --pane "$pane" -- "$@" >/dev/null 2>&1; then
     "$herdr" agent rename "$pane" "$name" >/dev/null 2>&1 \
       || printf '  (warning: could not rename %s session)\n' "$kind"
   else
@@ -70,10 +70,12 @@ resolve_dir() {
 # root pane, which is where the agent lands.
 
 # claude left, zsh right
+# --ide: auto-connects to nvim's claudecode.nvim IDE server, if one is already
+# running in $dir when claude starts (see config/nvim/lua/plugins/claude.lua).
 layout_claude_zsh() {
   local root="$1"
   split_pane "$root" right >/dev/null
-  start_agent claude "$root"
+  start_agent claude "$root" --ide
 }
 
 # zsh left, zsh right
