@@ -48,6 +48,7 @@ Git policies
 
 - Commit autonomously at natural checkpoints (task complete, tests pass) — don't ask first and don't wait for me to say "commit this". Write a good message and just commit.
 - Multi-step or exploratory work goes on a working branch, not the default branch (main/master); I review, squash, and merge working branches myself. A small self-contained change may be committed directly on the current branch.
+- Branch names use dashes, never slashes: `fix-628-masthead-freshness`, not `fix/628-masthead-freshness`. Underscores are fine.
 - When doing multiple changes concurrently, commit each change separately.
 - Never push; I review and push to GitHub myself.
 - I'll do pull requests myself.

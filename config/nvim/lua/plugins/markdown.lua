@@ -41,6 +41,9 @@ return {
     opts = {
       min_col_width = 8,
       max_col_width = 40,
+      auto_preview = false, -- opt-in only (<leader>mw/<leader>mW); default silently
+                             -- swaps to a read-only reader buffer for any table-bearing
+                             -- markdown file, which blocks in-place editing (E21)
     },
     keys = {
       { "<leader>mw", "<cmd>MarkdownTableTogglePreview<cr>", desc = "Toggle wrapped table preview", ft = "markdown" },

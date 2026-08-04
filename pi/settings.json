@@ -5,7 +5,7 @@
   "enabledModels": [
     "lmstudio/**"
   ],
-  "lastChangelogVersion": "0.82.1",
+  "lastChangelogVersion": "0.83.0",
   "packages": [
     "npm:@ollama/pi-web-search"
   ],
