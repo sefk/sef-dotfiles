@@ -72,7 +72,8 @@ map("n", "<leader>s", ":%s/\\<<C-r><C-w>\\>/")
 -- Paste from clipboard
 map("n", "<leader>P", ":set paste<CR>:put  *<CR>:set nopaste<CR>")
 
--- Format options toggle (moved off <leader>a/<leader>A, which claudecode owns)
+-- Format options toggle (on <leader>fa/<leader>fA since claudecode.nvim held
+-- <leader>a; the plugin is gone but the muscle memory is not)
 map("n", "<leader>fa", ":set formatoptions-=a<CR>")
 map("n", "<leader>fA", ":set formatoptions+=a<CR>")
 

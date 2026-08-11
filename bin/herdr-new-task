@@ -70,12 +70,10 @@ resolve_dir() {
 # root pane, which is where the agent lands.
 
 # claude left, zsh right
-# --ide: auto-connects to nvim's claudecode.nvim IDE server, if one is already
-# running in $dir when claude starts (see config/nvim/lua/plugins/claude.lua).
 layout_claude_zsh() {
   local root="$1"
   split_pane "$root" right >/dev/null
-  start_agent claude "$root" --ide
+  start_agent claude "$root"
 }
 
 # zsh left, zsh right
