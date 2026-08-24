@@ -45,11 +45,21 @@ Pull full PR context: `pull_request_read` (method `get`) for title/body, and
 GitHub would otherwise concatenate.
 
 Write a new squash commit message from scratch — don't just trim GitHub's
-default. Structure:
+default. Since the merge passes an explicit subject/body, GitHub's automatic
+`(#N)` PR-number suffix does **not** get appended — add the right number
+yourself per below.
 
-- **Title**: PR title, cleaned up (or a better one if the PR title is vague),
-  under ~70 chars, no PR number suffix (GitHub adds `(#N)` automatically on
-  squash — leave it that way).
+- **Title**: PR title, cleaned up (or a better one if the PR title is
+  vague), under ~70 chars.
+  - Find the **underlying issue number(s)** this PR closes — not the PR's
+    own number. Check the PR body for closing keywords (`Closes #123`,
+    `Fixes #123`, `Resolves org/repo#123`, etc.) and/or
+    `pull_request_read` method `get` for `closingIssuesReferences` (or
+    `gh pr view --json closingIssuesReference`).
+  - If there's 1–3 such issues, append them to the title:
+    `foo bar (#123)` or `foo bar (#123, #124)`.
+  - If there are more than 3, or none, leave the title bare — don't force
+    it.
 - **Body**: short paragraph(s) or bullets covering:
   - What changed from a customer/user-facing angle, if any.
   - Interesting/non-obvious decisions made and why (tradeoffs, things
