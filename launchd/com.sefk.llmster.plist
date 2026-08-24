@@ -7,12 +7,18 @@
 
 	<!-- `lms daemon up` starts llmster in the background and exits; the
 	     daemon then persists on its own, so this only needs to fire once
-	     per login rather than being kept alive by launchd. -->
+	     per login rather than being kept alive by launchd.
+
+	     The daemon does NOT open the OpenAI-compatible HTTP server, so
+	     `lms server start` has to follow it. Without that, anything
+	     pointed at localhost:1234 (ssrename, for one) gets connection
+	     refused after every reboot. `server start` reuses the port it was
+	     last started on. -->
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Users/sefk/.lmstudio/bin/lms</string>
-		<string>daemon</string>
-		<string>up</string>
+		<string>/bin/sh</string>
+		<string>-c</string>
+		<string>lms daemon up &amp;&amp; lms server start</string>
 	</array>
 
 	<key>RunAtLoad</key>
