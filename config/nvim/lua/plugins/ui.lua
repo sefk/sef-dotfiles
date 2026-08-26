@@ -2,7 +2,6 @@ return {
   -- Status line: black background + dark-yellow text, matching vimrc style
   {
     "nvim-lualine/lualine.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
       -- Mirror vimrc: ctermbg=black ctermfg=DarkYellow / ctermfg=gray
       local black  = "#000000"
@@ -28,10 +27,18 @@ return {
           component_separators = "",
           section_separators = "",
           globalstatus = false,
+          -- ASCII only. Nerd-font glyphs are double-width, and nvim and the
+          -- remote terminal don't always agree on that width -- one disagreement
+          -- desyncs column tracking for the rest of the line.
+          icons_enabled = false,
         },
         sections = {
           lualine_a = { "mode" },
-          lualine_b = { "branch", "diff", "diagnostics" },
+          lualine_b = {
+            "branch",
+            { "diff",        symbols = { added = "+", modified = "~", removed = "-" } },
+            { "diagnostics", symbols = { error = "E", warn = "W", info = "I", hint = "H" } },
+          },
           lualine_c = { { "filename", path = 1 } },
           lualine_x = { "encoding", "fileformat", "filetype" },
           lualine_y = { "progress" },
@@ -49,6 +56,5 @@ return {
     end,
   },
 
-  -- Icons (used by neo-tree, telescope, etc.)
-  { "nvim-tree/nvim-web-devicons", lazy = true },
+  -- nvim-web-devicons removed: see icons_enabled above.
 }

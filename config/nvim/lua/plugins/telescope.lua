@@ -17,6 +17,10 @@ return {
       telescope.setup({
         defaults = {
           preview = { treesitter = false },
+          -- ASCII only (see ui.lua)
+          prompt_prefix = "> ",
+          selection_caret = "> ",
+          entry_prefix = "  ",
           mappings = {
             i = {
               ["<C-u>"] = false,

@@ -113,3 +113,32 @@ vim.cmd([[
 ]])
 map("n", "L", ":call MyNext()<CR>")
 map("n", "H", ":call MyPrev()<CR>")
+
+-- Markdown preview via glow, in its own tab. Replaces the in-buffer markdown
+-- rendering plugins, which garbled the screen over ssh/mosh/herdr.
+-- Uses `tabnew` (a fresh empty buffer) rather than `vsplit` -- jobstart's
+-- terminal takes over the *current* buffer, which after a plain split is still
+-- the markdown file. Full width also keeps glow from hard-wrapping tables.
+map("n", "<leader>mp", function()
+  local file = vim.fn.expand("%:p")
+  if file == "" then
+    vim.notify("glow: buffer has no file", vim.log.levels.WARN)
+    return
+  end
+  vim.cmd("silent! write")
+  vim.cmd("tabnew")
+  local win = vim.api.nvim_get_current_win()
+  vim.wo[win].number = false
+  vim.wo[win].list = false
+  vim.wo[win].spell = false
+  local width = math.max(40, vim.api.nvim_win_get_width(win) - 2)
+  vim.fn.jobstart({ "glow", "-w", tostring(width), "-p", file }, {
+    term = true,
+    on_exit = function()
+      if vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_close(win, true)
+      end
+    end,
+  })
+  vim.cmd("startinsert")
+end, { desc = "Preview markdown with glow" })

@@ -14,6 +14,12 @@ opt.listchars = { tab = "  ", trail = "·", extends = ">", precedes = "<" }
 opt.laststatus = 2
 opt.fillchars:append({ vert = " " })
 
+-- Never conceal. Concealment changes the byte<->column mapping mid-line, which
+-- is the main way in-buffer markdown rendering garbled the display remotely.
+-- Set explicitly so a plugin default can't quietly turn it back on.
+opt.conceallevel = 0
+opt.concealcursor = ""
+
 -- Editing
 opt.hidden = true
 opt.backspace = { "indent", "eol", "start" }
@@ -120,21 +126,33 @@ au({ "BufLeave", "FocusLost" }, {
   callback = function() vim.cmd("silent! wall") end,
 })
 
--- Poll for external file changes every 5 seconds
-vim.fn.timer_start(5000, function()
+-- Poll for external file changes every 30 seconds. Was 5s, which forced a
+-- full-buffer reload and redraw at arbitrary moments -- a redraw storm the
+-- remote stack had to keep up with. Also check on focus//enter, which covers
+-- the common "edited elsewhere, came back" case without any timer at all.
+vim.fn.timer_start(30000, function()
   vim.cmd("silent! checktime")
 end, { ["repeat"] = -1 })
+
+au({ "FocusGained", "BufEnter" }, {
+  callback = function() vim.cmd("silent! checktime") end,
+})
 
 -- Disable LSP diagnostic signs/virtual text (too noisy for code)
 vim.diagnostic.config({ signs = false, virtual_text = false, underline = false })
 
 
--- Transparent background: inherit terminal black
-vim.api.nvim_set_hl(0, "Normal",     { bg = "none", ctermbg = "none" })
-vim.api.nvim_set_hl(0, "NormalNC",   { bg = "none", ctermbg = "none" })
-vim.api.nvim_set_hl(0, "NonText",    { bg = "none", ctermbg = "none" })
-vim.api.nvim_set_hl(0, "LineNr",     { bg = "none", ctermbg = "none" })
-vim.api.nvim_set_hl(0, "SignColumn", { bg = "none", ctermbg = "none" })
+-- Opaque background matching the terminal's own #040404. This used to be
+-- `bg = "none"` (transparent), which looks identical but leaves nvim not
+-- painting those cells at all -- so over ssh/mosh/herdr, stale content from
+-- whatever the terminal drew previously showed through and never got
+-- overwritten. Painting every cell is what makes garbling self-correct.
+local term_bg = "#040404"
+vim.api.nvim_set_hl(0, "Normal",     { bg = term_bg, ctermbg = "black" })
+vim.api.nvim_set_hl(0, "NormalNC",   { bg = term_bg, ctermbg = "black" })
+vim.api.nvim_set_hl(0, "NonText",    { bg = term_bg, ctermbg = "black" })
+vim.api.nvim_set_hl(0, "LineNr",     { bg = term_bg, ctermbg = "black" })
+vim.api.nvim_set_hl(0, "SignColumn", { bg = term_bg, ctermbg = "black" })
 
 -- Floats stay opaque and bordered. The built-in colorscheme gives NormalFloat
 -- #07080d, which is indistinguishable from the terminal's own #040404 -- popups

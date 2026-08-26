@@ -31,7 +31,8 @@ return {
     dependencies = {
       "williamboman/mason.nvim",
       "williamboman/mason-lspconfig.nvim",
-      { "j-hui/fidget.nvim", opts = {} },  -- LSP progress in bottom-right
+      -- fidget.nvim removed: an animated spinner float redrawing on its own
+      -- timer, competing with every other redraw over the remote link.
     },
     config = function()
       -- blink.cmp enhances capabilities if loaded
