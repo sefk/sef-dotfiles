@@ -25,6 +25,19 @@ show_agent_labels_on_pane_borders = true
 agent_panel_sort = "priority"
 hide_tab_bar_when_single_tab = true  # workspaces are mostly single-tab
 
+# Reclaim the scrollbar column permanently. The scrollbar is drawn *inside* the
+# pane width, so it appears and disappears as scrollback grows -- and the pane
+# oscillates between 219 and 218 columns mid-session (measured: a ruler of the
+# stty-reported width fills the row exactly at both sizes, so herdr and the app
+# agree at any instant; the problem is that the instant keeps changing).
+#
+# Every width flip re-wraps every soft-wrapped line in nvim, and cells stranded
+# at the old right edge survive the repaint: orphaned word-tails down the right
+# margin, duplicated line fragments, a statusline shifted a column left. Long
+# soft-wrapped markdown triggers it constantly because those rows fill the full
+# width; a shell prompt never reaches the edge, which is why only editing broke.
+pane_scrollbars = false
+
 [ui.toast]
 delivery = "system"                  # macOS desktop notification when herdr isn't focused
 
