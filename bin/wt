@@ -2,7 +2,8 @@
 #
 # wt — sibling git worktrees for issue work.
 #
-#   wt <N> [slug]   create (or attach to) ../<repo>-<N>-<slug> on issue-<N>-<slug>
+#   wt <N> [slug]   create (or attach to) ../<repo>-<N>-<slug> on issue-<N>-<slug>,
+#                   and cd there
 #   wt ls           list this repo's worktrees
 #   wt rm [N]       remove the worktree (default: the one you're in), and the
 #                   branch if it's merged
@@ -209,6 +210,7 @@ cmd_add() {
   local d; d=$(resolve_dest "$n") || true
   if [ -n "$d" ] && [ -d "$d" ]; then
     echo "worktree already exists: $d"
+    request_cd "$d"
     return 0
   fi
 
@@ -277,7 +279,7 @@ cmd_add() {
 
   echo
   echo "worktree $d on $branch"
-  echo "  cd \"\$(wt path $n)\""
+  request_cd "$d"
 }
 
 case "${1:-}" in
