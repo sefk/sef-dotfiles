@@ -57,8 +57,11 @@ WT_PORT_BASE=8000
 WT_SETUP="uv sync"
 ```
 
-The worktree needs to load `$WT_PORT_FILE` for the port to take effect — for a
-direnv repo, add `dotenv_if_exists .env.worktree` to `.envrc` after `.env`.
+A new worktree with an `.envrc` gets `direnv allow` run in it — a new path is a
+new direnv block even when `.envrc` is the same file the main checkout already
+approved. The worktree still needs to load `$WT_PORT_FILE` for the port to take
+effect: in a direnv repo, add `dotenv_if_exists .env.worktree` to `.envrc`
+after `.env`.
 Share the one local service stack across worktrees; a distinct app port is
 enough, no second database per tree.
 

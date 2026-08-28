@@ -22,6 +22,9 @@
 #   WT_PORT_FILE=".env.worktree"
 #   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
 #
+# A worktree with an .envrc gets `direnv allow` run in it — a new path is a new
+# direnv block even when .envrc is the main checkout's approved file.
+#
 # Share the one local service stack across worktrees — a distinct app port is
 # enough. Don't stand up a second database per tree.
 
@@ -162,6 +165,16 @@ cmd_add() {
       echo "$WT_PORT_VAR=$port"
     } > "$d/$WT_PORT_FILE"
     echo "wrote $WT_PORT_FILE with $WT_PORT_VAR=$port"
+  fi
+
+  # New worktree = new path = a fresh direnv block, even though .envrc is the
+  # same file the main checkout already approved.
+  if [ -e "$d/.envrc" ] && command -v direnv >/dev/null 2>&1; then
+    if ( cd "$d" && direnv allow . >/dev/null 2>&1 ); then
+      echo "direnv allow'd $d/.envrc"
+    else
+      echo "wt: warning — direnv allow failed; run it yourself in $d" >&2
+    fi
   fi
 
   if [ -n "$WT_SETUP" ]; then
