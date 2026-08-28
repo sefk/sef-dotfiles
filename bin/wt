@@ -278,6 +278,11 @@ cmd_add() {
     echo "wrote $WT_PORT_FILE with $WT_PORT_VAR=$port"
   fi
 
+  if [ -n "$WT_SETUP" ]; then
+    echo "running: $WT_SETUP"
+    ( cd "$d" && eval "$WT_SETUP" )
+  fi
+
   # New worktree = new path = a fresh direnv block, even though .envrc is the
   # same file the main checkout already approved.
   if [ -e "$d/.envrc" ] && command -v direnv >/dev/null 2>&1; then
@@ -286,11 +291,6 @@ cmd_add() {
     else
       echo "wt: warning — direnv allow failed; run it yourself in $d" >&2
     fi
-  fi
-
-  if [ -n "$WT_SETUP" ]; then
-    echo "running: $WT_SETUP"
-    ( cd "$d" && eval "$WT_SETUP" )
   fi
 
   echo
