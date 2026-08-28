@@ -42,6 +42,8 @@ wt ls           list this repo's worktrees
 wt rm [853]     remove the worktree — default, the one you're in — and the
                 branch if merged; leaves you in the main checkout
 wt path 853     print the path, for `cd "$(wt path 853)"`
+wt slug 853 12  print the slug for an issue number or a string, at that
+                length — for callers with a tighter budget than a branch name
 ```
 
 `bash_startup/wt.sh` defines a `wt` shell function around `bin/wt`; it's what
@@ -81,7 +83,14 @@ enough, no second database per tree.
 
 `bin/herdr-new-task` (prefix+n) ties into this: name a task with a trailing
 number in a GitHub repo and it looks the number up as an issue, offers to build
-the worktree, and opens the workspace there.
+the worktree, and opens the workspace there. A name that is *only* the number
+also names the workspace after the issue, at a 12-character slug and without
+the project name, which the directory already carries:
+
+```
+task name "861"  ->  worktree ../datatalk-861-write-coding-guidelines
+                     workspace "861-write-coding"
+```
 
 The matching agent policies — never create a worktree, never close an issue
 early — live in `config/agents/GLOBAL.md`.

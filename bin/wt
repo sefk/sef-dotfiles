@@ -8,6 +8,8 @@
 #   wt rm [N]       remove the worktree (default: the one you're in), and the
 #                   branch if it's merged
 #   wt path <N>     print the worktree path (for `cd "$(wt path 853)"`)
+#   wt slug <N|text> [max]
+#                   print the slug for an issue number or an arbitrary string
 #
 # Worktrees are siblings of the main checkout, never nested inside it: nesting
 # puts them in the Docker build context, pytest's collection root, and every
@@ -148,6 +150,20 @@ resolve_dest() {
   find_dest_by_path "$n"
 }
 
+# Expose slugify, so callers that want a different budget than the branch name
+# (herdr workspace labels, say) don't reimplement the truncation.
+cmd_slug() {
+  local input=${1:?usage: wt slug <N|text> [max]}
+  WT_SLUG_MAX=${2:-$WT_SLUG_MAX}
+  case "$input" in
+    ''|*[!0-9]*) printf '%s\n' "$(printf '%s' "$input" | slugify)" ;;
+    *)
+      command -v gh >/dev/null 2>&1 || die "gh not available to look up issue $input"
+      printf '%s\n' "$(gh issue view "$input" --json title --jq .title 2>/dev/null | slugify)"
+      ;;
+  esac
+}
+
 cmd_ls() {
   git worktree list
 }
@@ -285,6 +301,7 @@ cmd_add() {
 case "${1:-}" in
   ''|-h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0" ;;
   ls)           shift; cmd_ls "$@" ;;
+  slug)         shift; cmd_slug "$@" ;;
   rm)           shift; cmd_rm "${1:-}" ;;
   path)         shift; cmd_path "$@" ;;
   *)            cmd_add "$@" ;;

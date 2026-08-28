@@ -12,7 +12,10 @@
 #
 # If the task name ends in a number and the directory is a GitHub repo, it looks
 # the number up as an issue and offers to build a sibling worktree for it (see
-# `wt`), then opens the workspace there instead of in the main checkout.
+# `wt`), then opens the workspace there instead of in the main checkout. A name
+# that is *only* a number gets the workspace renamed after the issue —
+# "861-write-coding", short enough for the sidebar and without the project name,
+# which the directory already carries.
 #
 # ADDING A LAYOUT: add a menu line in show_menu(), then a `layout_<key>` function,
 # then one `case` arm in build_layout(). Nothing else needs to change.
@@ -74,11 +77,18 @@ resolve_dir() {
 # A task named "grants 853" or just "853", started in a GitHub repo, almost
 # always means issue #853. Offer the sibling worktree instead of piling another
 # branch onto the main checkout.
+# Workspace labels sit in a narrow sidebar, so a bare number gets a short slug
+# rather than the worktree's longer one, and never the project name.
+WT_LABEL_SLUG_MAX=12
+
 maybe_worktree() {
-  local n title yn out wtdir
+  local n title yn out wtdir branch short numeric_only=0
 
   [[ "$name" =~ ([0-9]+)$ ]] || return 0
   n="${BASH_REMATCH[1]}"
+  # "861" alone means the issue and nothing else — we name the workspace.
+  # "grants 861" is a name you chose; keep it.
+  [[ "$name" =~ ^[0-9]+$ ]] && numeric_only=1
   # Guard against names ending in a year or version number.
   (( n >= 1 && n <= 99999 )) || return 0
 
@@ -102,6 +112,15 @@ maybe_worktree() {
   else
     printf '  (worktree setup failed; staying in %s)\n' "$dir"
     sleep 2
+    return 0
+  fi
+
+  # ../datatalk-861-write-coding-guidelines -> workspace "861-write-coding"
+  if (( numeric_only )); then
+    branch=$(git -C "$wtdir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    short=$(wt slug "${branch#issue-$n-}" "$WT_LABEL_SLUG_MAX" 2>/dev/null)
+    [[ -z "$short" ]] && short=$(wt slug "$title" "$WT_LABEL_SLUG_MAX" 2>/dev/null)
+    [[ -n "$short" ]] && name="$n-$short"
   fi
 }
 
