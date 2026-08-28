@@ -36,11 +36,19 @@ function _truncate_middle {
   echo "${s[1,$keep]}…${s[-$keep,-1]}"
 }
 
+# Normally every component but the last is squashed to a letter. When a branch
+# is on the prompt the last one gets squashed too: an issue worktree directory
+# (datatalk-861-write-coding) is its branch (issue-861-write-coding) with the
+# project name in front, so spelling both out prints the same thing twice.
 function _fishy_collapsed_wd {
-  local i pwd
+  local i pwd squash_through
   pwd=("${(s:/:)PWD/#$HOME/~}")
-  if (( $#pwd > 1 )); then
-    for i in {1..$(($#pwd-1))}; do
+
+  squash_through=$(( $#pwd - 1 ))
+  [[ -n "$_PROMPT_BRANCH" ]] && squash_through=$#pwd
+
+  if (( squash_through >= 1 )); then
+    for i in {1..$squash_through}; do
       if [[ "$pwd[$i]" = .* ]]; then
         pwd[$i]="${${pwd[$i]}[1,2]}"
       else
@@ -48,29 +56,22 @@ function _fishy_collapsed_wd {
       fi
     done
   fi
-  pwd[-1]=$(_truncate_middle "$pwd[-1]" "$PROMPT_MAX_LAST_SEGMENT_LEN")
+
+  (( squash_through < $#pwd )) && \
+    pwd[-1]=$(_truncate_middle "$pwd[-1]" "$PROMPT_MAX_LAST_SEGMENT_LEN")
   echo "${(j:/:)pwd}"
 }
 
+# The branch is the authoritative name now — _fishy_collapsed_wd squashes the
+# directory out of the way whenever this segment prints, so there is nothing
+# left to be redundant with.
 function zsh_essembeh_gitstatus {
-	ref=$(git symbolic-ref HEAD 2> /dev/null) || return
-	local branch="${ref#refs/heads/}"
+	[[ -n "$_PROMPT_BRANCH" ]] || return
 	GIT_STATUS=$(git_prompt_status)
 	if [[ -n $GIT_STATUS ]]; then
 		GIT_STATUS=" $GIT_STATUS"
 	fi
-	# _fishy_collapsed_wd only ever squashes segments *before* the last one
-	# (down to a letter or two); the last segment is always shown in full
-	# (or middle-truncated), never squashed. So comparing against the real
-	# last segment tells us whether the branch name is actually visible in
-	# the path as printed. If so, the branch name would just be repeating
-	# what's already on screen (e.g. a git worktree dir named after its
-	# branch) - collapse it to "()" instead of printing it twice.
-	if [[ "$branch" == "${PWD:t}" ]]; then
-		echo "$ZSH_THEME_GIT_PROMPT_PREFIX$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
-	else
-		echo "$ZSH_THEME_GIT_PROMPT_PREFIX$branch$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
-	fi
+	echo "$ZSH_THEME_GIT_PROMPT_PREFIX$_PROMPT_BRANCH$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
 }
 
 # by default, use green for user@host and no prefix
@@ -112,6 +113,11 @@ typeset -g _PROMPT_TSTP_STATUS=$(( 128 + $(kill -l TSTP 2>/dev/null || echo -100
 
 function _prompt_precmd {
 	_PROMPT_LAST_STATUS=$?
+
+	# Resolved once per prompt: the path segment and the git segment both need
+	# to agree on whether a branch is being shown. Empty on a detached HEAD or
+	# outside a repo, which is also what suppresses the git segment.
+	_PROMPT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
 
 	local -a stopped running
 	local j
