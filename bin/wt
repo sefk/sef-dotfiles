@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+#
+# wt — sibling git worktrees for issue work.
+#
+#   wt <N> [slug]   create (or attach to) ../<repo>-<N> on issue-<N>-<slug>
+#   wt ls           list this repo's worktrees
+#   wt rm <N>       remove the worktree, and the branch if it's merged
+#   wt path <N>     print the worktree path (for `cd "$(wt path 853)"`)
+#
+# Worktrees are siblings of the main checkout, never nested inside it: nesting
+# puts them in the Docker build context, pytest's collection root, and every
+# file watcher. The main checkout stays parked on the default branch.
+#
+# Per-repo settings come from an optional `.wtconfig` at the main checkout's
+# root, sourced as shell. Recognized variables (defaults shown):
+#
+#   WT_LINK=".env .envrc"     untracked files symlinked back to the main
+#                             checkout, so local config has one source of truth
+#   WT_PORT_VAR=""            if set, wt writes "$WT_PORT_VAR=$port" into
+#                             $WT_PORT_FILE, port = WT_PORT_BASE + (N % 1000)
+#   WT_PORT_BASE=8000
+#   WT_PORT_FILE=".env.worktree"
+#   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
+#
+# Share the one local service stack across worktrees — a distinct app port is
+# enough. Don't stand up a second database per tree.
+
+set -euo pipefail
+
+die() { echo "wt: $*" >&2; exit 1; }
+
+git rev-parse --git-dir >/dev/null 2>&1 || die "not in a git repository"
+
+# The main worktree is always the first entry of `git worktree list`.
+MAIN=$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')
+[ -d "$MAIN" ] || die "could not locate the main worktree"
+REPO=$(basename "$MAIN")
+PARENT=$(dirname "$MAIN")
+
+# --- per-repo config -------------------------------------------------------
+WT_LINK=".env .envrc"
+WT_PORT_VAR=""
+WT_PORT_BASE=8000
+WT_PORT_FILE=".env.worktree"
+WT_SETUP=""
+# shellcheck disable=SC1091
+[ -f "$MAIN/.wtconfig" ] && . "$MAIN/.wtconfig"
+
+default_branch() {
+  local head
+  head=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+  if [ -n "$head" ]; then
+    echo "${head#origin/}"
+    return
+  fi
+  for b in main master; do
+    git show-ref --verify --quiet "refs/heads/$b" && { echo "$b"; return; }
+  done
+  echo main
+}
+
+# Branch already associated with issue N, if any (local first, then remote).
+existing_branch() {
+  local n=$1
+  git for-each-ref --format='%(refname:short)' "refs/heads/issue-$n-*" | head -1 && return
+  git for-each-ref --format='%(refname:short)' "refs/remotes/origin/issue-$n-*" \
+    | head -1 | sed 's|^origin/||'
+}
+
+slugify() {
+  tr '[:upper:]' '[:lower:]' \
+    | sed -e 's/[^a-z0-9]\+/-/g' -e 's/^-//' -e 's/-$//' \
+    | cut -c1-40 | sed 's/-$//'
+}
+
+dest_for() { echo "$PARENT/$REPO-$1"; }
+
+cmd_ls() {
+  git worktree list
+}
+
+cmd_path() {
+  local n=${1:?usage: wt path <N>}
+  local d; d=$(dest_for "$n")
+  [ -d "$d" ] || die "no worktree at $d"
+  echo "$d"
+}
+
+cmd_rm() {
+  local n=${1:?usage: wt rm <N>}
+  local d; d=$(dest_for "$n")
+  [ -d "$d" ] || die "no worktree at $d"
+  local branch; branch=$(git -C "$d" rev-parse --abbrev-ref HEAD)
+  git worktree remove "$d"    # refuses on dirty/untracked; that's the point
+  echo "removed $d"
+  if git branch -d "$branch" 2>/dev/null; then
+    echo "deleted merged branch $branch"
+  else
+    echo "kept branch $branch (not merged; 'git branch -D $branch' to force)"
+  fi
+}
+
+cmd_add() {
+  local n=$1 slug=${2:-}
+  case "$n" in ''|*[!0-9]*) die "issue number must be numeric: $n" ;; esac
+
+  local d; d=$(dest_for "$n")
+  if [ -d "$d" ]; then
+    echo "worktree already exists: $d"
+    echo "$d"
+    return 0
+  fi
+
+  local base; base=$(default_branch)
+  local main_head; main_head=$(git -C "$MAIN" rev-parse --abbrev-ref HEAD)
+  if [ "$main_head" != "$base" ]; then
+    echo "wt: warning — main checkout $MAIN is on '$main_head', not '$base'." >&2
+    echo "wt:           park it on $base so worktrees branch from a clean base." >&2
+  fi
+
+  local branch; branch=$(existing_branch "$n")
+  if [ -z "$branch" ]; then
+    if [ -z "$slug" ] && command -v gh >/dev/null 2>&1; then
+      slug=$(gh issue view "$n" --json title --jq .title 2>/dev/null | slugify || true)
+    fi
+    [ -n "$slug" ] || die "no branch for issue $n; pass a slug: wt $n <slug>"
+    slug=$(printf '%s' "$slug" | slugify)
+    branch="issue-$n-$slug"
+  fi
+
+  git fetch --quiet origin 2>/dev/null || true
+
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    git worktree add "$d" "$branch"
+  elif git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    git worktree add "$d" --track -b "$branch" "origin/$branch"
+  else
+    local start="$base"
+    git show-ref --verify --quiet "refs/remotes/origin/$base" && start="origin/$base"
+    git worktree add "$d" -b "$branch" "$start"
+  fi
+
+  # Untracked local config: one source of truth in the main checkout.
+  for f in $WT_LINK; do
+    if [ -e "$MAIN/$f" ] && [ ! -e "$d/$f" ]; then
+      ln -s "$MAIN/$f" "$d/$f"
+      echo "linked $f -> $MAIN/$f"
+    fi
+  done
+
+  if [ -n "$WT_PORT_VAR" ]; then
+    local port=$(( WT_PORT_BASE + n % 1000 ))
+    {
+      echo "# Written by wt(1) — per-worktree overrides for issue $n."
+      echo "$WT_PORT_VAR=$port"
+    } > "$d/$WT_PORT_FILE"
+    echo "wrote $WT_PORT_FILE with $WT_PORT_VAR=$port"
+  fi
+
+  if [ -n "$WT_SETUP" ]; then
+    echo "running: $WT_SETUP"
+    ( cd "$d" && eval "$WT_SETUP" )
+  fi
+
+  echo
+  echo "worktree $d on $branch"
+  echo "  cd \"\$(wt path $n)\""
+}
+
+case "${1:-}" in
+  ''|-h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0" ;;
+  ls)           shift; cmd_ls "$@" ;;
+  rm)           shift; cmd_rm "$@" ;;
+  path)         shift; cmd_path "$@" ;;
+  *)            cmd_add "$@" ;;
+esac
