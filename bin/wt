@@ -67,10 +67,16 @@ existing_branch() {
     | head -1 | sed 's|^origin/||'
 }
 
+# Title -> branch-safe slug. Note -E: BSD sed has no \+ in a basic regex, and
+# silently leaving the spaces in produces an invalid branch name.
 slugify() {
-  tr '[:upper:]' '[:lower:]' \
-    | sed -e 's/[^a-z0-9]\+/-/g' -e 's/^-//' -e 's/-$//' \
-    | cut -c1-40 | sed 's/-$//'
+  local s
+  s=$(tr '[:upper:]' '[:lower:]' | sed -E -e 's/[^a-z0-9]+/-/g' -e 's/^-+//' -e 's/-+$//')
+  # Truncate on a word boundary rather than mid-word.
+  if [ ${#s} -gt 40 ]; then
+    s=$(printf '%s' "${s:0:40}" | sed -E -e 's/-[^-]*$//' -e 's/-+$//')
+  fi
+  printf '%s' "$s"
 }
 
 dest_for() { echo "$PARENT/$REPO-$1"; }
@@ -121,10 +127,11 @@ cmd_add() {
   local branch; branch=$(existing_branch "$n")
   if [ -z "$branch" ]; then
     if [ -z "$slug" ] && command -v gh >/dev/null 2>&1; then
-      slug=$(gh issue view "$n" --json title --jq .title 2>/dev/null | slugify || true)
+      slug=$(gh issue view "$n" --json title --jq .title 2>/dev/null | slugify)
+    else
+      slug=$(printf '%s' "$slug" | slugify)
     fi
     [ -n "$slug" ] || die "no branch for issue $n; pass a slug: wt $n <slug>"
-    slug=$(printf '%s' "$slug" | slugify)
     branch="issue-$n-$slug"
   fi
 
