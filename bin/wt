@@ -25,7 +25,7 @@
 #   WT_PORT_BASE=8000
 #   WT_PORT_FILE=".env.worktree"
 #   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
-#   WT_SLUG_MAX=24            slug length cap, trimmed on a word boundary
+#   WT_SLUG_MAX=18            slug length cap, trimmed on a word boundary
 #
 # A worktree with an .envrc gets `direnv allow` run in it — a new path is a new
 # direnv block even when .envrc is the main checkout's approved file.
@@ -65,7 +65,7 @@ WT_PORT_VAR=""
 WT_PORT_BASE=8000
 WT_PORT_FILE=".env.worktree"
 WT_SETUP=""
-WT_SLUG_MAX=24
+WT_SLUG_MAX=18
 # shellcheck disable=SC1091
 [ -f "$MAIN/.wtconfig" ] && . "$MAIN/.wtconfig"
 

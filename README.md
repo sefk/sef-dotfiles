@@ -60,9 +60,18 @@ Siblings, not `.worktrees/` or `.claude/worktrees/`: a nested worktree lands in
 the Docker build context, pytest's collection root, and every file watcher.
 
 The slug is looked up from the issue title via `gh` when omitted — filler words
-dropped, capped at `WT_SLUG_MAX` (24) on a word boundary, so "Write up some
-coding guidelines starting with comments; take a cleanup pass" becomes
-`write-coding-guidelines`. Per-repo setup comes from an optional `.wtconfig` at the repo root — which untracked
+dropped, capped at `WT_SLUG_MAX` (18) on a word boundary. One slug serves all
+three names, so they read as the same thing:
+
+```
+issue #861 "Write up some coding guidelines starting with comments"
+
+  directory  ../datatalk-861-write-coding
+  branch     issue-861-write-coding
+  workspace  861-write-coding
+```
+
+Per-repo setup comes from an optional `.wtconfig` at the repo root — which untracked
 files to symlink back to the main checkout (`.env`, `.envrc`), which env var
 gets a per-worktree port, and a setup command (`uv sync`). Example:
 
@@ -84,12 +93,16 @@ enough, no second database per tree.
 `bin/herdr-new-task` (prefix+n) ties into this: name a task with a trailing
 number in a GitHub repo and it looks the number up as an issue, offers to build
 the worktree, and opens the workspace there. A name that is *only* the number
-also names the workspace after the issue, at a 12-character slug and without
-the project name, which the directory already carries:
+also names the workspace after the issue — the same slug as the directory and
+branch, minus the project name, which the directory already carries. A name you
+chose yourself ("grants 861") is left alone.
+
+The zsh prompt (`oh-my-zsh/custom/themes/sefk.zsh-theme`) squashes the last
+path component to a letter whenever a branch is on the prompt, since the
+directory is then the branch with the project name in front:
 
 ```
-task name "861"  ->  worktree ../datatalk-861-write-coding-guidelines
-                     workspace "861-write-coding"
+~/s/b/d (issue-861-write-coding) >
 ```
 
 The matching agent policies — never create a worktree, never close an issue

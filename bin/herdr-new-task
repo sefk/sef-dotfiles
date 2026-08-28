@@ -77,10 +77,6 @@ resolve_dir() {
 # A task named "grants 853" or just "853", started in a GitHub repo, almost
 # always means issue #853. Offer the sibling worktree instead of piling another
 # branch onto the main checkout.
-# Workspace labels sit in a narrow sidebar, so a bare number gets a short slug
-# rather than the worktree's longer one, and never the project name.
-WT_LABEL_SLUG_MAX=12
-
 maybe_worktree() {
   local n title yn out wtdir branch short numeric_only=0
 
@@ -115,12 +111,18 @@ maybe_worktree() {
     return 0
   fi
 
-  # ../datatalk-861-write-coding-guidelines -> workspace "861-write-coding"
+  # One slug across all three names, so they read as the same thing:
+  #   dir       ../datatalk-861-write-coding
+  #   branch    issue-861-write-coding
+  #   workspace 861-write-coding
+  # The workspace drops the project name — the directory already carries it,
+  # and the sidebar is narrow.
   if (( numeric_only )); then
     branch=$(git -C "$wtdir" rev-parse --abbrev-ref HEAD 2>/dev/null)
-    short=$(wt slug "${branch#issue-$n-}" "$WT_LABEL_SLUG_MAX" 2>/dev/null)
-    [[ -z "$short" ]] && short=$(wt slug "$title" "$WT_LABEL_SLUG_MAX" 2>/dev/null)
-    [[ -n "$short" ]] && name="$n-$short"
+    short="${branch#issue-}"
+    [[ -z "$short" || "$short" == "$branch" ]] && short=$(wt slug "$title" 2>/dev/null) \
+      && short="$n-$short"
+    [[ -n "$short" ]] && name="$short"
   fi
 }
 
