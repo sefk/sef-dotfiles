@@ -36,17 +36,23 @@ Issue work happens in a sibling worktree, never in the main checkout — the mai
 checkout stays parked on the default branch so concurrent tasks can't collide.
 
 ```
-wt 853 [slug]   create/attach ../<repo>-853 on issue-853-<slug>
+wt 853 [slug]   create/attach ../<repo>-853-<slug> on issue-853-<slug>
 wt ls           list this repo's worktrees
 wt rm 853       remove the worktree, and the branch if merged
 wt path 853     print the path, for `cd "$(wt path 853)"`
 ```
 
+The slug is in the directory name so a listing of siblings says what each tree
+is for. Lookups go by branch, so `wt path`/`wt rm` still find a tree you
+renamed, or one from the older slugless layout.
+
 Siblings, not `.worktrees/` or `.claude/worktrees/`: a nested worktree lands in
 the Docker build context, pytest's collection root, and every file watcher.
 
-The slug is looked up from the issue title via `gh` when omitted. Per-repo
-setup comes from an optional `.wtconfig` at the repo root — which untracked
+The slug is looked up from the issue title via `gh` when omitted — filler words
+dropped, capped at `WT_SLUG_MAX` (24) on a word boundary, so "Write up some
+coding guidelines starting with comments; take a cleanup pass" becomes
+`write-coding-guidelines`. Per-repo setup comes from an optional `.wtconfig` at the repo root — which untracked
 files to symlink back to the main checkout (`.env`, `.envrc`), which env var
 gets a per-worktree port, and a setup command (`uv sync`). Example:
 

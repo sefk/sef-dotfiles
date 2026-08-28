@@ -2,7 +2,7 @@
 #
 # wt — sibling git worktrees for issue work.
 #
-#   wt <N> [slug]   create (or attach to) ../<repo>-<N> on issue-<N>-<slug>
+#   wt <N> [slug]   create (or attach to) ../<repo>-<N>-<slug> on issue-<N>-<slug>
 #   wt ls           list this repo's worktrees
 #   wt rm <N>       remove the worktree, and the branch if it's merged
 #   wt path <N>     print the worktree path (for `cd "$(wt path 853)"`)
@@ -21,6 +21,7 @@
 #   WT_PORT_BASE=8000
 #   WT_PORT_FILE=".env.worktree"
 #   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
+#   WT_SLUG_MAX=24            slug length cap, trimmed on a word boundary
 #
 # A worktree with an .envrc gets `direnv allow` run in it — a new path is a new
 # direnv block even when .envrc is the main checkout's approved file.
@@ -46,6 +47,7 @@ WT_PORT_VAR=""
 WT_PORT_BASE=8000
 WT_PORT_FILE=".env.worktree"
 WT_SETUP=""
+WT_SLUG_MAX=24
 # shellcheck disable=SC1091
 [ -f "$MAIN/.wtconfig" ] && . "$MAIN/.wtconfig"
 
@@ -70,19 +72,65 @@ existing_branch() {
     | head -1 | sed 's|^origin/||'
 }
 
-# Title -> branch-safe slug. Note -E: BSD sed has no \+ in a basic regex, and
-# silently leaving the spaces in produces an invalid branch name.
+# Filler words dropped from slugs — issue titles are full of them and they eat
+# the character budget without helping you recognize the branch.
+WT_STOPWORDS='a an and are as at be by for from in into is it its of on or that the this to when with some up'
+
+# Title -> short branch-safe slug. Note -E: BSD sed has no \+ in a basic regex,
+# and silently leaving the spaces in produces an invalid branch name.
 slugify() {
-  local s
+  local s w out=""
   s=$(tr '[:upper:]' '[:lower:]' | sed -E -e 's/[^a-z0-9]+/-/g' -e 's/^-+//' -e 's/-+$//')
-  # Truncate on a word boundary rather than mid-word.
-  if [ ${#s} -gt 40 ]; then
-    s=$(printf '%s' "${s:0:40}" | sed -E -e 's/-[^-]*$//' -e 's/-+$//')
-  fi
-  printf '%s' "$s"
+
+  # Drop stopwords, then keep whole words up to the length cap. Never return
+  # empty: a title made entirely of stopwords keeps its first word.
+  for w in ${s//-/ }; do
+    case " $WT_STOPWORDS " in *" $w "*) continue ;; esac
+    [ -z "$out" ] && { out="$w"; continue; }
+    [ $(( ${#out} + 1 + ${#w} )) -le "$WT_SLUG_MAX" ] || break
+    out="$out-$w"
+  done
+  [ -n "$out" ] || out="${s%%-*}"
+
+  printf '%s' "${out:0:$WT_SLUG_MAX}"
 }
 
-dest_for() { echo "$PARENT/$REPO-$1"; }
+# Path for a worktree that doesn't exist yet: ../<repo>-<N>-<slug>, so a
+# directory listing tells you what each tree is for.
+new_dest_for() {
+  local n=$1 branch=$2
+  echo "$PARENT/$REPO-$n-${branch#issue-$n-}"
+}
+
+# Path of the existing worktree for issue N, if any. Keyed off the branch, so
+# it survives a renamed directory; falls back to matching the path, which also
+# picks up the older slugless ../<repo>-<N> layout.
+find_dest() {
+  local n=$1 d
+  git worktree list --porcelain | awk -v n="$n" '
+    /^worktree /              { wt = substr($0, 10) }
+    /^branch refs\/heads\//   { b = substr($0, 20)
+                                if (b == "issue-" n || index(b, "issue-" n "-") == 1) {
+                                  print wt; exit
+                                } }'
+}
+
+# Path lookup as a fallback, for a tree git no longer lists or never branched
+# to the convention.
+find_dest_by_path() {
+  local n=$1 d
+  for d in "$PARENT/$REPO-$n" "$PARENT/$REPO-$n-"*; do
+    [ -d "$d" ] && { printf '%s' "$d"; return 0; }
+  done
+  return 1
+}
+
+resolve_dest() {
+  local n=$1 d
+  d=$(find_dest "$n")
+  [ -n "$d" ] && { printf '%s' "$d"; return 0; }
+  find_dest_by_path "$n"
+}
 
 cmd_ls() {
   git worktree list
@@ -90,15 +138,15 @@ cmd_ls() {
 
 cmd_path() {
   local n=${1:?usage: wt path <N>}
-  local d; d=$(dest_for "$n")
-  [ -d "$d" ] || die "no worktree at $d"
+  local d; d=$(resolve_dest "$n") || true
+  [ -n "$d" ] && [ -d "$d" ] || die "no worktree for issue $n"
   echo "$d"
 }
 
 cmd_rm() {
   local n=${1:?usage: wt rm <N>}
-  local d; d=$(dest_for "$n")
-  [ -d "$d" ] || die "no worktree at $d"
+  local d; d=$(resolve_dest "$n") || true
+  [ -n "$d" ] && [ -d "$d" ] || die "no worktree for issue $n"
   local branch; branch=$(git -C "$d" rev-parse --abbrev-ref HEAD)
   git worktree remove "$d"    # refuses on dirty/untracked; that's the point
   echo "removed $d"
@@ -113,10 +161,9 @@ cmd_add() {
   local n=$1 slug=${2:-}
   case "$n" in ''|*[!0-9]*) die "issue number must be numeric: $n" ;; esac
 
-  local d; d=$(dest_for "$n")
-  if [ -d "$d" ]; then
+  local d; d=$(resolve_dest "$n") || true
+  if [ -n "$d" ] && [ -d "$d" ]; then
     echo "worktree already exists: $d"
-    echo "$d"
     return 0
   fi
 
@@ -137,6 +184,7 @@ cmd_add() {
     [ -n "$slug" ] || die "no branch for issue $n; pass a slug: wt $n <slug>"
     branch="issue-$n-$slug"
   fi
+  d=$(new_dest_for "$n" "$branch")
 
   git fetch --quiet origin 2>/dev/null || true
 
