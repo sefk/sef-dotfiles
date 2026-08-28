@@ -43,26 +43,6 @@ else
     uc="$green"
 fi
 
-# ── Collapse working directory (fish-style) ──────────────────────
-collapse_wd() {
-    local wd="$1"
-    [[ "$wd" == "$HOME"* ]] && wd="~${wd#$HOME}"
-    if [[ "$wd" == */* ]]; then
-        local IFS='/'
-        local parts=($wd) result=""
-        for ((i=0; i<${#parts[@]}-1; i++)); do
-            local p="${parts[$i]}"
-            if [[ "$p" == .* && ${#p} -gt 1 ]]; then result+="${p:0:2}/"
-            elif [[ -n "$p" ]]; then result+="${p:0:1}/"
-            fi
-        done
-        echo "${result}${parts[${#parts[@]}-1]}"
-    else
-        echo "$wd"
-    fi
-}
-short_wd=$(collapse_wd "$cwd")
-
 # ── Git info (green clean parens, red dirty braces — matches PS1) ─
 git_info=""
 if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
@@ -84,6 +64,52 @@ if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
         fi
     fi
 fi
+
+# ── Collapse working directory (fish-style) ──────────────────────
+# Every component but the last is squashed to a letter. The last one joins
+# them only when it would repeat the branch — see dir_repeats_branch. Matches
+# the zsh prompt in oh-my-zsh/custom/themes/sefk.zsh-theme.
+collapse_wd() {
+    local wd="$1" squash_last="${2:-0}"
+    [[ "$wd" == "$HOME"* ]] && wd="~${wd#$HOME}"
+    if [[ "$wd" == */* ]]; then
+        local IFS='/'
+        local parts=($wd) result="" n=${#parts[@]} upto
+        upto=$((n - 1))
+        [ "$squash_last" = 1 ] && upto=$n
+        for ((i=0; i<upto; i++)); do
+            local p="${parts[$i]}"
+            if [[ "$p" == .* && ${#p} -gt 1 ]]; then result+="${p:0:2}/"
+            elif [[ -n "$p" ]]; then result+="${p:0:1}/"
+            fi
+        done
+        if [ "$squash_last" = 1 ]; then
+            echo "${result%/}"
+        else
+            echo "${result}${parts[$((n - 1))]}"
+        fi
+    else
+        echo "$wd"
+    fi
+}
+
+# Is the directory's name just the branch dressed up? An issue worktree is:
+# dir datatalk-861-write-coding, branch issue-861-write-coding. Printing both
+# says one thing twice, so the directory gets squashed and the branch is the
+# name you read. A main checkout keeps its name — there the branch carries no
+# project identity.
+dir_repeats_branch() {
+    [ -n "$branch" ] || return 1
+    local dir="${cwd##*/}" tail="${branch#issue-}"
+    case "$dir" in
+        "$branch"|*-"$branch"|"$tail"|*-"$tail") return 0 ;;
+    esac
+    return 1
+}
+
+squash_last=0
+dir_repeats_branch && squash_last=1
+short_wd=$(collapse_wd "$cwd" "$squash_last")
 
 # ── DataTalk dev-DB badge ─────────────────────────────────────────
 # Warn (in every project) when the DataTalk dev stack points at a cloud DB —
