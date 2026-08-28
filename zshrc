@@ -67,6 +67,10 @@ test_and_source ~/.bash_startup/claude.sh
 # loop; zsh doesn't source bash_startup, so pick it up here)
 test_and_source ~/.bash_startup/ssh-vpn.sh
 
+# wt worktree helper -- the function wrapper that lets `wt` cd the shell (bash
+# gets this via the bash_startup loop; zsh doesn't source bash_startup)
+test_and_source ~/.bash_startup/wt.sh
+
 # SEF (TOP) END
 
 # Set name of the theme to load --- if set to "random", it will

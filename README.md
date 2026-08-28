@@ -38,9 +38,15 @@ checkout stays parked on the default branch so concurrent tasks can't collide.
 ```
 wt 853 [slug]   create/attach ../<repo>-853-<slug> on issue-853-<slug>
 wt ls           list this repo's worktrees
-wt rm 853       remove the worktree, and the branch if merged
+wt rm [853]     remove the worktree — default, the one you're in — and the
+                branch if merged; leaves you in the main checkout
 wt path 853     print the path, for `cd "$(wt path 853)"`
 ```
+
+`bash_startup/wt.sh` defines a `wt` shell function around `bin/wt`; it's what
+lets `wt rm` move the shell out of the directory it just deleted. Bash picks it
+up from the `bash_startup` loop, zsh sources it explicitly. Calling `bin/wt`
+directly still works — it just prints the `cd` for you to run.
 
 The slug is in the directory name so a listing of siblings says what each tree
 is for. Lookups go by branch, so `wt path`/`wt rm` still find a tree you

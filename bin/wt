@@ -4,7 +4,8 @@
 #
 #   wt <N> [slug]   create (or attach to) ../<repo>-<N>-<slug> on issue-<N>-<slug>
 #   wt ls           list this repo's worktrees
-#   wt rm <N>       remove the worktree, and the branch if it's merged
+#   wt rm [N]       remove the worktree (default: the one you're in), and the
+#                   branch if it's merged
 #   wt path <N>     print the worktree path (for `cd "$(wt path 853)"`)
 #
 # Worktrees are siblings of the main checkout, never nested inside it: nesting
@@ -28,10 +29,24 @@
 #
 # Share the one local service stack across worktrees — a distinct app port is
 # enough. Don't stand up a second database per tree.
+#
+# A script can't cd its calling shell, so the `wt` shell function in
+# bash_startup/wt.sh exports WT_CD_FILE; writing a path there moves the shell.
+# Without the wrapper this degrades to printing where to go.
 
 set -euo pipefail
 
 die() { echo "wt: $*" >&2; exit 1; }
+
+# Ask the calling shell to cd. Honored only under the `wt` shell function,
+# which exports WT_CD_FILE; otherwise just tell the user where to go.
+request_cd() {
+  if [ -n "${WT_CD_FILE:-}" ]; then
+    printf '%s' "$1" > "$WT_CD_FILE"
+  else
+    printf '  cd %s\n' "$1"
+  fi
+}
 
 git rev-parse --git-dir >/dev/null 2>&1 || die "not in a git repository"
 
@@ -144,17 +159,47 @@ cmd_path() {
 }
 
 cmd_rm() {
-  local n=${1:?usage: wt rm <N>}
-  local d; d=$(resolve_dest "$n") || true
-  [ -n "$d" ] && [ -d "$d" ] || die "no worktree for issue $n"
-  local branch; branch=$(git -C "$d" rev-parse --abbrev-ref HEAD)
-  git worktree remove "$d"    # refuses on dirty/untracked; that's the point
+  local n=${1:-} d branch here
+
+  if [ -n "$n" ]; then
+    d=$(resolve_dest "$n") || true
+    [ -n "$d" ] && [ -d "$d" ] || die "no worktree for issue $n"
+  else
+    # No argument: the worktree you're standing in.
+    d=$(git rev-parse --show-toplevel 2>/dev/null) \
+      || die "not inside a worktree; pass an issue number"
+    [ "$d" != "$MAIN" ] \
+      || die "that's the main checkout ($MAIN), not a worktree; pass an issue number"
+    git worktree list --porcelain | grep -qxF "worktree $d" \
+      || die "$d is not a registered worktree of $REPO"
+  fi
+
+  # git worktree remove refuses on a dirty tree; say why first, since the
+  # no-argument form means you may not have looked at it in a while.
+  local dirty; dirty=$(git -C "$d" status --porcelain)
+  if [ -n "$dirty" ]; then
+    echo "wt: $d has uncommitted changes:" >&2
+    printf '%s\n' "$dirty" | sed 's/^/  /' >&2
+    die "commit or discard them first"
+  fi
+
+  branch=$(git -C "$d" rev-parse --abbrev-ref HEAD)
+
+  # Run from the main checkout: we may be deleting the directory we're in.
+  here=$PWD
+  git -C "$MAIN" worktree remove "$d"
   echo "removed $d"
-  if git branch -d "$branch" 2>/dev/null; then
+
+  if git -C "$MAIN" branch -d "$branch" 2>/dev/null; then
     echo "deleted merged branch $branch"
   else
     echo "kept branch $branch (not merged; 'git branch -D $branch' to force)"
   fi
+
+  # If the shell was sitting in what we just deleted, move it somewhere real.
+  case "$here" in
+    "$d"|"$d"/*) request_cd "$MAIN" ;;
+  esac
 }
 
 cmd_add() {
@@ -238,7 +283,7 @@ cmd_add() {
 case "${1:-}" in
   ''|-h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0" ;;
   ls)           shift; cmd_ls "$@" ;;
-  rm)           shift; cmd_rm "$@" ;;
+  rm)           shift; cmd_rm "${1:-}" ;;
   path)         shift; cmd_path "$@" ;;
   *)            cmd_add "$@" ;;
 esac
