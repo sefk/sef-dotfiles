@@ -36,16 +36,29 @@ function _truncate_middle {
   echo "${s[1,$keep]}…${s[-$keep,-1]}"
 }
 
-# Normally every component but the last is squashed to a letter. When a branch
-# is on the prompt the last one gets squashed too: an issue worktree directory
-# (datatalk-861-write-coding) is its branch (issue-861-write-coding) with the
-# project name in front, so spelling both out prints the same thing twice.
+# Is the current directory's name just the branch dressed up? An issue worktree
+# is: dir datatalk-861-write-coding, branch issue-861-write-coding. Printing
+# both spends half a long prompt line saying one thing twice, so in that case
+# the directory gets squashed away and the branch is the name you read.
+#
+# A main checkout (~/src/biglocalnews/datatalk on main) is not redundant — the
+# branch carries no project identity — so it keeps its name.
+function _prompt_dir_repeats_branch {
+  [[ -n "$_PROMPT_BRANCH" ]] || return 1
+  local dir=${PWD:t} tail=${_PROMPT_BRANCH#issue-}
+  [[ "$dir" == "$_PROMPT_BRANCH" || "$dir" == *-"$_PROMPT_BRANCH" ]] && return 0
+  [[ "$dir" == "$tail"          || "$dir" == *-"$tail"           ]] && return 0
+  return 1
+}
+
+# Normally every component but the last is squashed to a letter. The last one
+# joins them only when it would repeat the branch — see _prompt_dir_repeats_branch.
 function _fishy_collapsed_wd {
   local i pwd squash_through
   pwd=("${(s:/:)PWD/#$HOME/~}")
 
   squash_through=$(( $#pwd - 1 ))
-  [[ -n "$_PROMPT_BRANCH" ]] && squash_through=$#pwd
+  (( _PROMPT_SQUASH_LAST )) && squash_through=$#pwd
 
   if (( squash_through >= 1 )); then
     for i in {1..$squash_through}; do
@@ -62,9 +75,6 @@ function _fishy_collapsed_wd {
   echo "${(j:/:)pwd}"
 }
 
-# The branch is the authoritative name now — _fishy_collapsed_wd squashes the
-# directory out of the way whenever this segment prints, so there is nothing
-# left to be redundant with.
 function zsh_essembeh_gitstatus {
 	[[ -n "$_PROMPT_BRANCH" ]] || return
 	GIT_STATUS=$(git_prompt_status)
@@ -118,6 +128,8 @@ function _prompt_precmd {
 	# to agree on whether a branch is being shown. Empty on a detached HEAD or
 	# outside a repo, which is also what suppresses the git segment.
 	_PROMPT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+	_PROMPT_SQUASH_LAST=0
+	_prompt_dir_repeats_branch && _PROMPT_SQUASH_LAST=1
 
 	local -a stopped running
 	local j

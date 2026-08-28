@@ -98,11 +98,13 @@ branch, minus the project name, which the directory already carries. A name you
 chose yourself ("grants 861") is left alone.
 
 The zsh prompt (`oh-my-zsh/custom/themes/sefk.zsh-theme`) squashes the last
-path component to a letter whenever a branch is on the prompt, since the
-directory is then the branch with the project name in front:
+path component to a letter when it would just repeat the branch — a worktree
+directory is its branch with the project name in front. Ordinary checkouts
+keep their name, since there the branch says nothing about the project:
 
 ```
-~/s/b/d (issue-861-write-coding) >
+~/s/b/d (issue-861-write-coding) >     worktree
+~/s/b/datatalk (main) >                main checkout
 ```
 
 The matching agent policies — never create a worktree, never close an issue
