@@ -56,6 +56,28 @@ Git policies
 - You can do fast-forward only merges.
 - Never rebase changes that have already been pushed to GitHub.
 
+Worktrees
+
+- Issue work happens in a **sibling worktree**, never in the main checkout:
+  `../<repo>-<N>` on branch `issue-<N>-<slug>`. I create it with `wt <N>
+  <slug>`; the main checkout stays parked on the default branch so concurrent
+  tasks can't collide.
+- **Never create a worktree yourself** — no `isolation: "worktree"`, no
+  `EnterWorktree`, no `git worktree add` into `.claude/worktrees/` or
+  `.worktrees/`. If a task needs isolation, ask me to run `wt <N>` and tell me
+  the issue number and slug you want.
+- Worktrees share the main checkout's `.env`/`.envrc` (symlinked by `wt`) and
+  the one already-running local service stack. Don't stand up a second
+  database or duplicate stack per worktree; `wt` assigns a distinct app port.
+
+Issues and closing
+
+- **Never close an issue while work is in flight.** GitHub closes it at merge:
+  when the branch is `issue-<N>-*`, the PR body must contain `Closes #<N>`.
+  Add that line whenever you open a PR for issue work.
+- Comment on the issue with progress (branch, what changed, test results) and
+  leave it open. Closing is the merge's job, not the fix's.
+
 Use the `gh` command line utility to update issues on GitHub. You don't need permissions to read or write issues using `gh issues`.
 
 When adding comments to pull requests and issues, make it clear the comment is authored by you — name yourself specifically (e.g. Claude or Codex), since it will be presented under sefk credentials. This is not necessary for commit messages, as those already carry co-author attribution naming the actual tool.

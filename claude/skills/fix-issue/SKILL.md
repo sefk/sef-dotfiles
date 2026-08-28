@@ -1,6 +1,6 @@
 ---
 name: fix-issue
-description: Fix a GitHub issue end-to-end — read it, plan, implement, test, commit on a branch, comment and close. Use when asked to fix, resolve, or handle a numbered GitHub issue in the current repo, e.g. "/fix-issue 42", "fix issue #42", or "fix #42 and close it".
+description: Fix a GitHub issue end-to-end — read it, plan, implement, test, commit on a branch, comment on the issue. Use when asked to fix, resolve, or handle a numbered GitHub issue in the current repo, e.g. "/fix-issue 42", "fix issue #42", or "fix #42".
 ---
 
 # Fix a GitHub issue end-to-end
@@ -17,8 +17,13 @@ commits, working branch for multi-step work, never push).
    issue comment (marked as authored by Claude Code) before coding, so the
    decision is on the record. Trivial fixes skip the comment.
 
-3. **Branch** — multi-step work goes on `issue-<N>-<short-slug>`; a small
-   self-contained fix may land on the current branch.
+3. **Branch / worktree** — work happens on `issue-<N>-<short-slug>` in a
+   sibling worktree (`../<repo>-<N>`), never in the main checkout and never in
+   a worktree you create yourself. If you aren't already in one, ask the user
+   to run `wt <N> <slug>` and wait — don't `git worktree add`, don't use
+   `isolation: "worktree"`, and don't start work on the default branch. A
+   one-line fix may land on the current branch if it's already a working
+   branch.
 
 4. **Implement** — directly, or delegated:
    - **Delegate when well-scoped**: if after Read/Plan the fix has a clear
@@ -59,9 +64,9 @@ commits, working branch for multi-step work, never push).
    **Escape hatch — escalate, don't override.** If after a couple of rounds
    Codex still won't agree the problem is solved (or its remaining
    objection is a judgment call you disagree with), stop and escalate to
-   the user with both positions. Don't silently close the issue over
-   Codex's objection, and don't loop indefinitely — overriding Codex is the
-   user's call, not yours.
+   the user with both positions. Don't quietly declare the issue resolved
+   over Codex's objection, and don't loop indefinitely — overriding Codex is
+   the user's call, not yours.
 
 6. **Verify** — run the project's test suite (fast loop while iterating,
    full suite at the end; check the project CLAUDE.md for the commands).
@@ -72,11 +77,14 @@ commits, working branch for multi-step work, never push).
 7. **Commit** — one commit per logical change; append (`#<N>)` at the end of the
    message subject line and in the body.
 
-8. **Close the loop** — comment on the issue with what changed, files
-   touched, branch name, and test results, marked as authored by Claude
-   Code. If commits are on an unpushed local branch, say so. Close the
-   issue (`gh issue close`) only when it is fully resolved; otherwise
-   leave it open and state what remains.
+8. **Close the loop — but do not close the issue.** Comment on the issue
+   with what changed, files touched, branch name, and test results, marked as
+   authored by Claude Code. If commits are on an unpushed local branch, say
+   so. **Never `gh issue close`** — the issue stays open through review and
+   GitHub closes it when the PR merges. To make that happen, the PR body must
+   carry `Closes #<N>`; if a PR already exists, verify the line is there and
+   add it if not, and if the PR is opened later, state in your report that its
+   body needs `Closes #<N>`.
 
 9. **Report** — tell the user branch, commits, and test status in a couple
    of lines. No long recap.

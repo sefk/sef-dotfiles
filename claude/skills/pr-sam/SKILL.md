@@ -38,7 +38,24 @@ exhausted) to fetch every review thread.
 - Other unresolved (non-blocker) threads: mention the count in passing, but
   don't block on them.
 
-## 3. Draft the commit message
+## 3. Make sure the PR closes its issue
+
+The issue must not have been closed by hand during the fix — GitHub closes it
+here, at merge. Confirm the wiring is in place *before* merging:
+
+- Resolve the underlying issue number(s): `pull_request_read` method `get` for
+  `closingIssuesReferences`, or `gh pr view <n> --json closingIssuesReferences`.
+- If that comes back empty but the head branch is `issue-<N>-*` (or the PR
+  body/commits clearly reference an issue), the closing keyword is missing.
+  Say so, and offer to append `Closes #<N>` to the PR body via
+  `update_pull_request` / `gh pr edit <n> --body ...` before merging. Don't
+  merge a linked-issue PR that won't close its issue without saying so.
+- If the referenced issue is already **closed**, flag it — something closed it
+  early, and it should be reopened so the merge closes it properly.
+
+Carry the resolved issue numbers into step 4.
+
+## 4. Draft the commit message
 
 Pull full PR context: `pull_request_read` (method `get`) for title/body, and
 `list_commits` (or `get_diff`) for the individual commit messages that
@@ -50,12 +67,8 @@ default. Since the merge passes an explicit subject/body, GitHub's automatic
 yourself per below.
 
 - **Title**: PR title, cleaned up (or a better one if the PR title is
-  vague), under ~70 chars.
-  - Find the **underlying issue number(s)** this PR closes — not the PR's
-    own number. Check the PR body for closing keywords (`Closes #123`,
-    `Fixes #123`, `Resolves org/repo#123`, etc.) and/or
-    `pull_request_read` method `get` for `closingIssuesReferences` (or
-    `gh pr view --json closingIssuesReference`).
+  vague), under ~70 chars. Using the underlying issue number(s) from step 3 —
+  not the PR's own number:
   - If there's 1–3 such issues, append them to the title:
     `foo bar (#123)` or `foo bar (#123, #124)`.
   - If there are more than 3, or none, leave the title bare — don't force
@@ -64,6 +77,10 @@ yourself per below.
   - What changed from a customer/user-facing angle, if any.
   - Interesting/non-obvious decisions made and why (tradeoffs, things
     someone reading `git log` later would want to know).
+  - A final `Closes #123` line (one per underlying issue). The `(#123)` in
+    the title is *not* a closing keyword; this line is the belt to the PR
+    body's suspenders, and it closes the issue even if the PR link is
+    missing.
 
 Explicitly strip out:
 - Repeated "Co-Authored-By:" lines — one per commit is fine, but dedupe so
@@ -78,15 +95,20 @@ Explicitly strip out:
 
 **Show the proposed commit message to the user and wait for explicit
 approval before merging.** If they ask for edits, revise and re-show. Don't
-proceed to step 4 without a clear yes.
+proceed to the merge without a clear yes.
 
-## 4. Merge
+## 5. Merge
 
 Once approved, squash-merge via `merge_pull_request` (method `squash`) or
 `gh pr merge <n> --squash --subject "<title>" --body "<body>"`, passing the
 approved title/body exactly.
 
-## 5. Report
+Then **verify the issue actually closed**: `gh issue view <N> --json state`
+for each underlying issue. If one is still open, close it yourself
+(`gh issue close <N>`) with a comment — marked as authored by Claude — naming
+the PR and the merge commit SHA.
+
+## 6. Report
 
 Concise:
 - CI status at merge time.
@@ -94,3 +116,4 @@ Concise:
   addressed first).
 - The final commit message used.
 - Merge commit SHA / link.
+- Which issues closed, and whether GitHub did it or you had to.
