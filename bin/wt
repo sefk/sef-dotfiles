@@ -11,6 +11,16 @@
 #   wt slug <N|text> [max]
 #                   print the slug for an issue number or an arbitrary string
 #
+# `wt <N>` and `wt rm` change things on disk, so both show a plan — the branch
+# and directory to create, or the worktree and branch to delete — and wait for
+# a yes. `-y` (anywhere in the arguments) skips the question; so does a
+# non-interactive stdin, since there'd be nobody to answer. The plan prints
+# either way, so a scripted run leaves the same record.
+#
+# Creating a worktree also offers the suggested slug for editing before it
+# becomes a branch name and a directory — the two things hardest to rename
+# afterwards.
+#
 # Worktrees are siblings of the main checkout, never nested inside it: nesting
 # puts them in the Docker build context, pytest's collection root, and every
 # file watcher. The main checkout stays parked on the default branch.
@@ -40,6 +50,23 @@
 set -euo pipefail
 
 die() { echo "wt: $*" >&2; exit 1; }
+
+# Set by the -y/--yes flag, stripped from the arguments before dispatch.
+ASSUME_YES=0
+
+interactive() { [ "$ASSUME_YES" -eq 0 ] && [ -t 0 ]; }
+
+# Show a plan, then ask. The caller has already printed the plan lines, so a
+# `-y` or piped run still says what it's about to do; it just doesn't wait.
+confirm() {
+  local ans
+  interactive || return 0
+  # A read that fails is EOF, not assent — bail rather than default to yes.
+  read -r -p "wt: proceed? [Y/n] " ans || { echo >&2; echo "wt: cancelled" >&2; return 1; }
+  case "$ans" in ''|[Yy]*) return 0 ;; esac
+  echo "wt: cancelled" >&2
+  return 1
+}
 
 # Ask the calling shell to cd. Honored only under the `wt` shell function,
 # which exports WT_CD_FILE; otherwise just tell the user where to go.
@@ -111,6 +138,14 @@ slugify() {
   [ -n "$out" ] || out="${s%%-*}"
 
   printf '%s' "${out:0:$WT_SLUG_MAX}"
+}
+
+# A slug you typed yourself: make it branch-safe, but don't second-guess the
+# wording — no stopword dropping, no length cap. You asked for those words.
+sanitize_slug() {
+  printf '%s' "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E -e 's/[^a-z0-9]+/-/g' -e 's/^-+//' -e 's/-+$//'
 }
 
 # Path for a worktree that doesn't exist yet: ../<repo>-<N>-<slug>, so a
@@ -202,6 +237,25 @@ cmd_rm() {
 
   branch=$(git -C "$d" rev-parse --abbrev-ref HEAD)
 
+  # Whether the branch survives is the difference between a tidy-up and losing
+  # work, so work it out before asking rather than reporting it afterwards.
+  local base ref merged=0
+  base=$(default_branch)
+  ref="$base"
+  git -C "$MAIN" show-ref --verify --quiet "refs/remotes/origin/$base" && ref="origin/$base"
+  git -C "$MAIN" merge-base --is-ancestor "$branch" "$ref" 2>/dev/null && merged=1
+
+  echo
+  echo "wt: plan"
+  printf '  remove worktree  %s\n' "$d"
+  if [ "$merged" -eq 1 ]; then
+    printf '  delete branch    %s (merged into %s)\n' "$branch" "$ref"
+  else
+    printf '  keep branch      %s (not merged into %s)\n' "$branch" "$ref"
+  fi
+  echo
+  confirm || return 1
+
   # Run from the main checkout: we may be deleting the directory we're in.
   here=$PWD
   git -C "$MAIN" worktree remove "$d"
@@ -237,29 +291,73 @@ cmd_add() {
     echo "wt:           park it on $base so worktrees branch from a clean base." >&2
   fi
 
-  local branch; branch=$(existing_branch "$n")
+  git fetch --quiet origin 2>/dev/null || true
+
+  local branch title edited
+  branch=$(existing_branch "$n")
   if [ -z "$branch" ]; then
     if [ -z "$slug" ] && command -v gh >/dev/null 2>&1; then
-      slug=$(gh issue view "$n" --json title --jq .title 2>/dev/null | slugify)
+      title=$(gh issue view "$n" --json title --jq .title 2>/dev/null || true)
+      [ -n "$title" ] && echo "issue #$n: $title"
+      slug=$(printf '%s' "$title" | slugify)
     else
       slug=$(printf '%s' "$slug" | slugify)
+    fi
+    # The slug names both the branch and the directory — the two things hardest
+    # to change afterwards — so hand it over for editing while it's still text.
+    if interactive; then
+      read -r -e -p "  slug: " -i "$slug" edited || true
+      slug=$(sanitize_slug "${edited:-$slug}")
     fi
     [ -n "$slug" ] || die "no branch for issue $n; pass a slug: wt $n <slug>"
     branch="issue-$n-$slug"
   fi
   d=$(new_dest_for "$n" "$branch")
 
-  git fetch --quiet origin 2>/dev/null || true
-
+  # Settle how the branch comes into being before touching anything, so the
+  # plan states what happens rather than guessing at it.
+  local mode start=""
   if git show-ref --verify --quiet "refs/heads/$branch"; then
-    git worktree add "$d" "$branch"
+    mode=local
   elif git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
-    git worktree add "$d" --track -b "$branch" "origin/$branch"
+    mode=remote
   else
-    local start="$base"
+    mode=new
+    start="$base"
     git show-ref --verify --quiet "refs/remotes/origin/$base" && start="origin/$base"
-    git worktree add "$d" -b "$branch" "$start"
   fi
+
+  echo
+  echo "wt: plan for issue $n"
+  case "$mode" in
+    local)  printf '  reuse branch     %s (already local)\n' "$branch" ;;
+    remote) printf '  create branch    %s tracking origin/%s\n' "$branch" "$branch" ;;
+    new)    printf '  create branch    %s from %s\n' "$branch" "$start" ;;
+  esac
+  printf '  create worktree  %s\n' "$d"
+  for f in $WT_LINK; do
+    if [ -e "$MAIN/$f" ]; then
+      printf '  link             %s -> %s/%s\n' "$f" "$MAIN" "$f"
+    fi
+  done
+  if [ -n "$WT_PORT_VAR" ]; then
+    printf '  write            %s with %s=%s\n' \
+      "$WT_PORT_FILE" "$WT_PORT_VAR" "$(( WT_PORT_BASE + n % 1000 ))"
+  fi
+  if [ -n "$WT_SETUP" ]; then
+    printf '  run              %s\n' "$WT_SETUP"
+  fi
+  if [ -e "$MAIN/.envrc" ] && command -v direnv >/dev/null 2>&1; then
+    printf '  run              direnv allow\n'
+  fi
+  echo
+  confirm || return 1
+
+  case "$mode" in
+    local)  git worktree add "$d" "$branch" ;;
+    remote) git worktree add "$d" --track -b "$branch" "origin/$branch" ;;
+    new)    git worktree add "$d" -b "$branch" "$start" ;;
+  esac
 
   # Untracked local config: one source of truth in the main checkout.
   for f in $WT_LINK; do
@@ -297,6 +395,17 @@ cmd_add() {
   echo "worktree $d on $branch"
   request_cd "$d"
 }
+
+# -y/--yes anywhere in the arguments: skip the confirmation. Stripped here so
+# every subcommand can keep its positional arguments simple.
+args=()
+for a in "$@"; do
+  case "$a" in
+    -y|--yes) ASSUME_YES=1 ;;
+    *)        args+=("$a") ;;
+  esac
+done
+set -- ${args+"${args[@]}"}
 
 case "${1:-}" in
   ''|-h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0" ;;
