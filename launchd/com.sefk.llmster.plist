@@ -5,26 +5,38 @@
 	<key>Label</key>
 	<string>com.sefk.llmster</string>
 
-	<!-- `lms daemon up` starts llmster in the background and exits; the
-	     daemon then persists on its own, so this only needs to fire once
-	     per login rather than being kept alive by launchd.
+	<!-- llmster-supervise.sh starts the daemon and its HTTP server, then
+	     blocks health-checking both, so launchd has a real process to
+	     supervise. It exits non-zero the moment either one fails and
+	     KeepAlive brings it straight back.
 
-	     The daemon does NOT open the OpenAI-compatible HTTP server, so
-	     `lms server start` has to follow it. Without that, anything
-	     pointed at localhost:1234 (ssrename, for one) gets connection
-	     refused after every reboot. `server start` reuses the port it was
-	     last started on. -->
+	     This replaces a RunAtLoad-once, KeepAlive-false setup that fired
+	     the two `lms` commands and exited. Those commands return
+	     immediately, so launchd was supervising nothing: when llmster was
+	     killed (last exit status -9, likely jetsam under the 27B model),
+	     localhost:1234 stayed dead until the next login and ssrename sat
+	     in its backend-unreachable backoff. -->
 	<key>ProgramArguments</key>
 	<array>
-		<string>/bin/sh</string>
-		<string>-c</string>
-		<string>lms daemon up &amp;&amp; lms server start</string>
+		<string>/Users/sefk/bin/llmster-supervise.sh</string>
 	</array>
 
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>
-	<false/>
+	<true/>
+
+	<!-- If lms is fundamentally broken the wrapper exits immediately;
+	     don't let launchd hot-loop on it. -->
+	<key>ThrottleInterval</key>
+	<integer>60</integer>
+
+	<!-- llmster is spawned by the wrapper and so lands in this job's
+	     process group. Without this, launchd SIGKILLs that whole group
+	     when the wrapper exits — killing the very daemon the wrapper
+	     exists to keep alive, and any in-flight request with it. -->
+	<key>AbandonProcessGroup</key>
+	<true/>
 
 	<!-- launchd starts with a minimal PATH; give lms a sane one. -->
 	<key>EnvironmentVariables</key>

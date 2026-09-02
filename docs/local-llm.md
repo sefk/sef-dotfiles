@@ -206,13 +206,48 @@ win over plain `llama-server`, which only speaks OpenAI-style.
 3. Added `launchd/com.sefk.llmster.plist` (mirrors the existing
    claude-backup/claude-nightly/agentsview pattern) so the daemon starts
    on every login without the GUI app. Key detail: `lms daemon up` starts
-   llmster in the background and exits immediately — so the plist uses
-   `RunAtLoad = true`, `KeepAlive = false` (not a supervised long-running
-   process; the daemon persists independently once started).
+   llmster in the background and exits immediately, and the daemon does
+   not open the HTTP server on its own, so `lms server start` has to
+   follow it.
    ```sh
    make ~/Library/LaunchAgents/com.sefk.llmster.plist
    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.sefk.llmster.plist
    ```
+
+### Supervision: why there is a wrapper script
+
+The plist originally ran those two `lms` commands directly under
+`RunAtLoad = true`, `KeepAlive = false`, on the theory that the daemon
+persists on its own once started and needs no supervision.
+
+That was wrong in one specific way: nothing brought it back. On
+2026-09-01 llmster was killed (`launchctl list` reported last exit
+status **-9**; no crash report, which is consistent with a SIGKILL,
+most likely jetsam under the 27B model). Because both `lms` commands
+had long since exited, launchd was supervising nothing, and
+`localhost:1234` stayed refused **until the next login** — about 1.5
+hours, during which ssrename sat in its backend-unreachable backoff and
+quietly renamed nothing.
+
+`bin/llmster-supervise.sh` fixes that. It starts the daemon and the
+server, then blocks, polling both — the daemon's PID (from `lms daemon
+status`) and an actual `GET /v1/models` — and exits non-zero the moment
+either fails. The plist sets `KeepAlive = true`, so launchd restarts it
+immediately; startup therefore has exactly one code path and launchd
+owns the throttling and logging.
+
+Two non-obvious details, both found by testing with `kill -9`:
+
+- **`AbandonProcessGroup = true` is required.** llmster is spawned by
+  the wrapper and lands in the job's process group. Without this,
+  launchd SIGKILLs that whole group when the wrapper exits — killing
+  the very daemon it exists to keep alive. The first test run caught
+  `lms server start` being killed exactly this way.
+- **Startup retries rather than bailing.** A transient failure racing
+  the previous run's teardown would otherwise cost a full
+  `ThrottleInterval` (60s) of downtime for a fault that clears a second
+  later. With both fixes, measured recovery from `kill -9` of llmster
+  is ~15s, down from ~80s.
 
 ## Can ollama and LM Studio share a models directory?
 
