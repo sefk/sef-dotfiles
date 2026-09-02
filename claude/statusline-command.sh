@@ -43,6 +43,55 @@ else
     uc="$green"
 fi
 
+# ── Collapse working directory (fish-style) ──────────────────────
+# Every component but the last is squashed to a letter; the last one is kept
+# in full. Matches the zsh prompt in oh-my-zsh/custom/themes/sefk.zsh-theme.
+collapse_wd() {
+    local wd="$1"
+    [[ "$wd" == "$HOME"* ]] && wd="~${wd#$HOME}"
+    if [[ "$wd" == */* ]]; then
+        local IFS='/'
+        local parts=($wd) result="" n=${#parts[@]}
+        for ((i=0; i<n-1; i++)); do
+            local p="${parts[$i]}"
+            if [[ "$p" == .* && ${#p} -gt 1 ]]; then result+="${p:0:2}/"
+            elif [[ -n "$p" ]]; then result+="${p:0:1}/"
+            fi
+        done
+        echo "${result}${parts[$((n - 1))]}"
+    else
+        echo "$wd"
+    fi
+}
+
+# Is the directory's name just the branch dressed up? An issue worktree is:
+# dir datatalk-861-write-coding, branch issue-861-write-coding. Printing both
+# in full says one thing twice, so the branch gets truncated down to its
+# non-redundant prefix (e.g. "issue…") — the directory (which already carries
+# the slug) stays untouched and readable. A main checkout keeps the branch in
+# full — there the branch carries no project identity.
+dir_repeats_branch() {
+    [ -n "$branch" ] || return 1
+    local dir="${cwd##*/}" tail="${branch#issue-}"
+    case "$dir" in
+        "$branch"|*-"$branch"|"$tail"|*-"$tail") return 0 ;;
+    esac
+    return 1
+}
+
+# The part of the branch name not already spelled out in the directory, plus
+# an ellipsis. issue-855-three-suggestion next to datatalk-855-three-suggestion
+# becomes "issue…"; if the whole branch is redundant (dir == branch), just "…".
+short_branch() {
+    local dir="${cwd##*/}" tail="${branch#issue-}" prefix
+    case "$dir" in
+        "$branch"|*-"$branch") echo "…"; return ;;
+    esac
+    prefix="${branch%$tail}"
+    prefix="${prefix%-}"
+    echo "${prefix}…"
+}
+
 # ── Git info (green clean parens, red dirty braces — matches PS1) ─
 git_info=""
 if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
@@ -57,59 +106,18 @@ if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
         echo "$status" | grep -q "^R"  && flags+="~"
         echo "$status" | grep -q "^ D\|^D" && flags+="!"
 
+        display_branch="$branch"
+        dir_repeats_branch && display_branch="$(short_branch)"
+
         if [ -n "$flags" ]; then
-            git_info=" ${red}{${branch} ${flags}}${reset}"
+            git_info=" ${red}{${display_branch} ${flags}}${reset}"
         else
-            git_info=" ${green}(${branch})${reset}"
+            git_info=" ${green}(${display_branch})${reset}"
         fi
     fi
 fi
 
-# ── Collapse working directory (fish-style) ──────────────────────
-# Every component but the last is squashed to a letter. The last one joins
-# them only when it would repeat the branch — see dir_repeats_branch. Matches
-# the zsh prompt in oh-my-zsh/custom/themes/sefk.zsh-theme.
-collapse_wd() {
-    local wd="$1" squash_last="${2:-0}"
-    [[ "$wd" == "$HOME"* ]] && wd="~${wd#$HOME}"
-    if [[ "$wd" == */* ]]; then
-        local IFS='/'
-        local parts=($wd) result="" n=${#parts[@]} upto
-        upto=$((n - 1))
-        [ "$squash_last" = 1 ] && upto=$n
-        for ((i=0; i<upto; i++)); do
-            local p="${parts[$i]}"
-            if [[ "$p" == .* && ${#p} -gt 1 ]]; then result+="${p:0:2}/"
-            elif [[ -n "$p" ]]; then result+="${p:0:1}/"
-            fi
-        done
-        if [ "$squash_last" = 1 ]; then
-            echo "${result%/}"
-        else
-            echo "${result}${parts[$((n - 1))]}"
-        fi
-    else
-        echo "$wd"
-    fi
-}
-
-# Is the directory's name just the branch dressed up? An issue worktree is:
-# dir datatalk-861-write-coding, branch issue-861-write-coding. Printing both
-# says one thing twice, so the directory gets squashed and the branch is the
-# name you read. A main checkout keeps its name — there the branch carries no
-# project identity.
-dir_repeats_branch() {
-    [ -n "$branch" ] || return 1
-    local dir="${cwd##*/}" tail="${branch#issue-}"
-    case "$dir" in
-        "$branch"|*-"$branch"|"$tail"|*-"$tail") return 0 ;;
-    esac
-    return 1
-}
-
-squash_last=0
-dir_repeats_branch && squash_last=1
-short_wd=$(collapse_wd "$cwd" "$squash_last")
+short_wd=$(collapse_wd "$cwd")
 
 # ── DataTalk dev-DB badge ─────────────────────────────────────────
 # Warn (in every project) when the DataTalk dev stack points at a cloud DB —

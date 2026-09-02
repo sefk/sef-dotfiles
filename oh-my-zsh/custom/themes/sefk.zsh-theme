@@ -38,11 +38,13 @@ function _truncate_middle {
 
 # Is the current directory's name just the branch dressed up? An issue worktree
 # is: dir datatalk-861-write-coding, branch issue-861-write-coding. Printing
-# both spends half a long prompt line saying one thing twice, so in that case
-# the directory gets squashed away and the branch is the name you read.
+# both in full spends half a long prompt line saying one thing twice, so in
+# that case the branch segment gets truncated down to its non-redundant
+# prefix (e.g. "issue…") — the directory (which already carries the slug)
+# stays untouched and readable.
 #
 # A main checkout (~/src/biglocalnews/datatalk on main) is not redundant — the
-# branch carries no project identity — so it keeps its name.
+# branch carries no project identity — so it keeps its full name.
 function _prompt_dir_repeats_branch {
   [[ -n "$_PROMPT_BRANCH" ]] || return 1
   local dir=${PWD:t} tail=${_PROMPT_BRANCH#issue-}
@@ -51,14 +53,29 @@ function _prompt_dir_repeats_branch {
   return 1
 }
 
-# Normally every component but the last is squashed to a letter. The last one
-# joins them only when it would repeat the branch — see _prompt_dir_repeats_branch.
+# The part of the branch name that isn't already spelled out in the
+# directory, plus an ellipsis marker. issue-855-three-suggestion next to
+# datatalk-855-three-suggestion becomes "issue…"; if the whole branch is
+# redundant (dir == branch), just "…".
+function _prompt_short_branch {
+  local dir=${PWD:t} branch=$_PROMPT_BRANCH prefix
+  local tail=${branch#issue-}
+  if [[ "$dir" == "$branch" || "$dir" == *-"$branch" ]]; then
+    echo "…"
+    return
+  fi
+  prefix=${branch%$tail}
+  prefix=${prefix%-}
+  echo "${prefix}…"
+}
+
+# Every component but the last is squashed to a letter; the last one is kept
+# in full (only middle-truncated if it's very long).
 function _fishy_collapsed_wd {
   local i pwd squash_through
   pwd=("${(s:/:)PWD/#$HOME/~}")
 
   squash_through=$(( $#pwd - 1 ))
-  (( _PROMPT_SQUASH_LAST )) && squash_through=$#pwd
 
   if (( squash_through >= 1 )); then
     for i in {1..$squash_through}; do
@@ -70,18 +87,19 @@ function _fishy_collapsed_wd {
     done
   fi
 
-  (( squash_through < $#pwd )) && \
-    pwd[-1]=$(_truncate_middle "$pwd[-1]" "$PROMPT_MAX_LAST_SEGMENT_LEN")
+  pwd[-1]=$(_truncate_middle "$pwd[-1]" "$PROMPT_MAX_LAST_SEGMENT_LEN")
   echo "${(j:/:)pwd}"
 }
 
 function zsh_essembeh_gitstatus {
 	[[ -n "$_PROMPT_BRANCH" ]] || return
+	local branch=$_PROMPT_BRANCH
+	(( _PROMPT_DIR_REPEATS_BRANCH )) && branch=$(_prompt_short_branch)
 	GIT_STATUS=$(git_prompt_status)
 	if [[ -n $GIT_STATUS ]]; then
 		GIT_STATUS=" $GIT_STATUS"
 	fi
-	echo "$ZSH_THEME_GIT_PROMPT_PREFIX$_PROMPT_BRANCH$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+	echo "$ZSH_THEME_GIT_PROMPT_PREFIX$branch$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
 }
 
 # by default, use green for user@host and no prefix
@@ -128,8 +146,8 @@ function _prompt_precmd {
 	# to agree on whether a branch is being shown. Empty on a detached HEAD or
 	# outside a repo, which is also what suppresses the git segment.
 	_PROMPT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
-	_PROMPT_SQUASH_LAST=0
-	_prompt_dir_repeats_branch && _PROMPT_SQUASH_LAST=1
+	_PROMPT_DIR_REPEATS_BRANCH=0
+	_prompt_dir_repeats_branch && _PROMPT_DIR_REPEATS_BRANCH=1
 
 	local -a stopped running
 	local j
