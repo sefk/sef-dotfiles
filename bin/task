@@ -581,9 +581,13 @@ def short_line(r):
             parts[-1] += " closed"
     if r["pr"]:
         parts.append(f"pr{r['pr']['number']} {r['pr']['state']}")
-    port = fmt_port(r)
-    if port:
-        parts.append(port)
+    # Only a stack that's actually listening earns a place in the prompt; the
+    # port a worktree *could* use is in `task status`.
+    live = sorted({p for p, _, _ in r["listening"]})
+    if live:
+        parts.append(":" + ",".join(str(p) for p in live))
+    if r["db"] and r["db"] != "local":
+        parts.append(r["db"])
     for fl in r["flags"]:
         if fl.split()[0] in ("merged", "no-ws", "no-pr", "name?") or fl.startswith("unpushed"):
             parts.append(fl)

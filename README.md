@@ -152,12 +152,14 @@ the primitives underneath.
 Both prompts carry the one-liner in a linked worktree (never a main checkout):
 
 ```
-~/s/b/datatalk-920-log-lines (issue…) [#920 · pr925 open · 8920 up] >
+~/s/b/datatalk-920-log-lines (issue…) [#920 · pr925 open · :8920] >
 ```
 
 The zsh theme and the Claude statusline call `task here --short`, which prints
 a per-directory cached line and refreshes it in the background, so a prompt
-costs ~0.1s and never waits on GitHub.
+costs ~0.1s and never waits on GitHub. The `:8920` appears only while a dev
+stack is actually listening there; the port a worktree *would* use is a
+`task status` matter.
 
 ## Things to set up on new machines
 
