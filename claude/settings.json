@@ -2,14 +2,13 @@
   "cleanupPeriodDays": 3650,
   "permissions": {
     "allow": [
-      "Bash",
       "WebSearch",
       "WebFetch",
       "Skill(commit-commands:commit)"
     ],
     "defaultMode": "auto"
   },
-  "model": "opus[1m]",
+  "model": "claude-fable-5-1[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -68,11 +67,42 @@
       "$defaults",
       "Starting processes (foreground or background) such as dev servers, build watchers, test runners, daemons, etc.",
       "Monitoring processes that are running: checking status, inspecting logs, polling for output, listing process state.",
-      "Killing or signaling processes that Claude itself started in this session (e.g. via run_in_background, nohup &, spawned children). Includes SIGTERM/SIGKILL on those PIDs and stopping their background tasks."
+      "Killing or signaling processes that Claude itself started in this session (e.g. via run_in_background, nohup &, spawned children). Includes SIGTERM/SIGKILL on those PIDs and stopping their background tasks.",
+      "Bash(uv run ruff format:*) in this repo",
+      "Bash(uv run pytest:*) in this repo"
     ],
     "soft_deny": [
       "$defaults",
-      "Killing or signaling processes that Claude did NOT start in this session. This includes the user's own running processes, editors, terminals, system daemons, and processes started by other tools or other Claude sessions. If unsure whether Claude started a given PID, treat it as not-started and ask first."
+      "Killing or signaling processes that Claude did NOT start in this session. This includes the user's own running processes, editors, terminals, system daemons, and processes started by other tools or other Claude sessions. If unsure whether Claude started a given PID, treat it as not-started and ask first.",
+      "Bash(git push origin prod) — pushing to the protected prod branch",
+      "Terraform apply/plan targeting infra/cloudrun/terraform/loader_prod.tf or other prod-named resources"
+    ],
+    "environment": [
+      "### Org-wide",
+      "**Organization**: biglocalnews (GitHub org) — Stanford / Big Local News, DataTalk project",
+      "**Cloud provider(s)**: Google Cloud Platform (GCP) — project `hs-bln-datatalk` (Cloud Run, BigQuery, Cloud SQL)",
+      "**Repository visibility**: Private (biglocalnews/datatalk, confirmed via gh)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: gcloud secrets (GCP Secret Manager); CI secrets referenced by name only: GCP_CI_EVAL_SERVICE_ACCOUNT, GCP_LOADER_SERVICE_ACCOUNT, GCP_WORKLOAD_IDENTITY_PROVIDER, GITHUB_TOKEN, PROJECT_TOKEN",
+      "**Default / protected branches**: `main` (default, protected), `prod` (protected) — plus active rulesets: `Copilot review for default branch`, `main`, `prod`",
+      "**CI/CD deploy targets**: GCP Cloud Run (prod and staging), via GitHub Actions workflows pushing to `main` (staging) and `prod` (production) branches",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: The trusted repo (biglocalnews/datatalk) and its origin remote only (no additional orgs configured)",
+      "**Trusted internal domains**: datatalk.biglocalnews.org, datatalk-eval.biglocalnews.org, datatalk-sql.biglocalnews.org",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: Google Cloud console (Cloud Run) at console.cloud.google.com/run/services?project=hs-bln-datatalk; Redash SQL UI at datatalk-sql.biglocalnews.org",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: `.env`, `.env.dbtarget`, `.env.worktree`, `.env.bq-staging`, `.env.example`, `.envrc`, `eval/.envrc` and other gitignored env files (LLM/provider API keys, Postgres/DB credentials); `docs/runbooks/prod-db-break-glass.md`; production/staging Terraform state under `infra/cloudrun/terraform*/`; FEC tipsheet PDFs under `tests/benchmarks/sources/` (members-only/copyrighted, gitignored) — share only with the project team, never commit to the repo or paste externally",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any host/namespace/branch containing `prod` or `production` as a whole segment — includes the `prod` git branch, prod Cloud Run services, `infra/cloudrun/terraform/loader_prod.tf`, `infra/cloudrun/cloudbuild-prod-chainlit.yaml`, `docs/runbooks/prod-db-break-glass.md`, `tests/infra/test_bq_prod_plan.py`",
+      "**Protected deployment namespaces / environments**: prod Cloud Run services and the `prod` branch (deploys are manual/team-gated per README)",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources under `infra/cloudrun/terraform/` and `infra/cloudrun/terraform-eval/`; anything named/tagged `prod` or `production` (e.g. `loader_prod.tf`, prod Cloud Build config)",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development on DataTalk (natural language campaign finance explorer)",
+      "**Trusted repo**: /Users/sefk/src/biglocalnews/datatalk-890-gemini-3-1-eval, working against origin github.com:biglocalnews/datatalk.git (private)",
+      "**Org-specific CLIs**: gh, gcloud, bq, uv, psql (per project docs and shell history)",
+      "routine under datatalk/ prefix: uv run ruff format, uv run pytest -m \"not slow\", uv run pytest (per CLAUDE.md formatting/testing workflow)"
     ]
   },
   "voiceEnabled": true
