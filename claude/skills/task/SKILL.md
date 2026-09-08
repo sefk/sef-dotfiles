@@ -35,7 +35,7 @@ identifies the rest:
 | branch           | `issue-<N>-<slug>`          | `<slug>`             |
 | worktree dir     | `../<repo>-<N>-<slug>`      | `../<repo>-<slug>`   |
 | herdr workspace  | `<N>-<slug>`                | `<slug>`             |
-| agent name       | same as the workspace label | same                 |
+| agent name       | `<slug>` (herdr names can't start with a digit) | `<slug>` |
 
 The slug is short (`wt slug <N>` derives one from the issue title, capped at
 18 chars), lowercase, dash-separated. **Branch and directory names are the
@@ -74,8 +74,10 @@ do it after a one-line statement of intent.
      small repos): a branch in the main checkout is fine, say so.
 4. herdr workspace, only when running inside herdr (`HERDR_ENV=1`):
    `herdr workspace create --label <label> --cwd <dir> --focus`, split a
-   shell pane to the right, then `herdr agent start <kind> --pane <root>` and
-   `herdr agent rename <pane> <label>`. The `herdr-new-task` popup
+   shell pane to the right, wait for the shell's prompt (direnv output on a
+   fresh worktree takes a second), then `herdr agent start <slug> --kind
+   <kind> --pane <root>`. Agent names must start with a letter, so the name
+   is the slug, not the `<N>-<slug>` label. The `herdr-new-task` popup
    (prefix+n) does the same interactively when the user prefers.
 5. Report the key, branch, directory, port (`task here`), and workspace.
 
