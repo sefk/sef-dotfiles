@@ -72,13 +72,15 @@ issue #861 "Write up some coding guidelines starting with comments"
 ```
 
 Per-repo setup comes from an optional `.wtconfig` at the repo root — which untracked
-files to symlink back to the main checkout (`.env`, `.envrc`), which env var
-gets a per-worktree port, and a setup command (`uv sync`). Example:
+files to symlink back to the main checkout (`.env`, `.envrc`), which env vars
+get a per-worktree port (one line each, `NAME=base`; the older
+`WT_PORT_VAR=NAME` plus `WT_PORT_BASE` still works), and a setup command
+(`uv sync`). Example:
 
 ```sh
 WT_LINK=".env .envrc"
-WT_PORT_VAR=CHAINLIT_PORT   # issue 853 -> CHAINLIT_PORT=8853 in .env.worktree
-WT_PORT_BASE=8000
+WT_PORT_VARS="CHAINLIT_PORT=8000 EVAL_PORT=9000"  # issue 853 -> CHAINLIT_PORT=8853
+                                                  # and EVAL_PORT=9853 in .env.worktree
 WT_SETUP="uv sync"
 ```
 

@@ -30,9 +30,12 @@
 #
 #   WT_LINK=".env .envrc"     untracked files symlinked back to the main
 #                             checkout, so local config has one source of truth
-#   WT_PORT_VAR=""            if set, wt writes "$WT_PORT_VAR=$port" into
-#                             $WT_PORT_FILE, port = WT_PORT_BASE + (N % 1000)
-#   WT_PORT_BASE=8000
+#   WT_PORT_VARS=""           per-worktree ports, written into $WT_PORT_FILE:
+#                             "CHAINLIT_PORT=8000 EVAL_PORT=9000" gives issue
+#                             861 CHAINLIT_PORT=8861 and EVAL_PORT=9861
+#                             (base + N % 1000). The older single-var form,
+#                             WT_PORT_VAR=NAME with WT_PORT_BASE=8000, still
+#                             works and means the same thing.
 #   WT_PORT_FILE=".env.worktree"
 #   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
 #   WT_SLUG_MAX=18            slug length cap, trimmed on a word boundary
@@ -88,6 +91,7 @@ PARENT=$(dirname "$MAIN")
 
 # --- per-repo config -------------------------------------------------------
 WT_LINK=".env .envrc"
+WT_PORT_VARS=""
 WT_PORT_VAR=""
 WT_PORT_BASE=8000
 WT_PORT_FILE=".env.worktree"
@@ -95,6 +99,21 @@ WT_SETUP=""
 WT_SLUG_MAX=18
 # shellcheck disable=SC1091
 [ -f "$MAIN/.wtconfig" ] && . "$MAIN/.wtconfig"
+# The single-var form is just the multi-var form with one entry.
+if [ -z "$WT_PORT_VARS" ] && [ -n "$WT_PORT_VAR" ]; then
+  WT_PORT_VARS="$WT_PORT_VAR=$WT_PORT_BASE"
+fi
+
+# "NAME=8861" lines for issue N, one per WT_PORT_VARS entry.
+port_assignments() {
+  local n=$1 entry name base
+  for entry in $WT_PORT_VARS; do
+    name=${entry%%=*}
+    base=${entry#*=}
+    [ "$base" = "$entry" ] && base=$WT_PORT_BASE
+    echo "$name=$(( base + n % 1000 ))"
+  done
+}
 
 default_branch() {
   local head
@@ -340,9 +359,9 @@ cmd_add() {
       printf '  link             %s -> %s/%s\n' "$f" "$MAIN" "$f"
     fi
   done
-  if [ -n "$WT_PORT_VAR" ]; then
-    printf '  write            %s with %s=%s\n' \
-      "$WT_PORT_FILE" "$WT_PORT_VAR" "$(( WT_PORT_BASE + n % 1000 ))"
+  if [ -n "$WT_PORT_VARS" ]; then
+    printf '  write            %s with %s\n' \
+      "$WT_PORT_FILE" "$(port_assignments "$n" | paste -sd' ' -)"
   fi
   if [ -n "$WT_SETUP" ]; then
     printf '  run              %s\n' "$WT_SETUP"
@@ -367,13 +386,12 @@ cmd_add() {
     fi
   done
 
-  if [ -n "$WT_PORT_VAR" ]; then
-    local port=$(( WT_PORT_BASE + n % 1000 ))
+  if [ -n "$WT_PORT_VARS" ]; then
     {
       echo "# Written by wt(1) — per-worktree overrides for issue $n."
-      echo "$WT_PORT_VAR=$port"
+      port_assignments "$n"
     } > "$d/$WT_PORT_FILE"
-    echo "wrote $WT_PORT_FILE with $WT_PORT_VAR=$port"
+    echo "wrote $WT_PORT_FILE with $(port_assignments "$n" | paste -sd' ' -)"
   fi
 
   if [ -n "$WT_SETUP" ]; then
