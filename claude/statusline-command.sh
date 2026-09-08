@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Code status line
-# Line 1: user@host:path (branch status) [DB badge]
+# Line 1: user@host:path (branch status) [task: issue/PR/port] [DB badge]
 # Line 2: Model ▓▓▓░░░░░░░ pct% | duration | +add/-rm | cc 5h/7d cx 5h/7d | $spend
 #   cc = Claude, cx = Codex — both shown as quota USED% (same direction).
 
@@ -118,6 +118,17 @@ if git -C "$cwd" --no-optional-locks rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 short_wd=$(collapse_wd "$cwd")
+
+# ── Task segment: issue, PR, port, drift for a linked worktree ────
+# `task here --short` (bin/task) serves a per-directory cache and refreshes it
+# in the background, so this stays cheap on the hot path. Main checkouts and
+# non-git dirs print nothing.
+task_info=""
+if [ -n "$branch" ] && command -v task >/dev/null 2>&1 \
+   && [ "$(git -C "$cwd" --no-optional-locks rev-parse --git-common-dir 2>/dev/null)" != ".git" ]; then
+    t=$(task here --short "$cwd" 2>/dev/null)
+    [ -n "$t" ] && task_info=" ${magenta}[${t}]${reset}"
+fi
 
 # ── DataTalk dev-DB badge ─────────────────────────────────────────
 # Warn (in every project) when the DataTalk dev stack points at a cloud DB —
@@ -267,8 +278,8 @@ if [ -n "$TMUX" ] && [ -x "$HOME/bin/tmux-border-color" ]; then
 fi
 
 # ── Line 1: identity + location + git branch (+ DataTalk DB badge) ─
-printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}%b%b\n" \
-    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd" "$git_info" "$db_badge"
+printf "%b${uc}%s${reset}@${uc}%s${reset}:${yellow}%s${reset}%b%b%b\n" \
+    "$tmux_prefix" "$(whoami)" "$(hostname -s)" "$short_wd" "$git_info" "$task_info" "$db_badge"
 
 # ── Line 2: model + context bar + duration + lines + quota + spend ─
 printf "${cyan}${bold}%s${reset} %b%b${reset} %s%% ${dim}|${reset} %s ${dim}|${reset} %b%b%b\n" \

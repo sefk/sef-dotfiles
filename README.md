@@ -90,12 +90,10 @@ after `.env`.
 Share the one local service stack across worktrees; a distinct app port is
 enough, no second database per tree.
 
-`bin/herdr-new-task` (prefix+n) ties into this: name a task with a trailing
-number in a GitHub repo and it looks the number up as an issue, offers to build
-the worktree, and opens the workspace there. A name that is *only* the number
-also names the workspace after the issue — the same slug as the directory and
-branch, minus the project name, which the directory already carries. A name you
-chose yourself ("grants 861") is left alone.
+`bin/herdr-new-task` (prefix+n) opens a named herdr workspace on a directory
+with a chosen pane layout and starts the agent, named after the workspace. Run
+`wt` first and give the workspace the same `<N>-<slug>` name as the directory
+and branch, so `task status` can join them (see below).
 
 The zsh prompt (`oh-my-zsh/custom/themes/sefk.zsh-theme`) squashes the last
 path component to a letter when it would just repeat the branch — a worktree
@@ -109,6 +107,57 @@ keep their name, since there the branch says nothing about the project:
 
 The matching agent policies — never create a worktree, never close an issue
 early — live in `config/agents/GLOBAL.md`.
+
+## Task lifecycle (`bin/task`, `claude/skills/task`)
+
+A task's state is scattered over five places that don't know about each other:
+a git worktree, a branch, a GitHub issue, a GitHub PR, and a herdr workspace
+with an agent in it. `task` joins them on one key — the issue number, or a slug
+for work without one — and reports the drift between them, which is what
+"stranded work" and "which session is this" actually are:
+
+```
+task status            one row per task in this repo; --all for every repo
+                       herdr is sitting in, --branches to include bare
+                       branches, --json for the whole thing
+task here [--short]    the row for this directory; --short is the one-liner
+                       the prompts use
+task herdr-sync        push pr/issue/port/drift tokens onto the matching
+                       herdr workspaces (display-only metadata)
+```
+
+```
+KEY  BRANCH                     WT  PR           ISSUE   HERDR              AGENT        PORT     FLAGS
+920  issue-920-log-lines        ✓   #925 open    open    920-log-lines      claude idle  8920 up
+902  issue-902-missing-nonauth  ✓   #904 merged  closed  902-loaders        claude idle  8902     merged name?
+712  712-overhead-grouping      ✓   #882 open    open    882-group-payroll  claude idle  8882     name?
+```
+
+`merged` and `closed` mean the worktree/workspace outlived its work; `name?`
+means branch, directory, and workspace slugs disagree (the last row is issue
+712's branch in a directory named after its PR — the classic bug-vs-PR mixup);
+`no-pr`, `dirty`, `unpushed N` flag work that hasn't left the machine. The
+legend is in `task --help`. GitHub state is cached for ten minutes under
+`~/.cache/task/`; herdr and `lsof` are queried live and skipped when absent.
+
+`task` is read-only on purpose. The flexible part — set up, adopt, fork/split
+(one piece of work that turned out to be two), rename, wrap up — is the `task`
+agent skill in `claude/skills/task/SKILL.md`, written tool-neutrally and
+linked into `~/.agents/skills/` for pi/codex. It reads `task status`, states a
+plan, and composes `wt`, `git`, `gh`, and `herdr`; anything destructive waits
+for a yes. "Set up a project for bug 931" or "split this into two tasks" from
+any agent session is the intended interface; `wt` and the herdr popup remain
+the primitives underneath.
+
+Both prompts carry the one-liner in a linked worktree (never a main checkout):
+
+```
+~/s/b/datatalk-920-log-lines (issue…) [#920 · pr925 open · 8920 up] >
+```
+
+The zsh theme and the Claude statusline call `task here --short`, which prints
+a per-directory cached line and refreshes it in the background, so a prompt
+costs ~0.1s and never waits on GitHub.
 
 ## Things to set up on new machines
 

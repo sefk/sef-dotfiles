@@ -1,0 +1,748 @@
+#!/usr/bin/env python3
+"""
+task -- where is every piece of work, across git, GitHub, herdr, and dev servers.
+
+A "task" is one unit of work. Its state is scattered over five places that
+don't know about each other: git worktrees, branches, GitHub issues, GitHub
+pull requests, herdr workspaces (and the agents in them), and whatever dev
+servers happen to be listening. This tool joins them on one key -- the issue
+number when there is one, otherwise the branch/workspace slug -- and reports
+the result. It is read-only: the flexible, judgment-laden actions (set up,
+fork, wrap up) live in the `task` agent skill, which reads this output and
+composes `wt`, `git`, `gh`, and `herdr` as needed.
+
+  task status [--repo PATH] [--all] [--branches] [--json] [--refresh] [--offline]
+        one row per task. Repos come from the cwd plus every repo a herdr
+        workspace is sitting in (--all); --repo restricts to one. Branches
+        with no worktree, workspace, or open PR are hidden unless --branches
+        (--json always includes them).
+  task here [PATH] [--short] [--json]
+        the task for a directory (default cwd). --short is a one-line
+        summary for prompts and statuslines: it prints a cached line and
+        refreshes it in the background when stale, so it never waits.
+  task herdr-sync
+        push pr/issue/port/db tokens onto matching herdr workspaces as
+        display-only metadata (herdr workspace report-metadata).
+
+Flags in the last column are the point: they name drift between the five
+sources, which is what "stranded work" and "which session is this" are.
+
+  merged        PR merged but the branch/worktree/workspace is still here
+  closed        the issue is closed (and no open PR explains why)
+  no-wt         branch exists, no worktree
+  no-ws         worktree exists, no herdr workspace on it
+  no-agent      workspace exists but no agent is running in it
+  adhoc         herdr workspace with no branch of its own (sits on main)
+  name?         branch, directory, and workspace slugs disagree
+  dirty         uncommitted changes
+  ahead N       commits not on the upstream (unpushed if no upstream)
+  no-pr         worktree with commits ahead of the default branch, no PR
+
+GitHub state is cached per repo under ~/.cache/task/ for 10 minutes (the
+`gh` calls are the slow part); --refresh forces a fetch, --offline forbids
+one. herdr and lsof are queried live; both are optional and skipped when
+unavailable.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "task"
+CACHE_TTL = 600
+GH_TIMEOUT = 20
+
+ISSUE_BRANCH = re.compile(r"^(?:issue-)?(\d+)(?:-(.*))?$")
+ISSUE_DIR = re.compile(r"-(\d+)(?:-(.*))?$")
+
+
+# --- small helpers -----------------------------------------------------------
+
+def run(cmd, cwd=None, timeout=15):
+    """stdout of a command, or None when it fails or isn't installed."""
+    try:
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if p.returncode != 0:
+        return None
+    return p.stdout
+
+
+def run_json(cmd, cwd=None, timeout=15):
+    out = run(cmd, cwd=cwd, timeout=timeout)
+    if not out:
+        return None
+    try:
+        return json.loads(out)
+    except ValueError:
+        return None
+
+
+def under(path, root):
+    """True when path is root or inside it."""
+    try:
+        Path(path).resolve().relative_to(Path(root).resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def slug_of(name):
+    """The human part of a name: drop issue-/N- prefixes and the repo prefix."""
+    m = ISSUE_BRANCH.match(name)
+    if m:
+        return m.group(2) or ""
+    return name
+
+
+# --- git ---------------------------------------------------------------------
+
+def main_worktree(path):
+    out = run(["git", "-C", str(path), "worktree", "list", "--porcelain"])
+    if not out:
+        return None
+    for line in out.splitlines():
+        if line.startswith("worktree "):
+            return line[len("worktree "):]
+    return None
+
+
+def default_branch(main):
+    out = run(["git", "-C", main, "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"])
+    if out:
+        return out.strip().split("/", 1)[1]
+    for b in ("main", "master"):
+        if run(["git", "-C", main, "show-ref", "--verify", "--quiet", f"refs/heads/{b}"]) is not None:
+            return b
+    return "main"
+
+
+def worktrees(main):
+    out = run(["git", "-C", main, "worktree", "list", "--porcelain"]) or ""
+    result, cur = [], {}
+    for line in out.splitlines():
+        if line.startswith("worktree "):
+            cur = {"path": line[9:], "branch": None, "detached": False, "prunable": False}
+            result.append(cur)
+        elif line.startswith("branch "):
+            cur["branch"] = line[7:].replace("refs/heads/", "")
+        elif line == "detached":
+            cur["detached"] = True
+        elif line.startswith("prunable"):
+            cur["prunable"] = True
+    return result
+
+
+def branch_facts(main, wt_path, branch, base):
+    """dirty flag, ahead-of-upstream, has-upstream, ahead-of-base."""
+    facts = {"dirty": False, "ahead": 0, "upstream": False, "ahead_base": 0}
+    if wt_path and os.path.isdir(wt_path):
+        st = run(["git", "-C", wt_path, "--no-optional-locks", "status", "--porcelain"], timeout=10)
+        facts["dirty"] = bool(st and st.strip())
+    if not branch:
+        return facts
+    up = run(["git", "-C", main, "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"])
+    if not up and run(["git", "-C", main, "show-ref", "--verify", "--quiet",
+                       f"refs/remotes/origin/{branch}"]) is not None:
+        up = f"origin/{branch}"
+    cnt = run(["git", "-C", main, "rev-list", "--count", f"{base}..{branch}"])
+    facts["ahead_base"] = int(cnt.strip()) if cnt else 0
+    if up:
+        facts["upstream"] = True
+        cnt = run(["git", "-C", main, "rev-list", "--count", f"{up.strip()}..{branch}"])
+        facts["ahead"] = int(cnt.strip()) if cnt else 0
+    else:
+        facts["ahead"] = facts["ahead_base"]
+    return facts
+
+
+def local_branches(main):
+    out = run(["git", "-C", main, "for-each-ref", "--format=%(refname:short)", "refs/heads/"]) or ""
+    return [b for b in out.split() if b]
+
+
+# --- GitHub (cached) ---------------------------------------------------------
+
+def cache_path(main):
+    h = hashlib.sha1(main.encode()).hexdigest()[:12]
+    return CACHE_DIR / f"{Path(main).name}-{h}.json"
+
+
+def load_cache(main):
+    try:
+        return json.loads(cache_path(main).read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def save_cache(main, data):
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = cache_path(main).with_suffix(".tmp")
+        tmp.write_text(json.dumps(data))
+        tmp.replace(cache_path(main))
+    except OSError:
+        pass
+
+
+def fetch_github(main, issue_keys):
+    """PRs by head branch and issue states, via gh. None when gh can't reach GitHub."""
+    if run(["gh", "repo", "view", "--json", "name"], cwd=main, timeout=GH_TIMEOUT) is None:
+        return None
+    prs = run_json(
+        ["gh", "pr", "list", "--state", "all", "--limit", "300", "--json",
+         "number,state,isDraft,headRefName,title,closingIssuesReferences,reviewDecision,updatedAt,url"],
+        cwd=main, timeout=GH_TIMEOUT) or []
+    by_branch = {}
+    for pr in sorted(prs, key=lambda p: p["updatedAt"]):
+        by_branch[pr["headRefName"]] = {
+            "number": pr["number"],
+            "state": pr["state"].lower(),
+            "draft": pr["isDraft"],
+            "title": pr["title"],
+            "closes": [r["number"] for r in pr.get("closingIssuesReferences") or []],
+            "review": (pr.get("reviewDecision") or "").lower(),
+            "url": pr["url"],
+        }
+    wanted = {int(k) for k in issue_keys}
+    for pr in by_branch.values():
+        wanted.update(int(n) for n in pr["closes"])
+
+    def one(n):
+        d = run_json(["gh", "issue", "view", str(n), "--json", "number,state,title,url"],
+                     cwd=main, timeout=GH_TIMEOUT)
+        return n, d
+
+    issues = {}
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for n, d in ex.map(one, sorted(wanted)):
+            if d:
+                issues[str(n)] = {"state": d["state"].lower(), "title": d["title"], "url": d["url"]}
+    return {"prs": by_branch, "issues": issues}
+
+
+def github_state(main, issue_keys, refresh=False, offline=False):
+    cached = load_cache(main)
+    fresh = cached and time.time() - cached.get("ts", 0) < CACHE_TTL
+    missing = cached and any(str(k) not in cached["data"].get("issues", {}) for k in issue_keys)
+    if cached and fresh and not refresh and not missing:
+        return cached["data"], "cache"
+    if offline:
+        return (cached["data"] if cached else {"prs": {}, "issues": {}}), "offline"
+    data = fetch_github(main, issue_keys)
+    if data is None:
+        return (cached["data"] if cached else {"prs": {}, "issues": {}}), "unreachable"
+    save_cache(main, {"ts": time.time(), "data": data})
+    return data, "live"
+
+
+# --- herdr -------------------------------------------------------------------
+
+def herdr_state():
+    """Workspaces with the cwds and agents of their panes. Empty when herdr is down."""
+    ws = run_json(["herdr", "workspace", "list"], timeout=5)
+    ag = run_json(["herdr", "agent", "list"], timeout=5)
+    if not ws:
+        return []
+    spaces = {}
+    for w in ws["result"].get("workspaces", []):
+        spaces[w["workspace_id"]] = {
+            "id": w["workspace_id"], "label": w["label"], "number": w.get("number"),
+            "status": w.get("agent_status"), "focused": w.get("focused", False),
+            "cwds": set(), "agents": [],
+        }
+    for a in (ag or {}).get("result", {}).get("agents", []):
+        s = spaces.get(a.get("workspace_id"))
+        if not s:
+            continue
+        for k in ("cwd", "foreground_cwd"):
+            if a.get(k):
+                s["cwds"].add(a[k])
+        if a.get("agent"):
+            s["agents"].append({"kind": a["agent"], "status": a.get("agent_status"),
+                                "pane": a["pane_id"], "cwd": a.get("cwd")})
+    return list(spaces.values())
+
+
+# --- dev servers -------------------------------------------------------------
+
+def listeners():
+    """{cwd: [(port, command, pid)]} for my own listening TCP sockets."""
+    me = os.environ.get("USER") or os.getlogin()
+    out = run(["lsof", "-nP", "-a", "-u", me, "-iTCP", "-sTCP:LISTEN", "-F", "pcn"], timeout=10)
+    if not out:
+        return {}
+    procs, pid, cmd = {}, None, None
+    for line in out.splitlines():
+        tag, val = line[0], line[1:]
+        if tag == "p":
+            pid = int(val)
+        elif tag == "c":
+            cmd = val
+        elif tag == "n" and pid:
+            m = re.search(r":(\d+)$", val)
+            if m:
+                procs.setdefault(pid, {"cmd": cmd, "ports": set()})["ports"].add(int(m.group(1)))
+    if not procs:
+        return {}
+    out = run(["lsof", "-a", "-p", ",".join(map(str, procs)), "-d", "cwd", "-F", "pn"], timeout=10)
+    by_cwd = {}
+    pid = None
+    for line in (out or "").splitlines():
+        tag, val = line[0], line[1:]
+        if tag == "p":
+            pid = int(val)
+        elif tag == "n" and pid in procs:
+            for port in sorted(procs[pid]["ports"]):
+                by_cwd.setdefault(val, []).append((port, procs[pid]["cmd"], pid))
+    return by_cwd
+
+
+def declared_port(wt_path):
+    """Port a worktree was assigned (wt writes it into .env.worktree)."""
+    for name in (".env.worktree",):
+        try:
+            for line in (Path(wt_path) / name).read_text().splitlines():
+                m = re.match(r"^\s*([A-Z_]*PORT)\s*=\s*(\d+)", line)
+                if m:
+                    return int(m.group(2))
+        except OSError:
+            pass
+    return None
+
+
+def db_target(wt_path):
+    """Where a worktree's dev stack points its database. 'local' unless overridden."""
+    try:
+        text = (Path(wt_path) / ".env.dbtarget").read_text()
+    except OSError:
+        return "local"
+    urls = re.findall(r"^\s*[A-Z_]*DATABASE_URL\s*=\s*(\S+)", text, re.M)
+    if not urls:
+        return "override"
+    for u in urls:
+        if "staging" in u:
+            return "STAGING"
+        if "localhost" not in u and "127.0.0.1" not in u:
+            return "PROD"
+    return "local"
+
+
+# --- the join ----------------------------------------------------------------
+
+def key_for(branch, dirname, repo):
+    """(key, slug) for a branch/dir. Issue number wins; else the branch itself."""
+    if branch:
+        m = ISSUE_BRANCH.match(branch)
+        if m:
+            return m.group(1), m.group(2) or ""
+    if dirname and dirname != repo and dirname.startswith(repo + "-"):
+        m = ISSUE_DIR.match(dirname)
+        if m and dirname[len(repo) + 1:].split("-")[0].isdigit():
+            return m.group(1), m.group(2) or ""
+    if branch:
+        return branch, branch
+    return None, None
+
+
+def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
+    repo = Path(main).name
+    base = default_branch(main)
+    rows = {}
+
+    def row(key):
+        return rows.setdefault(key, {
+            "key": key, "repo": repo, "slug": None, "branch": None, "worktree": None,
+            "dir_slug": None, "pr": None, "issue": None, "workspaces": [], "agents": [],
+            "port": None, "listening": [], "db": None, "git": {}, "flags": [],
+        })
+
+    for wt in worktrees(main):
+        if wt["path"] == main:
+            continue
+        key, slug = key_for(wt["branch"], Path(wt["path"]).name, repo)
+        if key is None:
+            key = Path(wt["path"]).name
+        r = row(key)
+        r["branch"], r["worktree"], r["slug"] = wt["branch"], wt["path"], slug
+        dm = ISSUE_DIR.search(Path(wt["path"]).name)
+        r["dir_slug"] = dm.group(2) if dm else None
+        r["prunable"] = wt["prunable"]
+
+    if only is None:
+        for b in local_branches(main):
+            if b == base:
+                continue
+            key, slug = key_for(b, None, repo)
+            r = row(key)
+            if r["branch"] is None:
+                r["branch"], r["slug"] = b, slug
+
+    for r in rows.values():
+        if only is not None and not (r["worktree"] and under(only, r["worktree"])):
+            continue
+        r["git"] = branch_facts(main, r["worktree"], r["branch"], base)
+
+    # herdr workspaces: matched by pane cwd inside a worktree, else by label key,
+    # else (sitting in the main checkout) an ad-hoc row keyed by label.
+    for ws in herdr:
+        matched = None
+        for r in rows.values():
+            if r["worktree"] and any(under(c, r["worktree"]) for c in ws["cwds"]):
+                matched = r
+                break
+        if matched is None:
+            m = re.match(r"^(\d+)", ws["label"])
+            if m and m.group(1) in rows:
+                matched = rows[m.group(1)]
+        if matched is None and any(under(c, main) for c in ws["cwds"]):
+            matched = row(ws["label"])
+            matched["adhoc"] = True
+            matched["worktree"] = main
+            matched["branch"] = run(["git", "-C", main, "symbolic-ref", "--short", "HEAD"]) or ""
+            matched["branch"] = matched["branch"].strip()
+        if matched is None:
+            continue
+        matched["workspaces"].append({"id": ws["id"], "label": ws["label"], "status": ws["status"]})
+        matched["agents"].extend(ws["agents"])
+
+    for r in rows.values():
+        wt_path = r["worktree"]
+        if wt_path:
+            r["port"] = declared_port(wt_path)
+            r["db"] = db_target(wt_path)
+            for cwd, lst in ports.items():
+                if under(cwd, wt_path) and (wt_path != main or not r.get("adhoc") is False):
+                    r["listening"].extend(lst)
+            r["listening"] = sorted(set(r["listening"]))
+
+    issue_keys = [k for k in rows if k.isdigit()]
+    gh, source = github_state(main, issue_keys, refresh=refresh, offline=offline)
+    for r in rows.values():
+        if r["branch"]:
+            r["pr"] = gh["prs"].get(r["branch"])
+        if r["key"].isdigit():
+            r["issue"] = gh["issues"].get(r["key"])
+        elif r["pr"] and r["pr"]["closes"]:
+            n = str(r["pr"]["closes"][0])
+            r["issue"] = gh["issues"].get(n)
+            if r["issue"]:
+                r["issue"]["number"] = n
+
+    for r in rows.values():
+        r["flags"] = flags_for(r)
+    return list(rows.values()), source
+
+
+def flags_for(r):
+    f = []
+    pr, issue, g = r["pr"], r["issue"], r["git"]
+    if pr and pr["state"] == "merged":
+        f.append("merged")
+    elif issue and issue["state"] == "closed" and not (pr and pr["state"] == "open"):
+        f.append("closed")
+    if r.get("adhoc"):
+        f.append("adhoc")
+    elif r["worktree"] is None:
+        f.append("no-wt")
+    elif not r["workspaces"]:
+        f.append("no-ws")
+    if r["workspaces"] and not r["agents"]:
+        f.append("no-agent")
+    slugs = {s for s in (r["slug"], r["dir_slug"]) if s}
+    for ws in r["workspaces"]:
+        m = re.match(r"^(?:\d+-)?(.*)$", ws["label"])
+        if m and m.group(1):
+            slugs.add(m.group(1))
+    if len(slugs) > 1 and not r.get("adhoc"):
+        f.append("name?")
+    if g.get("dirty"):
+        f.append("dirty")
+    if g.get("ahead") and not (pr and pr["state"] == "merged"):
+        f.append(f"ahead {g['ahead']}" if g.get("upstream") else f"unpushed {g['ahead']}")
+    if r["worktree"] and not r.get("adhoc") and g.get("ahead_base") and not pr:
+        f.append("no-pr")
+    if r.get("prunable"):
+        f.append("prunable")
+    return f
+
+
+# --- discovery ---------------------------------------------------------------
+
+def discover_repos(args, herdr):
+    mains = []
+    if args.repo:
+        m = main_worktree(args.repo)
+        if not m:
+            sys.exit(f"task: not a git repository: {args.repo}")
+        return [m]
+    m = main_worktree(os.getcwd())
+    if m:
+        mains.append(m)
+    if args.all or not m:
+        for ws in herdr:
+            for c in ws["cwds"]:
+                mm = main_worktree(c)
+                if mm and mm not in mains:
+                    mains.append(mm)
+    return mains
+
+
+# --- rendering ---------------------------------------------------------------
+
+def fmt_pr(pr):
+    if not pr:
+        return ""
+    s = f"#{pr['number']} {pr['state']}"
+    if pr["draft"] and pr["state"] == "open":
+        s += " draft"
+    if pr["review"] == "approved":
+        s += " ✓"
+    elif pr["review"] == "changes_requested":
+        s += " ✗"
+    return s
+
+
+def fmt_issue(r):
+    i = r["issue"]
+    if not i:
+        return ""
+    n = i.get("number", r["key"])
+    return f"#{n} {i['state']}" if not r["key"].isdigit() else i["state"]
+
+
+def fmt_ws(r):
+    return ", ".join(w["label"] for w in r["workspaces"])
+
+
+def fmt_agent(r):
+    return ", ".join(f"{a['kind']} {a['status'] or '?'}" for a in r["agents"])
+
+
+def fmt_port(r):
+    live = sorted({p for p, _, _ in r["listening"]})
+    if live:
+        s = ",".join(str(p) for p in live) + " up"
+        if r["port"] and r["port"] not in live:
+            s += f" (want {r['port']})"
+    elif r["port"]:
+        s = str(r["port"])
+    else:
+        s = ""
+    if r["db"] and r["db"] != "local":
+        s = f"{s} {r['db']}".strip()
+    return s
+
+
+COLUMNS = [
+    ("KEY", lambda r: r["key"] if len(r["key"]) <= 24 else r["key"][:23] + "…"),
+    ("BRANCH", lambda r: (r["branch"] or "") if not r.get("adhoc") else f"({r['branch']})"),
+    ("WT", lambda r: "" if r.get("adhoc") else ("✓" if r["worktree"] else "")),
+    ("PR", lambda r: fmt_pr(r["pr"])),
+    ("ISSUE", fmt_issue),
+    ("HERDR", fmt_ws),
+    ("AGENT", fmt_agent),
+    ("PORT", fmt_port),
+    ("FLAGS", lambda r: " ".join(r["flags"])),
+]
+
+
+def render_table(rows, multi_repo):
+    cols = list(COLUMNS)
+    if multi_repo:
+        cols.insert(0, ("REPO", lambda r: r["repo"]))
+    table = [[f(r) for _, f in cols] for r in rows]
+    widths = [max(len(h), *(len(t[i]) for t in table)) if table else len(h)
+              for i, (h, _) in enumerate(cols)]
+    out = ["  ".join(h.ljust(w) for (h, _), w in zip(cols, widths)).rstrip()]
+    for t in table:
+        out.append("  ".join(c.ljust(w) for c, w in zip(t, widths)).rstrip())
+    return "\n".join(out)
+
+
+def sort_key(r):
+    return (r["repo"], 0 if r["key"].isdigit() else 1, -int(r["key"]) if r["key"].isdigit() else 0, r["key"])
+
+
+def short_line(r):
+    """One line for a prompt: key, PR, port/db, and the flags that matter."""
+    parts = []
+    if r["key"].isdigit():
+        parts.append(f"#{r['key']}")
+        if r["issue"] and r["issue"]["state"] == "closed":
+            parts[-1] += " closed"
+    if r["pr"]:
+        parts.append(f"pr{r['pr']['number']} {r['pr']['state']}")
+    port = fmt_port(r)
+    if port:
+        parts.append(port)
+    for fl in r["flags"]:
+        if fl.split()[0] in ("merged", "no-ws", "no-pr", "name?") or fl.startswith("unpushed"):
+            parts.append(fl)
+    return " · ".join(parts)
+
+
+# --- commands ----------------------------------------------------------------
+
+def cmd_status(args):
+    herdr = herdr_state()
+    mains = discover_repos(args, herdr)
+    if not mains:
+        sys.exit("task: no repository here and no herdr workspaces to look in")
+    ports = listeners()
+    rows, sources = [], {}
+    for m in mains:
+        rs, src = collect_repo(m, herdr, ports, refresh=args.refresh, offline=args.offline)
+        rows.extend(rs)
+        sources[Path(m).name] = src
+    rows.sort(key=sort_key)
+    if args.json:
+        print(json.dumps({"repos": sources, "tasks": rows}, indent=2, default=list))
+        return
+    hidden = 0
+    if not args.branches:
+        keep = [r for r in rows if r["worktree"] or r["workspaces"] or (r["pr"] and r["pr"]["state"] == "open")]
+        hidden = len(rows) - len(keep)
+        rows = keep
+    print(render_table(rows, len(mains) > 1))
+    if hidden:
+        print(f"\n{hidden} branch(es) with no worktree hidden; --branches shows them", file=sys.stderr)
+    stale = [k for k, v in sources.items() if v != "live" and v != "cache"]
+    if stale:
+        print(f"\ngithub state for {', '.join(stale)}: {', '.join(sources[k] for k in stale)}", file=sys.stderr)
+
+
+SHORT_TTL = 60
+
+
+def short_cache_path(path):
+    h = hashlib.sha1(path.encode()).hexdigest()[:12]
+    return CACHE_DIR / f"here-{Path(path).name}-{h}.txt"
+
+
+def here_row(path, main, herdr, ports, refresh=False, offline=False):
+    rows, _ = collect_repo(main, herdr, ports, refresh=refresh, offline=offline, only=path)
+    mine = [r for r in rows if r["worktree"] and under(path, r["worktree"]) and not r.get("adhoc")]
+    return mine[0] if mine else None
+
+
+def cmd_here(args):
+    path = os.path.abspath(args.path or os.getcwd())
+    m = main_worktree(path)
+    if not m:
+        if args.short:
+            return
+        sys.exit("task: not in a git repository")
+    if args.short:
+        # A prompt must never wait: print the cached line and refresh it in the
+        # background when it's older than SHORT_TTL (the refresh itself uses the
+        # GitHub cache, so it costs a few git and herdr calls, no network).
+        cp = short_cache_path(path)
+        try:
+            age = time.time() - cp.stat().st_mtime
+            print(cp.read_text().rstrip())
+        except OSError:
+            age = None
+        if age is None or age > SHORT_TTL:
+            subprocess.Popen([sys.argv[0], "here", path, "--write-short"],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             start_new_session=True)
+        return
+    herdr = herdr_state()
+    ports = listeners()
+    r = here_row(path, m, herdr, ports, refresh=args.refresh, offline=args.offline or args.write_short)
+    if args.write_short:
+        try:
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            short_cache_path(path).write_text((short_line(r) if r else "") + "\n")
+        except OSError:
+            pass
+        return
+    if not r:
+        sys.exit(f"task: {path} is not in a task worktree (main checkout?)")
+    if args.json:
+        print(json.dumps(r, indent=2, default=list))
+    else:
+        print(render_table([r], False))
+
+
+def cmd_herdr_sync(args):
+    herdr = herdr_state()
+    if not herdr:
+        sys.exit("task: herdr is not running")
+    args.repo, args.all = None, True
+    mains = discover_repos(args, herdr)
+    ports = listeners()
+    n = 0
+    for m in mains:
+        rows, _ = collect_repo(m, herdr, ports, offline=args.offline, refresh=args.refresh)
+        for r in rows:
+            tokens = {}
+            if r["pr"]:
+                tokens["pr"] = f"#{r['pr']['number']} {r['pr']['state']}"
+            if r["issue"]:
+                tokens["issue"] = r["issue"]["state"]
+            port = fmt_port(r)
+            if port:
+                tokens["port"] = port
+            drift = [f for f in r["flags"] if f.split()[0] in ("merged", "closed", "name?", "no-pr")]
+            if drift:
+                tokens["drift"] = " ".join(drift)
+            for ws in r["workspaces"]:
+                cmd = ["herdr", "workspace", "report-metadata", ws["id"], "--source", "task",
+                       "--ttl-ms", str(CACHE_TTL * 1000)]
+                for k, v in tokens.items():
+                    cmd += ["--token", f"{k}={v}"]
+                for k in ("pr", "issue", "port", "drift"):
+                    if k not in tokens:
+                        cmd += ["--clear-token", k]
+                if run(cmd, timeout=5) is not None:
+                    n += 1
+    print(f"updated {n} workspace(s)")
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="task", add_help=False)
+    ap.add_argument("-h", "--help", action="store_true")
+    sub = ap.add_subparsers(dest="cmd")
+
+    p = sub.add_parser("status")
+    p.add_argument("--repo")
+    p.add_argument("--all", action="store_true", help="every repo a herdr workspace sits in")
+    p.add_argument("--branches", action="store_true", help="also list branches with no worktree")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--refresh", action="store_true")
+    p.add_argument("--offline", action="store_true")
+    p.set_defaults(fn=cmd_status)
+
+    p = sub.add_parser("here")
+    p.add_argument("path", nargs="?")
+    p.add_argument("--short", action="store_true")
+    p.add_argument("--write-short", action="store_true", help=argparse.SUPPRESS)
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--refresh", action="store_true")
+    p.add_argument("--offline", action="store_true")
+    p.set_defaults(fn=cmd_here)
+
+    p = sub.add_parser("herdr-sync")
+    p.add_argument("--refresh", action="store_true")
+    p.add_argument("--offline", action="store_true")
+    p.set_defaults(fn=cmd_herdr_sync)
+
+    args = ap.parse_args()
+    if args.help or not args.cmd:
+        print(__doc__.strip())
+        return
+    args.fn(args)
+
+
+if __name__ == "__main__":
+    main()

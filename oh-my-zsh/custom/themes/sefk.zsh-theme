@@ -102,6 +102,15 @@ function zsh_essembeh_gitstatus {
 	echo "$ZSH_THEME_GIT_PROMPT_PREFIX$branch$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
 }
 
+# Task segment: issue, PR, port, and drift for the worktree you're in, from
+# `task here --short` (bin/task). That reads a per-directory cache and refreshes
+# it in the background, so it costs ~0.1s and never waits on GitHub. Only
+# linked worktrees get it -- a main checkout isn't a task.
+function _prompt_task_seg {
+	[[ -n "$_PROMPT_TASK" ]] || return
+	echo "%{$fg[magenta]%}[$_PROMPT_TASK]%{$reset_color%} "
+}
+
 # by default, use green for user@host and no prefix
 local ZSH_ESSEMBEH_COLOR="green"
 local ZSH_ESSEMBEH_PREFIX=""
@@ -149,6 +158,13 @@ function _prompt_precmd {
 	_PROMPT_DIR_REPEATS_BRANCH=0
 	_prompt_dir_repeats_branch && _PROMPT_DIR_REPEATS_BRANCH=1
 
+	# A linked worktree's common dir is the main checkout's .git, not ".git".
+	_PROMPT_TASK=""
+	if [[ -n "$_PROMPT_BRANCH" ]] && (( $+commands[task] )) \
+	   && [[ "$(git rev-parse --git-common-dir 2>/dev/null)" != .git ]]; then
+		_PROMPT_TASK=$(task here --short 2>/dev/null)
+	fi
+
 	local -a stopped running
 	local j
 	for j in "${(@v)jobstates}"; do
@@ -177,4 +193,4 @@ function _prompt_precmd {
 }
 precmd_functions+=(_prompt_precmd)
 
-PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} ${_PROMPT_STATUS_SEG}${_PROMPT_JOBS_SEG}$(zsh_essembeh_gitstatus)$(_prompt_char) '
+PROMPT='${ZSH_ESSEMBEH_PREFIX}%{$fg[$ZSH_ESSEMBEH_COLOR]%}%n@%M%{$reset_color%}:%{$fg[yellow]%}$(_fishy_collapsed_wd)%{$reset_color%} ${_PROMPT_STATUS_SEG}${_PROMPT_JOBS_SEG}$(zsh_essembeh_gitstatus)$(_prompt_task_seg)$(_prompt_char) '
