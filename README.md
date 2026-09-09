@@ -209,6 +209,29 @@ named `wrangler` (the skill has the commands), then
 `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.sefk.wrangle-tick.plist`.
 Log: `~/.cache/task/wrangle-tick.log`.
 
+## Quota history (`claude/statusline-command.sh`)
+
+The status line's `cc 5h/7d cx 5h/7d` group shows how much of each subscription
+window is spent, and it is the only place those numbers exist locally: Claude
+hands them to the status line on every render but never writes them to the
+transcript, and [agentsview] stores no rate-limit data at all — not even
+Codex's, which sit in the rollout files it already parses. So the status line
+keeps a sidecar. Whenever a window's rounded percentage or reset time moves it
+appends one record per window to `~/.agentsview/quota.jsonl`:
+
+```json
+{"ts":"2026-09-08T19:45:12Z","agent":"claude","window":"five_hour","used_percent":41,"resets_at":1788940800}
+```
+
+Unchanged renders cost one read of `quota.state` and no writes, so the hot path
+stays cheap; `CLAUDE_QUOTA_LOG=off` disables it. Sampling only happens while a
+session is rendering, which is enough to reconstruct the peak of a window but
+not to prove a quiet one stayed quiet. Which window is which comes from
+`window_minutes`, not from Codex's `primary`/`secondary` position — Codex moved
+its weekly window into `primary` and dropped `secondary` to null.
+
+[agentsview]: https://www.agentsview.io/
+
 ## Things to set up on new machines
 
 Longer time to use a screenshot

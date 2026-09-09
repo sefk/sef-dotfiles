@@ -22,6 +22,8 @@ lines_rm=$(echo "$input" | jq -r '.cost.total_lines_removed // 0')
 duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 rate_5h=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 rate_7d=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+rate_5h_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
+rate_7d_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
 
 # ── Colors ────────────────────────────────────────────────────────
 reset="\033[0m"
@@ -208,6 +210,8 @@ rate_color() {
 
 # Claude (Pro/Max only — empty on first turn or free accounts)
 claude_rl=""
+p5=""
+p7=""
 if [ -n "$rate_5h" ]; then
     p5=$(printf '%.0f' "$rate_5h")
     c5=$(rate_color "$p5")
@@ -225,17 +229,36 @@ fi
 # newest files since a just-started session may not have a snapshot yet. The
 # numbers are as-of the last Codex turn (there's no live query without an API
 # call — same as Claude's, which are as-of the last turn here).
+#
+# Which window is which is read from window_minutes, not from primary/secondary
+# position: Codex moved the weekly window into primary and dropped secondary to
+# null, so keying off position labelled the weekly number "5h" and printed a
+# bogus "7d:0%". Either window may be absent.
 codex_rl=""
+q5=""
+q7=""
+codex_5h_reset=""
+codex_7d_reset=""
 codex_sessions="$HOME/.codex/sessions"
 if [ -d "$codex_sessions" ]; then
     for f in $(ls -t "$codex_sessions"/*/*/*/rollout-*.jsonl 2>/dev/null | head -8); do
         line=$(tail -r "$f" 2>/dev/null | grep -m1 '"rate_limits":{')
         [ -z "$line" ] && continue
-        read -r cx5 cx7 <<<"$(printf '%s' "$line" | jq -r '.payload.rate_limits | "\(.primary.used_percent) \(.secondary.used_percent)"' 2>/dev/null)"
-        case "$cx5" in ''|null) continue ;; esac
-        q5=$(printf '%.0f' "$cx5"); d5=$(rate_color "$q5")
-        q7=$(printf '%.0f' "$cx7"); d7=$(rate_color "$q7")
-        codex_rl="${dim}cx${reset} ${d5}5h:${q5}%${reset} ${d7}7d:${q7}%${reset}"
+        # One "<window_minutes> <used_percent> <resets_at>" line per live window.
+        wins=$(printf '%s' "$line" | jq -r '.payload.rate_limits
+            | [.primary, .secondary] | .[] | select(. != null)
+            | "\(.window_minutes) \(.used_percent) \(.resets_at // 0)"' 2>/dev/null)
+        [ -z "$wins" ] && continue
+        while read -r wmin wpct wreset; do
+            case "$wmin" in
+                300)   q5=$(printf '%.0f' "$wpct"); codex_5h_reset="$wreset" ;;
+                10080) q7=$(printf '%.0f' "$wpct"); codex_7d_reset="$wreset" ;;
+            esac
+        done <<<"$wins"
+        [ -n "$q5$q7" ] || continue
+        codex_rl="${dim}cx${reset}"
+        [ -n "$q5" ] && codex_rl="${codex_rl} $(rate_color "$q5")5h:${q5}%${reset}"
+        [ -n "$q7" ] && codex_rl="${codex_rl} $(rate_color "$q7")7d:${q7}%${reset}"
         break
     done
 fi
@@ -246,6 +269,57 @@ for part in "$claude_rl" "$codex_rl"; do
     [ -n "$part" ] && limits_info="${limits_info:+$limits_info }${part}"
 done
 [ -n "$limits_info" ] && limits_info=" ${dim}|${reset} ${limits_info}"
+
+# ── Quota sidecar — persist the samples nobody else writes down ───
+# The harness hands us account-wide quota on every render and Codex's rollouts
+# carry the same for its account, but neither is durable: Claude's numbers exist
+# only in the status line input (never in the transcript), and agentsview stores
+# no rate-limit data at all. Append a record whenever a window's rounded
+# percentage or reset time moves — the same trigger the CLI uses internally for
+# its rate_limit_event — so quota history can be reconstructed after the fact.
+# One record per window keeps it trivially ingestible. Nothing here may fail or
+# noticeably slow the status line; CLAUDE_QUOTA_LOG=off disables it.
+quota_log() {
+    [ "${CLAUDE_QUOTA_LOG:-on}" = "off" ] && return 0
+    local dir="${AGENTSVIEW_DATA_DIR:-$HOME/.agentsview}"
+    [ -d "$dir" ] || return 0
+    local log="$dir/quota.jsonl" state="$dir/quota.state"
+    local desired="" spec a w p r
+    for spec in "claude five_hour $p5 $rate_5h_reset" \
+                "claude seven_day $p7 $rate_7d_reset" \
+                "codex five_hour $q5 $codex_5h_reset" \
+                "codex seven_day $q7 $codex_7d_reset"; do
+        read -r a w p r <<<"$spec"
+        [ -n "$p" ] || continue
+        desired="${desired}${a}.${w} ${p} ${r:-0}"$'\n'
+    done
+    [ -n "$desired" ] || return 0
+
+    # Whole-state compare first: the common case is "nothing moved", and that
+    # costs one small read and no writes.
+    local current=""
+    [ -f "$state" ] && current=$(cat "$state" 2>/dev/null)
+    [ "$desired" = "$current" ] && return 0
+
+    local ts key
+    ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    while read -r key p r; do
+        [ -n "$key" ] || continue
+        printf '%s\n' "$current" | grep -qxF "$key $p $r" && continue
+        printf '{"ts":"%s","agent":"%s","window":"%s","used_percent":%s,"resets_at":%s}\n' \
+            "$ts" "${key%%.*}" "${key#*.}" "$p" "$r" >>"$log"
+    done <<<"$desired"
+
+    # Replace atomically: several sessions render concurrently and all see the
+    # same account-wide numbers, so a torn state file would re-log on every
+    # render until it healed.
+    if printf '%s' "$desired" >"$state.$$" 2>/dev/null; then
+        mv -f "$state.$$" "$state" 2>/dev/null
+    fi
+    rm -f "$state.$$" 2>/dev/null
+    return 0
+}
+quota_log 2>/dev/null
 
 # ── Today's spend across agents (agentsview; ollama is unpriced/free) ─
 # Only call agentsview when its daemon is actually reachable. A wedged/syncing
