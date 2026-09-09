@@ -81,7 +81,7 @@ ISSUE_BRANCH = re.compile(r"^(?:issue-)?(\d+)(?:-(.*))?$")
 ISSUE_DIR = re.compile(r"-(\d+)(?:-(.*))?$")
 PRIORITY = re.compile(r"^[Pp]([0-3])$")
 
-KIND_ICON = {"bug": "🐛", "review": "👀", "other": "🧭"}
+KIND_ICON = {"bug": "🌳", "review": "👀", "other": "🧭"}
 # Fallback priority colors when the repo has no P-labels of its own.
 PRI_COLOR = {"P0": "e11d48", "P1": "f97316", "P2": "eab308", "P3": "6b7280"}
 # Labels that describe *what kind* of work, in the order we'd rather show them.

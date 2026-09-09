@@ -68,7 +68,7 @@ Quiet: <one line, what's fine and needs nothing>   (optional)
 Name tasks by **slug**, never by bare issue number; the user doesn't carry
 numbers in their head. Include the number after the slug once when the user
 will need it to act (`cand-office-guess #943`). Prefix with the kind icon
-(🐛 bug of theirs, 👀 review of someone else's PR, 🧭 other) and the
+(🌳 bug of theirs, 👀 review of someone else's PR, 🧭 other) and the
 priority when it's P0/P1.
 
 When a **new band-4 item** appears and the user isn't looking at you:

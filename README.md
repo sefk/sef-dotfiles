@@ -131,12 +131,12 @@ task brief             where attention belongs (see "Wrangling" below)
 
 ```
     PRI  KEY  SLUG               TAGS               WT  PR            ISSUE   HERDR              AGENT               PORT     FLAGS
-🐛  P3   920  log-lines          ops                ✓   #925 open     open    920-log-lines      claude idle (done)  8920 up  ahead 9
-🐛  P2   902  missing-nonauth    loader             ✓   #904 merged   closed  902-loaders        claude idle         8902     merged name?
+🌳  P3   920  log-lines          ops                ✓   #925 open     open    920-log-lines      claude idle (done)  8920 up  ahead 9
+🌳  P2   902  missing-nonauth    loader             ✓   #904 merged   closed  902-loaders        claude idle         8902     merged name?
 👀  P2   712  overhead-grouping  sql_agent decision ✓   #882 open     open    882-group-payroll  claude idle         8882     name?
 ```
 
-The first column is the **kind**, derived rather than declared: 🐛 issue work
+The first column is the **kind**, derived rather than declared: 🌳 issue work
 of mine, 👀 a worktree sitting on someone else's PR, 🧭 ad-hoc work with no
 issue. PRI and TAGS come from the issue's labels and are painted in GitHub's
 own label colors on a terminal, so P0/P1 and `sql_agent` vs `ops` read at a
