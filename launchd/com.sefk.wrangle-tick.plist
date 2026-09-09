@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.sefk.wrangle-tick</string>
+
+	<!-- The cheap half of the wrangler (bin/wrangle-tick): refresh the task
+	     brief, paint herdr tokens, and nudge the `wrangler` agent when
+	     something new needs attention. Every 5 minutes; the script itself
+	     backs off to hourly / 4-hourly when the keyboard has been idle. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/sefk/bin/wrangle-tick</string>
+	</array>
+
+	<key>StartInterval</key>
+	<integer>300</integer>
+
+	<key>RunAtLoad</key>
+	<true/>
+
+	<!-- launchd starts with a minimal PATH; gh, herdr, git, lsof live here. -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/Users/sefk/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/sefk/.cache/task/wrangle-tick.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/sefk/.cache/task/wrangle-tick.log</string>
+</dict>
+</plist>

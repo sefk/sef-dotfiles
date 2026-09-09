@@ -124,23 +124,29 @@ task status            one row per task in this repo; --all for every repo
                        branches, --json for the whole thing
 task here [--short]    the row for this directory; --short is the one-liner
                        the prompts use
-task herdr-sync        push pr/issue/port/drift tokens onto the matching
-                       herdr workspaces (display-only metadata)
+task herdr-sync        push kind/pri/pr/issue/port/need tokens onto the
+                       matching herdr workspaces (display-only metadata)
+task brief             where attention belongs (see "Wrangling" below)
 ```
 
 ```
-KEY  BRANCH                     WT  PR           ISSUE   HERDR              AGENT        PORT     FLAGS
-920  issue-920-log-lines        ✓   #925 open    open    920-log-lines      claude idle  8920 up
-902  issue-902-missing-nonauth  ✓   #904 merged  closed  902-loaders        claude idle  8902     merged name?
-712  712-overhead-grouping      ✓   #882 open    open    882-group-payroll  claude idle  8882     name?
+    PRI  KEY  SLUG               TAGS               WT  PR            ISSUE   HERDR              AGENT               PORT     FLAGS
+🐛  P3   920  log-lines          ops                ✓   #925 open     open    920-log-lines      claude idle (done)  8920 up  ahead 9
+🐛  P2   902  missing-nonauth    loader             ✓   #904 merged   closed  902-loaders        claude idle         8902     merged name?
+👀  P2   712  overhead-grouping  sql_agent decision ✓   #882 open     open    882-group-payroll  claude idle         8882     name?
 ```
 
-`merged` and `closed` mean the worktree/workspace outlived its work; `name?`
-means branch, directory, and workspace slugs disagree (the last row is issue
-712's branch in a directory named after its PR — the classic bug-vs-PR mixup);
-`no-pr`, `dirty`, `unpushed N` flag work that hasn't left the machine. The
-legend is in `task --help`. GitHub state is cached for ten minutes under
-`~/.cache/task/`; herdr and `lsof` are queried live and skipped when absent.
+The first column is the **kind**, derived rather than declared: 🐛 issue work
+of mine, 👀 a worktree sitting on someone else's PR, 🧭 ad-hoc work with no
+issue. PRI and TAGS come from the issue's labels and are painted in GitHub's
+own label colors on a terminal, so P0/P1 and `sql_agent` vs `ops` read at a
+glance without the numbers. `merged` and `closed` mean the worktree/workspace
+outlived its work; `name?` means branch, directory, and workspace slugs
+disagree (the last row is issue 712's branch in a directory named after its
+PR — the classic bug-vs-PR mixup); `no-pr`, `dirty`, `unpushed N` flag work
+that hasn't left the machine. The legend is in `task --help`. GitHub state is
+cached for ten minutes under `~/.cache/task/`; herdr and `lsof` are queried
+live and skipped when absent.
 
 `task` is read-only on purpose. The flexible part — set up, adopt, fork/split
 (one piece of work that turned out to be two), rename, wrap up — is the `task`
@@ -162,6 +168,46 @@ a per-directory cached line and refreshes it in the background, so a prompt
 costs ~0.1s and never waits on GitHub. The `:8920` appears only while a dev
 stack is actually listening there; the port a worktree *would* use is a
 `task status` matter.
+
+## Wrangling (`task brief`, `bin/wrangle-tick`, `claude/skills/wrangle`)
+
+With a dozen agents running, green/yellow/red per pane doesn't say what each
+one *needs*. `task brief` does: for every task row it reads the agent's last
+words (herdr knows the Claude session id; the transcript is the jsonl under
+`~/.claude/projects/`), the PR's review state (requested reviewers,
+unresolved threads by author, CI, conflicts, whether the last push came after
+your last look), and the issue's priority — and it adds open P0/P1 issues and
+review requests that have no worktree at all. The result is a ranked list with
+a reason per line:
+
+```
+ 96 P1 datatalk  cand-list: the agent's last message asks you something (31h ago)
+ 94 P1 datatalk  #862 … by newsroomdev: your review is requested; pushed 6h ago, after your agent's findings (6d ago)
+ 92 P0 datatalk  #715 Memo rows get one rule …: P0, assigned to newsroomdev, no branch or agent on it
+```
+
+Bands: 90+ someone or something is waiting on you now (or a P0 is unowned);
+70s something of yours is stuck; 50s finished work that hasn't left the
+machine; 30s hygiene. `--since-last` prints only items that are new or rose a
+band (exit 3 when nothing did), which is what makes the rest cheap:
+
+- `bin/wrangle-tick`, run by launchd every five minutes
+  (`launchd/com.sefk.wrangle-tick.plist`), refreshes the brief, paints
+  kind/pri/need tokens onto the herdr sidebar, and nudges a Claude agent named
+  `wrangler` only when something new appeared (any band while you're active;
+  band 4 only, hourly at most, while you're away) or as a 30-minute heartbeat
+  while you're active. It reads the keyboard idle time and backs off to hourly
+  after an hour idle and four-hourly after eight, so overnight it costs
+  nothing but a few `gh` calls.
+- The `wrangle` skill is the judgment half: the wrangler agent reads the brief
+  and answers "what are the one or two things worth my attention, and why",
+  in under 150 words, by slug not number. It is read-only toward other agents
+  (never prompts them or answers their dialogs) and toward GitHub.
+
+Set-up is one herdr workspace on the project's main checkout with an agent
+named `wrangler` (the skill has the commands), then
+`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.sefk.wrangle-tick.plist`.
+Log: `~/.cache/task/wrangle-tick.log`.
 
 ## Things to set up on new machines
 

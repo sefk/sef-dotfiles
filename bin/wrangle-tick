@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""
+wrangle-tick -- the cheap half of the wrangler. launchd runs it every few
+minutes; it decides whether the expensive half (a Claude session named
+`wrangler`, see claude/skills/wrangle) should wake up.
+
+  1. Throttle on the user's activity (macOS HID idle time):
+       active (idle < 1h)       run every tick
+       away   (1h..8h)          run hourly
+       gone   (idle > 8h)       run every 4 hours
+  2. `task brief --json --since-last` refreshes the snapshot under
+     ~/.cache/task/ and reports which attention items are new or rose a band.
+  3. `task herdr-sync` paints kind/pri/need tokens onto the herdr sidebar.
+  4. Nudge the wrangler agent with `herdr agent prompt wrangler ...` when
+       - something in the top band is new (someone/something is waiting on
+         you, or an unowned P0): always, even when you're away, at most once
+         an hour;
+       - anything else new while you're active;
+       - a heartbeat: 30 min since the last nudge while active.
+     Never when the agent is working or blocked. No agent named `wrangler`
+     means nothing to nudge; the snapshot is still refreshed for `task brief`.
+
+State lives in ~/.cache/task/wrangle-tick.json. --force skips the throttle.
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "task"
+STATE = CACHE / "wrangle-tick.json"
+BRIEF = CACHE / "brief.json"
+AGENT = os.environ.get("WRANGLER_AGENT", "wrangler")
+TOP_BAND = 90
+
+
+def run(cmd, timeout=120):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        print(f"wrangle-tick: {cmd[0]}: {e}", file=sys.stderr)
+        return None
+
+
+def idle_seconds():
+    p = run(["ioreg", "-c", "IOHIDSystem"], timeout=5)
+    m = p and re.search(r'"HIDIdleTime" = (\d+)', p.stdout)
+    return int(m.group(1)) / 1e9 if m else 0.0
+
+
+def load_state():
+    try:
+        return json.loads(STATE.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(s):
+    CACHE.mkdir(parents=True, exist_ok=True)
+    STATE.write_text(json.dumps(s))
+
+
+def wrangler():
+    """The wrangler agent's record from herdr, or None."""
+    p = run(["herdr", "agent", "list"], timeout=10)
+    if not p or p.returncode:
+        return None
+    try:
+        agents = json.loads(p.stdout)["result"]["agents"]
+    except (ValueError, KeyError):
+        return None
+    return next((a for a in agents if a.get("name") == AGENT), None)
+
+
+def main():
+    force = "--force" in sys.argv
+    now = time.time()
+    state = load_state()
+    idle = idle_seconds()
+    since_run = now - state.get("last_run", 0)
+    period = 0 if idle < 3600 else 3600 if idle < 8 * 3600 else 4 * 3600
+    if not force and since_run < period:
+        return
+    active = idle < 3600
+
+    p = run([str(Path(__file__).with_name("task")), "brief", "--json", "--since-last", "--no-color"])
+    state["last_run"] = now
+    if p is None or p.returncode not in (0, 3):
+        save_state(state)
+        sys.exit(f"wrangle-tick: task brief failed: {(p.stderr if p else '')[-400:]}")
+    new = []
+    if p.returncode == 0:
+        try:
+            new = json.loads(p.stdout).get("attention", [])
+        except ValueError:
+            new = []
+    run([str(Path(__file__).with_name("task")), "herdr-sync", "--offline"], timeout=60)
+
+    top = [i for i in new if i["score"] >= TOP_BAND]
+    since_nudge = now - state.get("last_nudge", 0)
+    reason = None
+    if top and since_nudge > 3600:
+        reason = "top"
+    elif new and active:
+        reason = "new"
+    elif active and since_nudge > 1800:
+        reason = "heartbeat"
+    state["last_seen_new"] = len(new)
+    if not reason:
+        save_state(state)
+        return
+
+    agent = wrangler()
+    if not agent or agent.get("agent_status") not in ("idle", "done"):
+        save_state(state)
+        return
+    heads = "; ".join(f"{i['score']} {i['short']}: {i['why'][:80]}" for i in new[:3])
+    msg = (f"/wrangle tick ({reason}): {len(new)} new attention item(s)"
+           + (f": {heads}" if heads else "")
+           + f". You have been idle {int(idle // 60)}m. Read ~/.cache/task/brief.json and brief me.")
+    r = run(["herdr", "agent", "prompt", AGENT, msg], timeout=30)
+    if r and r.returncode == 0:
+        state["last_nudge"] = now
+        state["last_reason"] = reason
+    save_state(state)
+
+
+if __name__ == "__main__":
+    main()
