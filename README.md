@@ -181,15 +181,24 @@ review requests that have no worktree at all. The result is a ranked list with
 a reason per line:
 
 ```
- 96 P1 datatalk  cand-list: the agent's last message asks you something (31h ago)
- 94 P1 datatalk  #862 … by newsroomdev: your review is requested; pushed 6h ago, after your agent's findings (6d ago)
- 92 P0 datatalk  #715 Memo rows get one rule …: P0, assigned to newsroomdev, no branch or agent on it
+ 96 P1 🌳 cand-list · #910 · PR #919 · ws4
+       the agent's last message asks you something (31h ago)
+ 94 P1 👀 distinguish-zero · #610 · PR #862 · ws2
+       by newsroomdev: your review is requested; pushed 6h ago, after your agent's findings (6d ago)
+ 92 P0 Memo rows get one rule but are a mixed population · #715 · no ws
+       P0, assigned to newsroomdev, no branch or agent on it
 ```
 
-Bands: 90+ someone or something is waiting on you now (or a P0 is unowned);
+The first line of each item is every handle you might reach for: kind icon,
+slug, issue number, PR number, herdr workspace number. The second is why it's
+there, assembled from evidence (transcript timestamps, reviewer lists, push
+times), not written by a model. The score is a band, not a ranking within a
+band: 90+ someone or something is waiting on you now (or a P0 is unowned);
 70s something of yours is stuck; 50s finished work that hasn't left the
-machine; 30s hygiene. `--since-last` prints only items that are new or rose a
-band (exit 3 when nothing did), which is what makes the rest cheap:
+machine; 30s hygiene.
+
+`--since-last` prints only items that are new or rose a band (exit 3 when
+nothing did), which is what makes the rest cheap:
 
 - `bin/wrangle-tick`, run by launchd every five minutes
   (`launchd/com.sefk.wrangle-tick.plist`), refreshes the brief, paints

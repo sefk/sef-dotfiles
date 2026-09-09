@@ -632,7 +632,7 @@ def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
             matched["branch"] = matched["branch"].strip()
         if matched is None:
             continue
-        matched["workspaces"].append({"id": ws["id"], "label": ws["label"], "status": ws["status"]})
+        matched["workspaces"].append({"id": ws["id"], "label": ws["label"], "status": ws["status"], "number": ws.get("number")})
         matched["agents"].extend(ws["agents"])
 
     for r in rows.values():
@@ -1183,7 +1183,9 @@ def attention(rows, loose):
         says = {a.get("says") for a in agents}
         newest = min((a["words"]["age_s"] for a in agents if a.get("words") and a["words"]["age_s"] is not None),
                      default=None)
-        ctx = dict(key=key, repo=r["repo"], name=name, pri=pri, tags=r.get("tags"), task_kind=r.get("kind"))
+        ctx = dict(key=key, repo=r["repo"], name=name, pri=pri, tags=r.get("tags"), task_kind=r.get("kind"),
+                   pr_number=pr["number"] if pr else None, issue_number=(issue or {}).get("number"),
+                   ws=[(w.get("number"), w["label"]) for w in r["workspaces"]])
 
         if not r["worktree"] and not r["workspaces"]:
             # A bare branch. Only interesting when it's a P0/P1 of mine that
@@ -1192,16 +1194,16 @@ def attention(rows, loose):
                 recent = (age_of(issue.get("updated")) or 1e9) < 3 * 86400
                 items.append(item((92 if pri == "P0" else 62 + (18 if recent else 0)), "loose",
                                   f"{pri}, branch parked",
-                                  f"#{key} {issue['title'][:55]}: {pri}, assigned to you, branch exists but no worktree or agent"
+                                  f"{pri}, assigned to you, branch exists but no worktree or agent"
                                   + (f"; issue updated {fmt_age(age_of(issue['updated']))} ago" if recent else ""), **ctx))
             continue
 
         if "stuck" in says:
             items.append(item(95 + bonus, "agent", "agent blocked",
-                              f"{name}: the agent is waiting at an approval or question dialog", **ctx))
+                              f"the agent is waiting at an approval or question dialog", **ctx))
         elif "asks" in says:
             items.append(item(90 + bonus, "agent", "agent asks you",
-                              f"{name}: the agent's last message asks you something ({fmt_age(newest)} ago)", **ctx))
+                              f"the agent's last message asks you something ({fmt_age(newest)} ago)", **ctx))
 
         if r.get("kind") == "review" and pr and pr["state"] == "open":
             my_rev = (pr.get("reviews") or {}).get(me) or {}
@@ -1216,58 +1218,58 @@ def attention(rows, loose):
                     note = f"; pushed {fmt_age(pushed)} ago, after your agent's findings ({fmt_age(newest)} ago)"
                 items.append(item(88 + bonus + min(5, int((age_of(pr["updated"]) or 0) // 86400)), "review",
                                   "review requested",
-                                  f"#{pr['number']} {pr['title'][:50]} by {pr['author']}: your review is requested" + note, **ctx))
+                                  f"by {pr['author']}: your review is requested" + note, **ctx))
             elif stale or (agents and newest is not None and pushed is not None and pushed < newest):
                 items.append(item(80 + bonus, "review", "review is stale",
-                                  f"#{pr['number']} by {pr['author']}: pushed {fmt_age(pushed)} ago, "
+                                  f"by {pr['author']}: pushed {fmt_age(pushed)} ago, "
                                   f"after your agent's findings ({fmt_age(newest)} ago)", **ctx))
             elif (pr.get("threads") or {}).get(me):
                 items.append(item(60 + bonus, "review", "your thread open",
-                                  f"#{pr['number']} by {pr['author']}: {pr['threads'][me]} thread(s) you opened are unresolved", **ctx))
+                                  f"by {pr['author']}: {pr['threads'][me]} thread(s) you opened are unresolved", **ctx))
 
         if r.get("kind") != "review" and pr and pr["state"] == "open" and not pr["draft"]:
             if pr.get("mergeable") == "conflicting":
                 items.append(item(72 + bonus, "pr", "PR conflicts",
-                                  f"#{pr['number']} {name}: merge conflict with the base branch", **ctx))
+                                  f"merge conflict with the base branch", **ctx))
             elif pr.get("ci") in ("failure", "error"):
-                items.append(item(70 + bonus, "pr", "CI red", f"#{pr['number']} {name}: CI is failing", **ctx))
+                items.append(item(70 + bonus, "pr", "CI red", f"CI is failing", **ctx))
             elif pr.get("review") == "changes_requested":
                 items.append(item(68 + bonus, "pr", "changes requested",
-                                  f"#{pr['number']} {name}: a reviewer requested changes", **ctx))
+                                  f"a reviewer requested changes", **ctx))
             elif pr.get("review") == "approved" and pr.get("ci") == "success":
                 items.append(item(66 + bonus, "pr", "ready to merge",
-                                  f"#{pr['number']} {name}: approved and green", **ctx))
+                                  f"approved and green", **ctx))
             elif not pr.get("ci") and pr.get("pushed_at") and (age_of(pr["pushed_at"]) or 0) > 3600:
                 items.append(item(55 + bonus, "pr", "no CI run",
-                                  f"#{pr['number']} {name}: no checks have run on the current head", **ctx))
+                                  f"no checks have run on the current head", **ctx))
             else:
                 humans = [a for a in (pr.get("threads") or {}) if a != me and "copilot" not in a and "[bot]" not in a]
                 bots = sum(v for a, v in (pr.get("threads") or {}).items() if a not in humans and a != me)
                 if humans:
                     items.append(item(75 + bonus, "pr", "reviewer thread open",
-                                      f"#{pr['number']} {name}: unresolved thread(s) from {', '.join(humans)}", **ctx))
+                                      f"unresolved thread(s) from {', '.join(humans)}", **ctx))
                 elif not pr.get("requested") and pr.get("ci") == "success" and not pr.get("review"):
                     items.append(item(50 + bonus, "pr", "green, no reviewer",
-                                      f"#{pr['number']} {name}: green with no reviewer requested; request one or merge", **ctx))
+                                      f"green with no reviewer requested; request one or merge", **ctx))
                 elif bots:
                     items.append(item(35 + bonus, "pr", f"{bots} bot threads",
-                                      f"#{pr['number']} {name}: {bots} unresolved Copilot thread(s)", **ctx))
+                                      f"{bots} unresolved Copilot thread(s)", **ctx))
 
         merged = pr and pr["state"] == "merged"
         if not merged and r.get("kind") != "review" and not r.get("adhoc") and g.get("ahead") and "busy" not in says:
             what = "unpushed" if not g.get("upstream") else "ahead of origin"
             if not pr:
                 items.append(item(58 + bonus, "work", "done, no PR",
-                                  f"{name}: {g['ahead']} commit(s) {what} and no PR"
+                                  f"{g['ahead']} commit(s) {what} and no PR"
                                   + (f"; the agent reported done {fmt_age(newest)} ago" if "done" in says else ""), **ctx))
             elif pr["state"] == "open":
                 items.append(item(52 + bonus, "work", "unpushed commits",
-                                  f"{name}: {g['ahead']} commit(s) {what} behind PR #{pr['number']}", **ctx))
+                                  f"{g['ahead']} commit(s) {what} behind PR #{pr['number']}", **ctx))
 
         if merged and (r["worktree"] or r["workspaces"]):
-            items.append(item(30, "cleanup", "merged, wrap up", f"{name}: PR merged, worktree/workspace still here", **ctx))
+            items.append(item(30, "cleanup", "merged, wrap up", f"PR merged, worktree/workspace still here", **ctx))
         elif issue and issue["state"] == "closed" and not (pr and pr["state"] == "open") and not merged:
-            items.append(item(28, "cleanup", "issue closed", f"{name}: issue closed, work still checked out", **ctx))
+            items.append(item(28, "cleanup", "issue closed", f"issue closed, work still checked out", **ctx))
 
     for repo, lst in loose.items():
         for l in lst:
@@ -1278,19 +1280,36 @@ def attention(rows, loose):
                 # the long-parked ones are backlog, not attention.
                 score = 92 if l["pri"] == "P0" else 62 + (20 if days < 3 else 0)
                 items.append(item(score, "loose", f"{l['pri']} with no branch",
-                                  f"#{l['number']} {l['title'][:60]}: {l['pri']}, {who}, no branch or agent on it",
-                                  key=l["number"], repo=repo, name=l["title"][:40], pri=l["pri"], tags=l["tags"],
-                                  number=l["number"], url=l["url"]))
+                                  f"{l['pri']}, {who}, no branch or agent on it",
+                                  key=l["number"], repo=repo, name=l["title"][:50], pri=l["pri"], tags=l["tags"],
+                                  number=l["number"], issue_number=l["number"], url=l["url"]))
             else:
-                why = f"#{l['number']} {l['title'][:50]} by {l['author']}: "
+                why = f"by {l['author']}: "
                 why += "your review is requested" if l["requested"] else f"{l['my_threads']} thread(s) you opened are unresolved"
                 if l.get("my_review_age_s") is not None and l.get("pushed_age_s") is not None and l["pushed_age_s"] < l["my_review_age_s"]:
                     why += f"; pushed after your last review ({fmt_age(l['my_review_age_s'])} ago)"
                 items.append(item((86 if l["requested"] else 60) + min(5, days), "loose",
                                   "review requested" if l["requested"] else "your thread open", why,
-                                  key=l["number"], repo=repo, name=l["branch"], number=l["number"], url=l["url"]))
+                                  key=l["number"], repo=repo, name=l["branch"], number=l["number"], pr_number=l["number"], task_kind="review", url=l["url"]))
     items.sort(key=lambda i: -i["score"])
     return items
+
+
+def ident(it):
+    """Who an item is about, every handle the user might reach for: kind icon,
+    slug, issue and PR numbers, herdr workspace number."""
+    parts = [f"{KIND_ICON.get(it.get('task_kind'), '')} {it.get('name') or it.get('key')}".strip()]
+    n = it.get("issue_number") or (it.get("key") if str(it.get("key", "")).isdigit() and not it.get("pr_number") else None)
+    if n:
+        parts.append(f"#{n}")
+    if it.get("pr_number"):
+        parts.append(f"PR #{it['pr_number']}")
+    ws = it.get("ws") or []
+    if ws:
+        parts.append(", ".join(f"ws{w[0]}" if w[0] is not None else w[1] for w in ws))
+    elif it.get("kind") == "loose" or it.get("task_kind"):
+        parts.append("no ws")
+    return " · ".join(parts)
 
 
 def band(score):
@@ -1363,11 +1382,12 @@ def cmd_brief(args):
         for it in shown[:cap]:
             mark = "NEW " if it["new"] else "    "
             pri = fmt_pri({"pri": it.get("pri"), "colors": {}}) if it.get("pri") else "  "
-            repo = f"{it['repo'][:12]:<12} " if multi and width >= WIDE_MIN else ""
-            head = f"{mark}{it['score']:3} {ljust(pri, 2)} {repo}"
-            why = it["why"] if repo or it["repo"] == home else f"[{it['repo'][:12]}] {it['why']}"
-            plain = ANSI.sub("", head)
-            print(wrap(plain + why, width, vlen(head)).replace(plain, head, 1))
+            head = f"{mark}{it['score']:3} {ljust(pri, 2)} "
+            who = ident(it)
+            if multi and it["repo"] != home:
+                who = f"{it['repo']} · {who}"
+            print(head + who)
+            print(wrap(" " * vlen(head) + it["why"], width, vlen(head)))
         if cap and len(shown) > cap:
             print(f"    ... {len(shown) - cap} more (--all-items or --json)")
         if not args.since_last:
