@@ -900,17 +900,98 @@ COLUMNS = [
 ]
 
 
-def render_table(rows, multi_repo, columns=None):
-    cols = list(columns or COLUMNS)
-    if multi_repo:
+def fmt_state(r):
+    """PR and issue folded into one short field for narrow screens."""
+    pr, issue = r["pr"], r["issue"]
+    if pr and pr["state"] == "merged":
+        return "merged"
+    if pr and pr["state"] == "open":
+        s = f"#{pr['number']}"
+        if pr["draft"]:
+            s += " draft"
+        elif pr["review"] == "approved":
+            s += " ✓"
+        elif pr["review"] == "changes_requested":
+            s += " ✗"
+        elif pr.get("mergeable") == "conflicting":
+            s += " conflict"
+        elif pr.get("ci") in ("failure", "error"):
+            s += " ci✗"
+        return s
+    if issue and issue["state"] == "closed":
+        return "closed"
+    return ""
+
+
+def fmt_agent_short(r):
+    out = []
+    for a in r["agents"]:
+        s = a["status"] or "?"
+        if a["kind"] != "claude":
+            s = f"{a['kind']} {s}"
+        if a.get("says") in ("asks", "done", "stuck"):
+            s += f" ({a['says']})"
+        out.append(s)
+    return ", ".join(out)
+
+
+def fmt_port_short(r):
+    live = sorted({p for p, _, _ in r["listening"]})
+    s = f"{live[0]} up" if live else (str(r["port"]) if r["port"] else "")
+    if r["db"] and r["db"] != "local":
+        s = f"{s} {r['db']}".strip()
+    return s
+
+
+NARROW_COLUMNS = [
+    ("", fmt_kind),
+    ("PRI", fmt_pri),
+    ("SLUG", lambda r: fmt_slug(dict(r, slug=(r.get("slug") or r["key"])[:20]))),
+    ("TAG", lambda r: fmt_tags(dict(r, tags=(r.get("tags") or [])[:1]))),
+    ("PR", fmt_state),
+    ("AGENT", fmt_agent_short),
+    ("PORT", fmt_port_short),
+    ("FLAGS", lambda r: " ".join(r["flags"])),
+]
+
+WIDE_MIN = 150
+
+
+def term_width():
+    try:
+        return int(os.environ["COLUMNS"])
+    except (KeyError, ValueError):
+        pass
+    try:
+        return os.get_terminal_size(sys.stdout.fileno()).columns
+    except (OSError, ValueError):
+        return 120
+
+
+def render_table(rows, multi_repo, columns=None, width=None):
+    """Wide: one table with a REPO column. Narrow: fewer columns, rows grouped by repo."""
+    width = width or term_width()
+    narrow = columns is None and width < WIDE_MIN
+    cols = list(columns or (NARROW_COLUMNS if narrow else COLUMNS))
+    if multi_repo and not narrow:
         cols.insert(0, ("REPO", lambda r: r["repo"]))
     table = [[f(r) for _, f in cols] for r in rows]
     widths = [max(vlen(h), *(vlen(t[i]) for t in table)) if table else vlen(h)
               for i, (h, _) in enumerate(cols)]
     out = ["  ".join(ljust(h, w) for (h, _), w in zip(cols, widths)).rstrip()]
-    for t in table:
+    repo = None
+    for r, t in zip(rows, table):
+        if narrow and multi_repo and r["repo"] != repo:
+            repo = r["repo"]
+            out.append(paint(repo, "8b949e"))
         out.append("  ".join(ljust(c, w) for c, w in zip(t, widths)).rstrip())
     return "\n".join(out)
+
+
+def wrap(text, width, indent):
+    """Wrap prose to width; continuation lines indented."""
+    import textwrap
+    return textwrap.fill(text, width=max(40, width), subsequent_indent=" " * indent)
 
 
 def sort_key(r):
@@ -1273,16 +1354,25 @@ def cmd_brief(args):
     else:
         if not shown:
             print("nothing new since the last brief" if args.since_last else "nothing needs you")
+        width = term_width()
+        multi = len(mains) > 1
+        # Narrow screens: name the repo only on items from somewhere other than
+        # the repo most of the list is about.
+        home = max((r["repo"] for r in rows), key=[r["repo"] for r in rows].count) if rows else None
         cap = None if args.since_last or args.all_items else 14
         for it in shown[:cap]:
             mark = "NEW " if it["new"] else "    "
             pri = fmt_pri({"pri": it.get("pri"), "colors": {}}) if it.get("pri") else "  "
-            print(f"{mark}{it['score']:3} {ljust(pri, 2)} {it['repo']:<12} {it['why']}")
+            repo = f"{it['repo'][:12]:<12} " if multi and width >= WIDE_MIN else ""
+            head = f"{mark}{it['score']:3} {ljust(pri, 2)} {repo}"
+            why = it["why"] if repo or it["repo"] == home else f"[{it['repo'][:12]}] {it['why']}"
+            plain = ANSI.sub("", head)
+            print(wrap(plain + why, width, vlen(head)).replace(plain, head, 1))
         if cap and len(shown) > cap:
             print(f"    ... {len(shown) - cap} more (--all-items or --json)")
         if not args.since_last:
             print()
-            print(render_table(snapshot["tasks"], len(mains) > 1))
+            print(render_table(snapshot["tasks"], multi, width=width))
             print()
             print("AGENTS' LAST WORDS")
             for r in rows:
@@ -1291,7 +1381,9 @@ def cmd_brief(args):
                     if not w:
                         continue
                     first = w["text"].replace("\n", " ")
-                    print(f"  {KIND_ICON.get(r.get('kind'), '')} {r.get('slug') or r['key']:<24} {a['says']:<5} {fmt_age(w['age_s']):>3}  {first[:110]}")
+                    name = (r.get("slug") or r["key"])[:20 if width < WIDE_MIN else 24]
+                    head = f"  {KIND_ICON.get(r.get('kind'), '')} {name:<{20 if width < WIDE_MIN else 24}} {a['says']:<5} {fmt_age(w['age_s']):>3}  "
+                    print(head + first[:max(20, width - vlen(head) - 1)])
         if idle is not None:
             print(f"\nuser idle {fmt_age(idle)}", file=sys.stderr)
     if args.since_last and not shown:
