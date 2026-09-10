@@ -704,7 +704,8 @@ def loose_items(gh, rows):
         if i["state"] != "open" or n in have_issue:
             continue
         mine = me in i["assignees"]
-        if i["pri"] == "P0" or (i["pri"] == "P1" and mine):
+        # Mine, or a P0 nobody owns. A priority assigned to someone else is theirs.
+        if (i["pri"] == "P0" and not i["assignees"]) or (i["pri"] in ("P0", "P1") and mine):
             out.append({"type": "issue", "number": n, "title": i["title"], "pri": i["pri"],
                         "labels": i["labels"], "tags": tags_for(i["labels"]), "mine": mine,
                         "assignees": i["assignees"], "url": i["url"], "age_s": age_of(i["updated"])})
@@ -1276,7 +1277,7 @@ def attention(rows, loose):
             days = int((l.get("age_s") or l.get("pushed_age_s") or 0) // 86400)
             if l["type"] == "issue":
                 who = "assigned to you" if l["mine"] else ("unassigned" if not l["assignees"] else "assigned to " + ", ".join(l["assignees"]))
-                # A P0 anywhere. A P1 of mine only climbs when it has moved recently;
+                # An unowned P0, or a P0 of mine. A P1 of mine only climbs when it has moved recently;
                 # the long-parked ones are backlog, not attention.
                 score = 92 if l["pri"] == "P0" else 62 + (20 if days < 3 else 0)
                 items.append(item(score, "loose", f"{l['pri']} with no branch",
