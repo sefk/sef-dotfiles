@@ -8,7 +8,7 @@
 # on when you hit the key).
 #
 # Prompts for a task name, a directory, and a layout, then builds the workspace.
-# Agents (claude, pi) are named after the workspace so the sidebar reads cleanly.
+# Agents (pi) are named after the workspace so the sidebar reads cleanly.
 #
 # ADDING A LAYOUT: add a menu line in show_menu(), then a `layout_<key>` function,
 # then one `case` arm in build_layout(). Nothing else needs to change.
@@ -69,14 +69,8 @@ resolve_dir() {
 # Each takes the root (left) pane id. Splits use --no-focus so focus stays on the
 # root pane, which is where the agent lands.
 
-# claude left, zsh right
-layout_claude_zsh() {
-  local root="$1"
-  split_pane "$root" right >/dev/null
-  start_agent claude "$root"
-}
-
-# zsh left, zsh right
+# zsh left, zsh right (used to also start claude on the left, but that
+# start-up was unreliable, so this is now just a plain split)
 layout_zsh_zsh() {
   local root="$1"
   split_pane "$root" right >/dev/null
@@ -99,21 +93,19 @@ layout_pi_btop_zsh() {
 
 show_menu() {
   printf '  layout:\n'
-  printf '    1) claude left, zsh right   (default)\n'
-  printf '    2) zsh left, zsh right\n'
-  printf '    3) zsh\n'
-  printf '    4) pi left, btop right-top, zsh right-bottom\n'
+  printf '    1) zsh left, zsh right   (default)\n'
+  printf '    2) zsh\n'
+  printf '    3) pi left, btop right-top, zsh right-bottom\n'
 }
 
 build_layout() {
   local choice="$1" root="$2"
   case "$choice" in
-    1) layout_claude_zsh  "$root" ;;
-    2) layout_zsh_zsh     "$root" ;;
-    3) layout_zsh         "$root" ;;
-    4) layout_pi_btop_zsh "$root" ;;
+    1) layout_zsh_zsh     "$root" ;;
+    2) layout_zsh         "$root" ;;
+    3) layout_pi_btop_zsh "$root" ;;
     *) printf '  unknown layout %s; using default.\n' "$choice"
-       layout_claude_zsh "$root" ;;
+       layout_zsh_zsh "$root" ;;
   esac
 }
 
