@@ -42,9 +42,11 @@ label colors when stdout is a terminal (NO_COLOR or --no-color disables).
 Flags in the last column are the point: they name drift between the five
 sources, which is what "stranded work" and "which session is this" are.
 
-  merged        PR merged but the branch/worktree/workspace is still here
+  merged        PR merged (or, in a non-team repo, the branch is already an
+                ancestor of the default branch via local merge/rebase) but
+                the branch/worktree/workspace is still here
   closed        the issue is closed (and no open PR explains why)
-  no-wt         branch exists, no worktree
+  no-wt         branch exists, no worktree (team repos only; see below)
   no-ws         worktree exists, no herdr workspace on it
   no-agent      workspace exists but no agent is running in it
   adhoc         herdr workspace with no branch of its own (sits on main)
@@ -52,6 +54,13 @@ sources, which is what "stranded work" and "which session is this" are.
   dirty         uncommitted changes
   ahead N       commits not on the upstream (unpushed if no upstream)
   no-pr         worktree with commits ahead of the default branch, no PR
+                (team repos only)
+
+A repo is a "team" repo -- worktrees and PRs expected -- when its .wtconfig
+sets TASK_TEAM=1. Absent, the repo is "individual": issue work happens
+straight in the main checkout (on the default branch or a local feature
+branch merged/rebased back by hand), so no-wt/no-pr never fire there, and
+"merged" falls back to a local ancestor check since there's no PR to ask.
 
 GitHub state is cached per repo under ~/.cache/task/ for 10 minutes (the
 `gh` calls are the slow part); --refresh forces a fetch, --offline forbids
@@ -155,6 +164,15 @@ def default_branch(main):
     return "main"
 
 
+def team_repo(main):
+    """True when .wtconfig at the repo root sets TASK_TEAM=1 (worktrees/PRs expected)."""
+    try:
+        text = (Path(main) / ".wtconfig").read_text()
+    except OSError:
+        return False
+    return re.search(r'(?m)^\s*TASK_TEAM\s*=\s*["\']?(1|true|yes)["\']?\s*(#.*)?$', text, re.IGNORECASE) is not None
+
+
 def worktrees(main):
     out = run(["git", "-C", main, "worktree", "list", "--porcelain"]) or ""
     result, cur = [], {}
@@ -172,13 +190,19 @@ def worktrees(main):
 
 
 def branch_facts(main, wt_path, branch, base):
-    """dirty flag, ahead-of-upstream, has-upstream, ahead-of-base."""
-    facts = {"dirty": False, "ahead": 0, "upstream": False, "ahead_base": 0}
+    """dirty flag, ahead-of-upstream, has-upstream, ahead-of-base, merged-locally."""
+    facts = {"dirty": False, "ahead": 0, "upstream": False, "ahead_base": 0, "merged_local": False}
     if wt_path and os.path.isdir(wt_path):
         st = run(["git", "-C", wt_path, "--no-optional-locks", "status", "--porcelain"], timeout=10)
         facts["dirty"] = bool(st and st.strip())
     if not branch:
         return facts
+    # Ancestor of the default branch = already merged or rebased in locally,
+    # same check `wt rm` uses to decide whether a branch is safe to delete.
+    ref = base
+    if run(["git", "-C", main, "show-ref", "--verify", "--quiet", f"refs/remotes/origin/{base}"]) is not None:
+        ref = f"origin/{base}"
+    facts["merged_local"] = run(["git", "-C", main, "merge-base", "--is-ancestor", branch, ref]) is not None
     up = run(["git", "-C", main, "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"])
     if not up and run(["git", "-C", main, "show-ref", "--verify", "--quiet",
                        f"refs/remotes/origin/{branch}"]) is not None:
@@ -577,11 +601,12 @@ def key_for(branch, dirname, repo):
 def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
     repo = Path(main).name
     base = default_branch(main)
+    team = team_repo(main)
     rows = {}
 
     def row(key):
         return rows.setdefault(key, {
-            "key": key, "repo": repo, "slug": None, "branch": None, "worktree": None,
+            "key": key, "repo": repo, "team": team, "slug": None, "branch": None, "worktree": None,
             "dir_slug": None, "pr": None, "issue": None, "workspaces": [], "agents": [],
             "port": None, "listening": [], "db": None, "git": {}, "flags": [],
         })
@@ -725,14 +750,17 @@ def loose_items(gh, rows):
 def flags_for(r):
     f = []
     pr, issue, g = r["pr"], r["issue"], r["git"]
-    if pr and pr["state"] == "merged":
+    team = r.get("team")
+    merged = (pr and pr["state"] == "merged") or (not team and g.get("merged_local"))
+    if merged:
         f.append("merged")
     elif issue and issue["state"] == "closed" and not (pr and pr["state"] == "open"):
         f.append("closed")
     if r.get("adhoc"):
         f.append("adhoc")
     elif r["worktree"] is None:
-        f.append("no-wt")
+        if team:
+            f.append("no-wt")
     elif not r["workspaces"]:
         f.append("no-ws")
     if r["workspaces"] and not r["agents"]:
@@ -746,9 +774,9 @@ def flags_for(r):
         f.append("name?")
     if g.get("dirty"):
         f.append("dirty")
-    if g.get("ahead") and not (pr and pr["state"] == "merged"):
+    if g.get("ahead") and not merged:
         f.append(f"ahead {g['ahead']}" if g.get("upstream") else f"unpushed {g['ahead']}")
-    if r["worktree"] and not r.get("adhoc") and g.get("ahead_base") and not pr and r.get("kind") != "review":
+    if team and r["worktree"] and not r.get("adhoc") and g.get("ahead_base") and not pr and r.get("kind") != "review":
         f.append("no-pr")
     if r.get("prunable"):
         f.append("prunable")
@@ -904,7 +932,7 @@ COLUMNS = [
 def fmt_state(r):
     """PR and issue folded into one short field for narrow screens."""
     pr, issue = r["pr"], r["issue"]
-    if pr and pr["state"] == "merged":
+    if (pr and pr["state"] == "merged") or (not r.get("team") and r["git"].get("merged_local")):
         return "merged"
     if pr and pr["state"] == "open":
         s = f"#{pr['number']}"
@@ -1256,19 +1284,23 @@ def attention(rows, loose):
                     items.append(item(35 + bonus, "pr", f"{bots} bot threads",
                                       f"{bots} unresolved Copilot thread(s)", **ctx))
 
-        merged = pr and pr["state"] == "merged"
+        merged = (pr and pr["state"] == "merged") or (not r.get("team") and g.get("merged_local"))
         if not merged and r.get("kind") != "review" and not r.get("adhoc") and g.get("ahead") and "busy" not in says:
             what = "unpushed" if not g.get("upstream") else "ahead of origin"
-            if not pr:
+            if not pr and r.get("team"):
                 items.append(item(58 + bonus, "work", "done, no PR",
                                   f"{g['ahead']} commit(s) {what} and no PR"
+                                  + (f"; the agent reported done {fmt_age(newest)} ago" if "done" in says else ""), **ctx))
+            elif not pr:
+                items.append(item(58 + bonus, "work", "not merged",
+                                  f"{g['ahead']} commit(s) {what}, not yet merged into main"
                                   + (f"; the agent reported done {fmt_age(newest)} ago" if "done" in says else ""), **ctx))
             elif pr["state"] == "open":
                 items.append(item(52 + bonus, "work", "unpushed commits",
                                   f"{g['ahead']} commit(s) {what} behind PR #{pr['number']}", **ctx))
 
         if merged and (r["worktree"] or r["workspaces"]):
-            items.append(item(30, "cleanup", "merged, wrap up", f"PR merged, worktree/workspace still here", **ctx))
+            items.append(item(30, "cleanup", "merged, wrap up", f"branch merged, worktree/workspace still here", **ctx))
         elif issue and issue["state"] == "closed" and not (pr and pr["state"] == "open") and not merged:
             items.append(item(28, "cleanup", "issue closed", f"issue closed, work still checked out", **ctx))
 

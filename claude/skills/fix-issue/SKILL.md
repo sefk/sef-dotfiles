@@ -17,13 +17,20 @@ commits, working branch for multi-step work, never push).
    issue comment (marked as authored by Claude Code) before coding, so the
    decision is on the record. Trivial fixes skip the comment.
 
-3. **Branch / worktree** — work happens on `issue-<N>-<short-slug>` in a
-   sibling worktree (`../<repo>-<N>`), never in the main checkout and never in
-   a worktree you create yourself. If you aren't already in one, ask the user
-   to run `wt <N> <slug>` and wait — don't `git worktree add`, don't use
-   `isolation: "worktree"`, and don't start work on the default branch. A
-   one-line fix may land on the current branch if it's already a working
-   branch.
+3. **Branch / worktree** — depends on the repo's workflow (global Version
+   Control policy; `.wtconfig`'s `TASK_TEAM=1` marks a team repo):
+   - **Team repo**: work happens on `issue-<N>-<short-slug>` in a sibling
+     worktree (`../<repo>-<N>`), never in the main checkout and never in a
+     worktree you create yourself. If you aren't already in one, ask the
+     user to run `wt <N> <slug>` and wait — don't `git worktree add`, don't
+     use `isolation: "worktree"`, and don't start work on the default
+     branch. A one-line fix may land on the current branch if it's already
+     a working branch.
+   - **Individual repo (default)**: work happens in the main checkout.
+     Small fixes commit straight onto the current branch (usually `main`);
+     anything that needs to stay reviewable or reversible on its own gets a
+     local feature branch (`issue-<N>-<short-slug>`) that you merge or
+     rebase back into `main` yourself when done — never open a PR for it.
 
 4. **Implement** — directly, or delegated:
    - **Delegate when well-scoped**: if after Read/Plan the fix has a clear
@@ -77,14 +84,21 @@ commits, working branch for multi-step work, never push).
 7. **Commit** — one commit per logical change; append (`#<N>)` at the end of the
    message subject line and in the body.
 
-8. **Close the loop — but do not close the issue.** Comment on the issue
-   with what changed, files touched, branch name, and test results, marked as
-   authored by Claude Code. If commits are on an unpushed local branch, say
-   so. **Never `gh issue close`** — the issue stays open through review and
-   GitHub closes it when the PR merges. To make that happen, the PR body must
-   carry `Closes #<N>`; if a PR already exists, verify the line is there and
-   add it if not, and if the PR is opened later, state in your report that its
-   body needs `Closes #<N>`.
+8. **Close the loop.**
+   - **Team repo**: do not close the issue. Comment with what changed,
+     files touched, branch name, and test results, marked as authored by
+     Claude Code. If commits are on an unpushed local branch, say so.
+     **Never `gh issue close`** — it stays open through review and GitHub
+     closes it when the PR merges. To make that happen, the PR body must
+     carry `Closes #<N>`; if a PR already exists, verify the line is there
+     and add it if not, and if the PR is opened later, state in your report
+     that its body needs `Closes #<N>`.
+   - **Individual repo**: nothing closes the issue automatically. If the fix
+     already landed on `main` (merged or rebased locally), close it yourself
+     (`gh issue close <N>`) with a comment — marked as authored by Claude
+     Code — naming the commit(s). If it's still sitting on an unmerged local
+     feature branch, leave the issue open and say so; comment with progress
+     instead.
 
 9. **Report** — tell the user branch, commits, and test status in a couple
    of lines. No long recap.

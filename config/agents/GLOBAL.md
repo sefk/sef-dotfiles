@@ -44,19 +44,32 @@ When monitoring long-running tasks, especially with production / other servers:
 
 Use Git for version control hosted at GitHub.
 
+Two workflows, chosen per repo. Default is **individual**; a repo is **team**
+only when its `.wtconfig` sets `TASK_TEAM=1` (see `wt`/`task`) — today that's
+just DataTalk.
+
+- **Team** — pull requests, sibling worktrees per issue.
+- **Individual** — no PRs, no worktrees. Work happens directly on `main`, or
+  occasionally a short-lived feature branch that lives in the main checkout
+  and gets merged or rebased back into `main` by me, locally — it never
+  becomes a PR.
+- **Both** — issue-driven development, `fix-issue` to implement, and a
+  `codex-review` pass before calling anything done.
+
 Git policies
 
 - Commit autonomously at natural checkpoints (task complete, tests pass) — don't ask first and don't wait for me to say "commit this". Write a good message and just commit.
-- Multi-step or exploratory work goes on a working branch, not the default branch (main/master); I review, squash, and merge working branches myself. A small self-contained change may be committed directly on the current branch.
+- Team repos: multi-step or exploratory work goes on a working branch, not the default branch (main/master); I review, squash, and merge it myself via a PR I open. A small self-contained change may still land directly on the current branch.
+- Individual repos: work goes straight on the current branch (usually `main`) unless it needs a feature branch to stay reviewable or reversible; that branch is mine to merge or rebase back into `main` — don't propose or open a PR for it.
 - Branch names use dashes, never slashes: `fix-628-masthead-freshness`, not `fix/628-masthead-freshness`. Underscores are fine.
 - When doing multiple changes concurrently, commit each change separately.
 - Never push; I review and push to GitHub myself.
-- I'll do pull requests myself.
+- Team repos: I'll do pull requests myself.
 - You can always `git fetch`.
 - You can do fast-forward only merges.
 - Never rebase changes that have already been pushed to GitHub.
 
-Worktrees
+Worktrees (team repos only — individual repos work directly in the main checkout)
 
 - Issue work happens in a **sibling worktree**, never in the main checkout:
   `../<repo>-<N>` on branch `issue-<N>-<slug>`. I create it with `wt <N>
@@ -72,11 +85,16 @@ Worktrees
 
 Issues and closing
 
-- **Never close an issue while work is in flight.** GitHub closes it at merge:
-  when the branch is `issue-<N>-*`, the PR body must contain `Closes #<N>`.
-  Add that line whenever you open a PR for issue work.
+- **Never close an issue while work is in flight.**
+  - Team repos: GitHub closes it at merge — when the branch is
+    `issue-<N>-*`, the PR body must contain `Closes #<N>`. Add that line
+    whenever you open a PR for issue work.
+  - Individual repos: nothing closes it automatically. Once the fix is
+    merged/rebased into `main`, close the issue yourself with a comment
+    naming the commit(s).
 - Comment on the issue with progress (branch, what changed, test results) and
-  leave it open. Closing is the merge's job, not the fix's.
+  leave it open until then. Closing is the merge's job — or, in an individual
+  repo, the last step right after it.
 
 Use the `gh` command line utility to update issues on GitHub. You don't need permissions to read or write issues using `gh issues`.
 

@@ -40,6 +40,10 @@
 #   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
 #   WT_SLUG_MAX=18            slug length cap, trimmed on a word boundary
 #
+# `.wtconfig` also carries TASK_TEAM=1, read by `task` (not by this script) to
+# mark a repo as team workflow (PRs + worktrees expected); absent means
+# individual (no PRs, no worktrees — see the global Version Control policy).
+#
 # A worktree with an .envrc gets `direnv allow` run in it — a new path is a new
 # direnv block even when .envrc is the main checkout's approved file.
 #

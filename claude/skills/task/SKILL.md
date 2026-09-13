@@ -45,6 +45,20 @@ creating anything and say so. When the repo isn't organized around issues
 (this dotfiles repo, or one with no GitHub at all), the slug is the only key;
 skip everything GitHub-specific below and don't invent an issue.
 
+## Team vs individual
+
+Two workflows, chosen per repo by `.wtconfig`'s `TASK_TEAM=1` at the main
+checkout's root (absent = individual; today only DataTalk sets it — see the
+global Version Control policy for the full rationale):
+
+- **team** — worktrees + PRs; issue work always gets a sibling worktree via
+  `wt`, lands as a PR, and the PR merge is what closes the issue.
+  `task status` flags `no-wt`/`no-pr` when either is missing.
+- **individual** — no worktrees, no PRs; issue work happens straight in the
+  main checkout, on the default branch or a local feature branch merged or
+  rebased back by hand. `no-wt`/`no-pr` never fire here, and `merged` is
+  decided by a local ancestor check instead of a PR's state.
+
 ## Verbs
 
 Each verb starts with `task status`, states a plan (what will be created,
@@ -63,15 +77,20 @@ do it after a one-line statement of intent.
    exists; never create a second worktree or branch for the same key. `wt`
    already handles "branch exists locally / on origin / not at all" for issue
    work.
-3. Worktree and branch:
-   - issue: `wt <N> [slug]` (interactive; it shows its plan and assigns the
-     dev port). From an agent session, ask the user to run it, or run
-     `wt -y <N> <slug>` when they've told you to go ahead.
-   - PR review: `gh pr checkout <N>` in a sibling worktree
+3. Worktree and branch — team repos only (`.wtconfig`'s `TASK_TEAM=1`) use a
+   worktree; individual repos (the default) always work in the main checkout:
+   - issue, team repo: `wt <N> [slug]` (interactive; it shows its plan and
+     assigns the dev port). From an agent session, ask the user to run it, or
+     run `wt -y <N> <slug>` when they've told you to go ahead.
+   - issue, individual repo: `git checkout -b issue-<N>-<slug>` (or just stay
+     on the current branch for a small fix) in the main checkout — no
+     worktree, say so.
+   - PR review (implies a team repo — reviewing someone else's PR): `gh pr
+     checkout <N>` in a sibling worktree
      (`git worktree add ../<repo>-pr<N> <head-branch>`), workspace label `pr<N>-<slug>`.
-   - ad-hoc: `git worktree add -b <slug> ../<repo>-<slug> origin/<default>`.
-     Skip the worktree entirely when the repo doesn't use them (dotfiles,
-     small repos): a branch in the main checkout is fine, say so.
+   - ad-hoc, team repo: `git worktree add -b <slug> ../<repo>-<slug> origin/<default>`.
+   - ad-hoc, individual repo: a branch (or just the current branch) in the
+     main checkout — no worktree.
 4. herdr workspace, only when running inside herdr (`HERDR_ENV=1`):
    `herdr workspace create --label <label> --cwd <dir> --focus`, split a
    shell pane to the right, wait for the shell's prompt (direnv output on a
@@ -121,11 +140,16 @@ ones the user explicitly abandons.
 2. Show the plan per task: remove worktree, delete local branch, close herdr
    workspace (`herdr workspace close <id>`; the agent inside exits), and
    whether the remote branch is already gone. Wait for a yes.
-3. `wt rm <N>` does worktree plus merged-branch removal for issue work; for
-   the rest, `git worktree remove <dir>` then `git branch -d <branch>`
-   (`-D` only when the user said abandon). Then close the workspace.
-4. Never close the GitHub issue; the merge does that. If a merged PR left its
-   issue open, say so rather than closing it.
+3. Team repo: `wt rm <N>` does worktree plus merged-branch removal for issue
+   work; for the rest, `git worktree remove <dir>` then `git branch -d
+   <branch>` (`-D` only when the user said abandon). Individual repo: no
+   worktree to remove — just `git branch -d <branch>` (or `-D` to abandon) in
+   the main checkout. Either way, then close the herdr workspace.
+4. Team repo: never close the GitHub issue; the PR merge does that. If a
+   merged PR left its issue open, say so rather than closing it. Individual
+   repo: nothing closed it automatically — close it yourself
+   (`gh issue close <N>`) with a comment naming the commit(s), unless it's
+   already closed.
 5. `task status` after, to show what's left.
 
 ### status — "what's where?" / "what's stale?"
