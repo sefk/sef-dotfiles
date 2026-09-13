@@ -25,6 +25,11 @@ instructions live in the global `claude/CLAUDE.md` (deep-linked to
   `RESUME_ADDRESS` and `RESTIC_PASSWORD` (encrypts the nightly
   `bin/claude-backup.sh` restic repo — also keep a copy in a password
   manager; without it the backups are unreadable).
+- `zsh_secret` follows a different pattern from `bash_secret`: `zsh_secret.example`
+  (redacted placeholders) **is** checked in, but `~/.zsh_secret` is a plain
+  copy the Makefile makes once on a new machine, never a symlink — real
+  secrets must never point back at the repo. Add a placeholder line to the
+  example whenever a new secret is needed there.
 - vim plugins are git submodules — run `git submodule init && git submodule
   update` before anything else.
 - When setting up a new host, consider adding its hostname to the static list in

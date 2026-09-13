@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md CLAUDE.md AGENTS.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr codex
+FILE_EXCLUDES          = README README.md CLAUDE.md AGENTS.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr codex zsh_secret.example
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
@@ -41,7 +41,7 @@ HERDR_DEEP_LINKS       = $(patsubst herdr/%,~/.config/herdr/%,$(HERDR_FILES_TO_L
 CODEX_FILES_TO_LINK    = $(sort $(wildcard codex/*))
 CODEX_DEEP_LINKS       = $(patsubst codex/%,~/.codex/%,$(CODEX_FILES_TO_LINK))
 
-all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(CODEX_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS)
+all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(CODEX_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/.zsh_secret
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -92,6 +92,16 @@ $(FILE_LINKS): $(HOME)/.%: %
 	
 $(SECRETS_FILE):
 	if [ ! -e $(SECRETS_FILE) ]; then touch $(SECRETS_FILE); fi
+
+# zsh_secret is a plain copy, not a symlink (unlike bash_secret): it should
+# never point back at the repo, so a real ~/.zsh_secret is never mistaken for
+# checked-in content. Copy the redacted example once; leave an existing file
+# alone, and nudge you to go fill it in on a new machine.
+~/.zsh_secret: zsh_secret.example
+	if [ ! -e $@ ]; then \
+		cp zsh_secret.example $@; \
+		echo "created $@ from zsh_secret.example -- fill in your real secrets there"; \
+	fi
 
 # only remove secrets file if it exists but is empty, i.e. likely that this makefile
 # created it
