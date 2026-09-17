@@ -4,6 +4,9 @@
 #
 #   wt <N> [slug]   create (or attach to) ../<repo>-<N>-<slug> on issue-<N>-<slug>,
 #                   and cd there
+#   wt <branch>     create (or attach to) ../<repo>-<branch> on <branch> (reusing
+#                   the branch if it exists), and cd there — any non-numeric
+#                   first argument is treated as a branch name, not an issue
 #   wt ls           list this repo's worktrees
 #   wt rm [N]       remove the worktree (default: the one you're in), and the
 #                   branch if it's merged
@@ -418,6 +421,94 @@ cmd_add() {
   request_cd "$d"
 }
 
+# A non-numeric first argument: treat it as a branch name rather than an issue
+# number. Worktree lands at ../<repo>-<branch> (no issue segment — the branch
+# name is already the identifier). No WT_PORT_VARS here: those offsets are
+# keyed off the issue number, which a bare branch name doesn't have.
+cmd_add_branch() {
+  local branch; branch=$(sanitize_slug "$1")
+  [ -n "$branch" ] || die "branch name must contain at least one letter or digit: $1"
+  local d="$PARENT/$REPO-$branch"
+
+  if [ -d "$d" ]; then
+    echo "worktree already exists: $d"
+    request_cd "$d"
+    return 0
+  fi
+
+  local base; base=$(default_branch)
+  local main_head; main_head=$(git -C "$MAIN" rev-parse --abbrev-ref HEAD)
+  if [ "$main_head" != "$base" ]; then
+    echo "wt: warning — main checkout $MAIN is on '$main_head', not '$base'." >&2
+    echo "wt:           park it on $base so worktrees branch from a clean base." >&2
+  fi
+
+  git fetch --quiet origin 2>/dev/null || true
+
+  local mode start=""
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    mode=local
+  elif git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    mode=remote
+  else
+    mode=new
+    start="$base"
+    git show-ref --verify --quiet "refs/remotes/origin/$base" && start="origin/$base"
+  fi
+
+  echo
+  echo "wt: plan for branch $branch"
+  case "$mode" in
+    local)  printf '  reuse branch     %s (already local)\n' "$branch" ;;
+    remote) printf '  create branch    %s tracking origin/%s\n' "$branch" "$branch" ;;
+    new)    printf '  create branch    %s from %s\n' "$branch" "$start" ;;
+  esac
+  printf '  create worktree  %s\n' "$d"
+  for f in $WT_LINK; do
+    if [ -e "$MAIN/$f" ]; then
+      printf '  link             %s -> %s/%s\n' "$f" "$MAIN" "$f"
+    fi
+  done
+  if [ -n "$WT_SETUP" ]; then
+    printf '  run              %s\n' "$WT_SETUP"
+  fi
+  if [ -e "$MAIN/.envrc" ] && command -v direnv >/dev/null 2>&1; then
+    printf '  run              direnv allow\n'
+  fi
+  echo
+  confirm || return 1
+
+  case "$mode" in
+    local)  git worktree add "$d" "$branch" ;;
+    remote) git worktree add "$d" --track -b "$branch" "origin/$branch" ;;
+    new)    git worktree add "$d" -b "$branch" "$start" ;;
+  esac
+
+  for f in $WT_LINK; do
+    if [ -e "$MAIN/$f" ] && [ ! -e "$d/$f" ]; then
+      ln -s "$MAIN/$f" "$d/$f"
+      echo "linked $f -> $MAIN/$f"
+    fi
+  done
+
+  if [ -n "$WT_SETUP" ]; then
+    echo "running: $WT_SETUP"
+    ( cd "$d" && eval "$WT_SETUP" )
+  fi
+
+  if [ -e "$d/.envrc" ] && command -v direnv >/dev/null 2>&1; then
+    if ( cd "$d" && direnv allow . >/dev/null 2>&1 ); then
+      echo "direnv allow'd $d/.envrc"
+    else
+      echo "wt: warning — direnv allow failed; run it yourself in $d" >&2
+    fi
+  fi
+
+  echo
+  echo "worktree $d on $branch"
+  request_cd "$d"
+}
+
 # -y/--yes anywhere in the arguments: skip the confirmation. Stripped here so
 # every subcommand can keep its positional arguments simple.
 args=()
@@ -435,5 +526,6 @@ case "${1:-}" in
   slug)         shift; cmd_slug "$@" ;;
   rm)           shift; cmd_rm "${1:-}" ;;
   path)         shift; cmd_path "$@" ;;
+  *[!0-9]*)     cmd_add_branch "$@" ;;
   *)            cmd_add "$@" ;;
 esac
