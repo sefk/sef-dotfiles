@@ -83,6 +83,10 @@ Worktrees (team repos only — individual repos work directly in the main checko
   a task needs isolation, say so and let me run `wt <N>` — or offer
   `/new-space <N> <slug>`, which also builds the herdr workspace and starts
   an agent there.
+- Tearing one down is `/cleanup` (the `task` skill's *wrap up* verb): worktree
+  and branch go, the herdr workspace is left for me to close with the keystroke.
+  Unpushed commits, dirty trees, and unmerged branches stop it until I say the
+  work is disposable, and the remote branch is mine to delete — that's a push.
 - Worktrees share the main checkout's `.env`/`.envrc` (symlinked by `wt`) and
   the one already-running local service stack. Don't stand up a second
   database or duplicate stack per worktree; `wt` assigns a distinct app port.

@@ -111,7 +111,9 @@ it for editing the way an interactive `wt` does.
 
 ## Related
 
-`task` covers the rest of the lifecycle (adopt, fork/split, rename, wrap up)
-and the reasoning behind the one-key-one-name convention; `new-space` is its
-*new* verb with the questions already answered. `fix-issue` calls this skill
-when issue work turns up in the wrong worktree.
+`cleanup` is the bookend: it removes the worktree and branch this skill
+creates, once the work has landed. `task` covers the rest of the lifecycle
+(adopt, fork/split, rename) and the reasoning behind the one-key-one-name
+convention; `new-space` is its *new* verb with the questions already
+answered. `fix-issue` calls this skill when issue work turns up in the wrong
+worktree.

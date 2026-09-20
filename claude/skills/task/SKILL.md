@@ -139,6 +139,11 @@ accept the `name?` flag; ask which.
 
 ### wrap up — "wrap up 927" / "clean up everything that's merged"
 
+The `cleanup` skill is this verb with the questions answered — reluctance
+about unpushed work, git run from the main checkout, the worktree removed
+last, and your own herdr workspace left for you to close. Use it unless the
+situation is odd enough to want the general form below.
+
 Only for rows flagged `merged`, or `closed` with no unpushed commits, or
 ones the user explicitly abandons.
 
