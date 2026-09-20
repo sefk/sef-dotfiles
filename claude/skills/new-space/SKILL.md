@@ -1,0 +1,117 @@
+---
+name: new-space
+description: Create an isolated space for one unit of work — a sibling git worktree on a feature branch plus a herdr workspace with a claude agent in it, handed the first instruction. Use when asked to start work somewhere new or to move work out of the current worktree, e.g. "/new-space 931", "/new-space 931 masthead-freshness", "/new-space spike-caching", "make me a space for this".
+---
+
+# New space for a unit of work
+
+`/new-space [<issue>] [<slug>] [first instruction...]`
+
+One command for what `wt` and the `herdr-new-task` popup (prefix+n) do by
+hand: a sibling worktree on its own branch, a herdr workspace labelled the
+same, a claude agent in it already working on the thing. The session that
+runs this **does not do the work** — it builds the space, hands the task
+over, and stops.
+
+This is the one place allowed to run `wt` itself (`wt -y`, which prints its
+plan and skips the question). The global ban still holds everywhere else and
+for every other mechanism: no `git worktree add`, no `isolation: "worktree"`,
+no `EnterWorktree`.
+
+## Arguments
+
+Both are optional, but you need one of them:
+
+- **numeric first argument** — a GitHub issue number. A second argument, if
+  given, is the slug.
+- **non-numeric first argument** — a slug; this is ad-hoc work with no issue
+  behind it. Don't invent an issue number for it.
+- **neither** — ask. The slug names the branch *and* the directory, the two
+  things hardest to change afterwards, so it's worth one question. If the
+  user names an issue by its title rather than its number, find it
+  (`gh issue list --search '<words>'`) and confirm the number.
+- **anything after the key** — the first instruction for the new agent, used
+  verbatim in step 6.
+
+Issue with no slug: derive one with `wt slug <N>` (from the issue title,
+18-char cap, stopwords dropped). State it in the plan — `wt -y` won't offer
+it for editing the way an interactive `wt` does.
+
+## Steps
+
+1. **Read the state first.** `task status --json` in the current repo, plus
+   `task here`. Everything carrying the key already exists or it doesn't:
+   - worktree *and* workspace already there → focus the workspace
+     (`herdr workspace focus <id>`), say so, stop. Never a second worktree or
+     branch for one key.
+   - worktree but no workspace → skip step 4, build the workspace on the
+     existing directory.
+   - branch on `origin/` but no worktree → fine, `wt` checks it out rather
+     than branching afresh.
+
+2. **Check the repo's workflow.** The main checkout is the first entry of
+   `git worktree list --porcelain`; team workflow is `TASK_TEAM=1` in its
+   `.wtconfig`. If that's absent the repo is individual — work belongs in the
+   main checkout and a worktree is against its grain. Say that in one line
+   and wait for a yes before continuing; an explicit `/new-space` is a good
+   reason to override it, just not silently.
+
+3. **State the plan, then build it.** One block, before touching anything:
+   issue/slug, branch name, worktree directory, port from `.wtconfig`'s
+   `WT_PORT_VARS`, workspace label, agent name, and the first instruction the
+   agent will get. Creating is not destructive — don't wait for a yes unless
+   step 2 asked for one.
+
+4. **Worktree** — `wt -y <N> <slug>` for issue work, `wt -y <slug>` for
+   ad-hoc (a non-numeric argument makes `wt` treat it as a branch name:
+   branch `<slug>`, directory `../<repo>-<slug>`, no port offset). `wt`
+   creates or reuses the branch, symlinks `.env`/`.envrc`, writes
+   `.env.worktree`, runs `WT_SETUP`, and `direnv allow`s the new path.
+
+   A script can't cd your shell and it can't cd you either: take the
+   directory from `wt path <N>`, or `../<repo>-<slug>` for ad-hoc work. Run
+   every later command with `git -C <dir>` or `--cwd <dir>`; don't try to
+   move this session into the worktree.
+
+5. **Workspace** — only when herdr is running (`HERDR_ENV=1`); without it,
+   report the worktree and stop there.
+
+   ```bash
+   ws=$(herdr workspace create --label <label> --cwd <dir> --focus)
+   root=$(printf '%s' "$ws" | jq -r '.result.root_pane.pane_id')
+   herdr pane split "$root" --direction right --cwd <dir> --no-focus
+   herdr agent start <agent-name> --kind claude --pane "$root" --timeout 60000
+   ```
+
+   - label is `<N>-<slug>` for issue work, `<slug>` for ad-hoc.
+   - agent name is the slug — herdr names can't start with a digit, so a slug
+     that does (`2fa-login`) becomes `<repo>-<slug>`.
+   - the generous `--timeout`: on a fresh worktree the shell prompt waits on
+     direnv and `WT_SETUP`. When a repo needs longer still, wait on the
+     prompt yourself with `herdr pane wait-output` before starting the agent.
+   - `herdr agent start` has been flaky. If it fails, say so, leave that pane
+     as a shell in the worktree, and carry on to the report — one retry at
+     most, no loop.
+
+6. **Hand the work over.**
+
+   ```bash
+   herdr agent prompt <agent-name> "<first instruction>" --wait --until working --timeout 15000
+   ```
+
+   `--until working` waits for the agent to pick the prompt up, not for it to
+   finish the task. The instruction is whatever the user typed after the key;
+   with nothing there, issue work gets `/fix-issue <N>` and ad-hoc work gets
+   no prompt at all — leave that agent idle at its prompt and say so.
+
+7. **Report and stop.** Two lines: key, branch, directory, port, workspace,
+   and what the new agent was told. Then stop — the work now belongs to the
+   agent over there, and doing it here too is exactly the collision the
+   worktree was for.
+
+## Related
+
+`task` covers the rest of the lifecycle (adopt, fork/split, rename, wrap up)
+and the reasoning behind the one-key-one-name convention; `new-space` is its
+*new* verb with the questions already answered. `fix-issue` calls this skill
+when issue work turns up in the wrong worktree.

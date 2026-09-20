@@ -20,12 +20,18 @@ commits, working branch for multi-step work, never push).
 3. **Branch / worktree** — depends on the repo's workflow (global Version
    Control policy; `.wtconfig`'s `TASK_TEAM=1` marks a team repo):
    - **Team repo**: work happens on `issue-<N>-<short-slug>` in a sibling
-     worktree (`../<repo>-<N>`), never in the main checkout and never in a
-     worktree you create yourself. If you aren't already in one, ask the
-     user to run `wt <N> <slug>` and wait — don't `git worktree add`, don't
-     use `isolation: "worktree"`, and don't start work on the default
-     branch. A one-line fix may land on the current branch if it's already
-     a working branch.
+     worktree (`../<repo>-<N>-<slug>`), never in the main checkout. Check
+     where you are first (`task here`). If this directory isn't issue N's
+     worktree — the main checkout, or another issue's tree — **stop and
+     hand off**: invoke the `new-space` skill with the issue number. It
+     builds the worktree and a herdr workspace and gives `/fix-issue <N>`
+     to a fresh agent there; you report where the work went and go no
+     further. Two agents in two trees on one issue is the collision the
+     worktree exists to prevent. Without herdr, `new-space` still makes the
+     worktree; name the directory and stop. Only continue here when you're
+     already on issue N's branch — or when the fix is a one-liner and the
+     current branch is already a working branch. Never `git worktree add`,
+     never `isolation: "worktree"`, never start work on the default branch.
    - **Individual repo (default)**: work happens in the main checkout.
      Small fixes commit straight onto the current branch (usually `main`);
      anything that needs to stay reviewable or reversible on its own gets a

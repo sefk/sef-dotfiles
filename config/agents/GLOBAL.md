@@ -77,8 +77,12 @@ Worktrees (team repos only — individual repos work directly in the main checko
   tasks can't collide.
 - **Never create a worktree yourself** — no `isolation: "worktree"`, no
   `EnterWorktree`, no `git worktree add` into `.claude/worktrees/` or
-  `.worktrees/`. If a task needs isolation, ask me to run `wt <N>` and tell me
-  the issue number and slug you want.
+  `.worktrees/`. The one exception is `wt` itself, run on my behalf by the
+  `new-space` skill (or the `task` skill's *new* verb): those may run
+  `wt -y <N> <slug>`, which prints its plan before it acts. Anywhere else, if
+  a task needs isolation, say so and let me run `wt <N>` — or offer
+  `/new-space <N> <slug>`, which also builds the herdr workspace and starts
+  an agent there.
 - Worktrees share the main checkout's `.env`/`.envrc` (symlinked by `wt`) and
   the one already-running local service stack. Don't stand up a second
   database or duplicate stack per worktree; `wt` assigns a distinct app port.

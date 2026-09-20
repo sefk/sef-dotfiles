@@ -69,6 +69,12 @@ do it after a one-line statement of intent.
 
 ### new — "set up a project for bug 931" / "set up somewhere to explore X"
 
+For the common case — a team repo, one issue or slug, a worktree plus a herdr
+workspace with an agent in it — invoke the `new-space` skill instead; it is
+this verb with the questions already answered. What follows is the general
+form, for what it doesn't cover (PR review trees, individual repos, adopting
+something that half-exists).
+
 1. Determine the key: an issue number (`gh issue view N` for the title), a
    PR number when reviewing someone else's work (`gh pr view N` for its head
    branch), or a slug the user gives or approves.
@@ -80,8 +86,9 @@ do it after a one-line statement of intent.
 3. Worktree and branch — team repos only (`.wtconfig`'s `TASK_TEAM=1`) use a
    worktree; individual repos (the default) always work in the main checkout:
    - issue, team repo: `wt <N> [slug]` (interactive; it shows its plan and
-     assigns the dev port). From an agent session, ask the user to run it, or
-     run `wt -y <N> <slug>` when they've told you to go ahead.
+     assigns the dev port). From an agent session run `wt -y <N> <slug>` —
+     setting the task up is what was asked for, and `wt` prints its plan
+     either way.
    - issue, individual repo: `git checkout -b issue-<N>-<slug>` (or just stay
      on the current branch for a small fix) in the main checkout — no
      worktree, say so.
@@ -96,8 +103,9 @@ do it after a one-line statement of intent.
    shell pane to the right, wait for the shell's prompt (direnv output on a
    fresh worktree takes a second), then `herdr agent start <slug> --kind
    <kind> --pane <root>`. Agent names must start with a letter, so the name
-   is the slug, not the `<N>-<slug>` label. The `herdr-new-task` popup
-   (prefix+n) does the same interactively when the user prefers.
+   is the slug, not the `<N>-<slug>` label. The `new-space` skill does all of
+   this end-to-end, and the `herdr-new-task` popup (prefix+n) does it
+   interactively when the user prefers.
 5. Report the key, branch, directory, port (`task here`), and workspace.
 
 ### adopt — "put this branch in a workspace" / "I already have a checkout for this"
