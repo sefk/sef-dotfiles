@@ -26,14 +26,36 @@ Both are optional, but you need one of them:
   given, is the slug.
 - **non-numeric first argument** — a slug; this is ad-hoc work with no issue
   behind it. Don't invent an issue number for it.
-- **neither** — ask. The slug names the branch *and* the directory, the two
-  things hardest to change afterwards, so it's worth one question. If the
-  user names an issue by its title rather than its number, find it
+- **neither** — ask for one; don't guess and don't invent an issue number. If
+  the user names an issue by its title rather than its number, find it
   (`gh issue list --search '<words>'`) and confirm the number.
 
-Issue with no slug: derive one with `wt slug <N>` (from the issue title,
-18-char cap, stopwords dropped). State it in the plan — `wt -y` won't offer
-it for editing the way an interactive `wt` does.
+### Always confirm a slug you derived
+
+**The slug is the one thing to stop and ask about.** It names the branch and
+the directory, which are the two hardest things to change later — the PR
+pins the branch, and open shells, agents, and `.env.worktree` pin the
+directory. Renaming afterwards is a `task` *rename* with four moving parts;
+picking it now costs one question.
+
+So: whenever the slug did not come from the user, **ask before creating
+anything** — an explicit question in the session (`AskUserQuestion` when you
+have it), not a line in the plan they might skim past. Offer:
+
+- the derived slug first, marked recommended — `wt slug <N>` turns the issue
+  title into one (lowercase, dashes, stopwords dropped, 18-char cap);
+- one or two genuine alternatives that emphasize a different part of the
+  issue, not near-spellings of the same words;
+- free text, which the question's *Other* option already gives them.
+
+An interactive `wt` offers the same edit; `wt -y` doesn't, and this skill
+runs `wt -y`, so the question is this skill's job. Skip it only when the
+user typed the slug on the command line — that was already their answer.
+
+Whatever comes back, `wt` runs it through the same slugify: lowercase,
+dashes, stopwords dropped, capped at 18 characters. If that changes what
+they chose, say the resulting branch name plainly rather than letting them
+find it later.
 
 ## Steps
 
@@ -54,11 +76,13 @@ it for editing the way an interactive `wt` does.
    and wait for a yes before continuing; an explicit `/new-space` is a good
    reason to override it, just not silently.
 
-3. **State the plan, then build it.** One block, before touching anything:
+3. **Settle the slug, then state the plan and build it.** Ask about the slug
+   first if you derived it (above) — that question comes before the plan,
+   because the plan is written in terms of its answer. Then one block:
    issue/slug, branch name, worktree directory, port from `.wtconfig`'s
-   `WT_PORT_VARS`, workspace label, agent name, and the first instruction the
-   agent will get. Creating is not destructive — don't wait for a yes unless
-   step 2 asked for one.
+   `WT_PORT_VARS`, workspace label, agent name. Creating is not destructive —
+   with the slug settled, don't wait for a second yes unless step 2 asked for
+   one.
 
 4. **Worktree** — `wt -y <N> <slug>` for issue work, `wt -y <slug>` for
    ad-hoc (a non-numeric argument makes `wt` treat it as a branch name:

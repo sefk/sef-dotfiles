@@ -37,6 +37,14 @@ commits, working branch for multi-step work, never push).
      anything that needs to stay reviewable or reversible on its own gets a
      local feature branch (`issue-<N>-<short-slug>`) that you merge or
      rebase back into `main` yourself when done — never open a PR for it.
+   - **Never pick the slug silently.** Wherever a slug is about to become a
+     branch name — the feature branch here, or the worktree `new-space`
+     builds — and it came from the issue title rather than from the user,
+     stop and ask which one they want (`AskUserQuestion` when you have it;
+     `wt slug <N>` for the suggestion, plus an alternative or two, and
+     *Other* for their own words). A branch and a directory are the hardest
+     things to rename afterwards, so the question is cheap by comparison.
+     A slug the user typed needs no question.
    - **Name the space to match.** Once you're settled in issue N's worktree
      and herdr is running (`HERDR_ENV=1`), the workspace should carry the
      same key as everything else: label `<N>-<slug>`, agent `<slug>`, both

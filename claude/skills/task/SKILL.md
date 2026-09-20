@@ -77,7 +77,11 @@ something that half-exists).
 
 1. Determine the key: an issue number (`gh issue view N` for the title), a
    PR number when reviewing someone else's work (`gh pr view N` for its head
-   branch), or a slug the user gives or approves.
+   branch), or a slug the user gives or approves. **Approves** is literal: a
+   slug you derived from an issue title gets an explicit question before
+   anything is created, with the derived one recommended and *Other* open
+   for their own words. Branch and directory are the hardest names to
+   change later; ask while it's still just text.
 2. Check `task status --json` for anything already carrying that key: an
    existing branch (local or `origin/`), worktree, or workspace. Reuse what
    exists; never create a second worktree or branch for the same key. `wt`
