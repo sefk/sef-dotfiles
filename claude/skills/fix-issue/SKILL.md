@@ -37,6 +37,25 @@ commits, working branch for multi-step work, never push).
      anything that needs to stay reviewable or reversible on its own gets a
      local feature branch (`issue-<N>-<short-slug>`) that you merge or
      rebase back into `main` yourself when done — never open a PR for it.
+   - **Name the space to match.** Once you're settled in issue N's worktree
+     and herdr is running (`HERDR_ENV=1`), the workspace should carry the
+     same key as everything else: label `<N>-<slug>`, agent `<slug>`, both
+     read off the branch (`issue-<N>-<slug>`), which is the authority — it's
+     the name the PR pins. A space that `/new-space` built is already right;
+     one adopted from a shell, a `wt` run, or a renamed branch often isn't,
+     and that drift is what `task status` flags as `name?`.
+
+     ```bash
+     herdr workspace get "$HERDR_WORKSPACE_ID" | jq -r '.result.workspace.label'
+     herdr workspace rename "$HERDR_WORKSPACE_ID" <N>-<slug>
+     herdr agent rename "$HERDR_PANE_ID" <slug>   # herdr names can't start with a digit
+     ```
+
+     Both renames are display-only and reversible, so don't ask — do it and
+     say so in a clause. Leave it alone when you're working in the main
+     checkout (individual repos, or a one-liner on an existing branch): that
+     workspace belongs to the repo, not to this task, and `<N>-<slug>` would
+     be wrong the moment the issue is done.
 
 4. **Implement** — directly, or delegated:
    - **Delegate when well-scoped**: if after Read/Plan the fix has a clear
