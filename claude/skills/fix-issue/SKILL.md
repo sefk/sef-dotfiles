@@ -24,9 +24,9 @@ commits, working branch for multi-step work, never push).
      where you are first (`task here`). If this directory isn't issue N's
      worktree — the main checkout, or another issue's tree — **stop and
      hand off**: invoke the `new-space` skill with the issue number. It
-     builds the worktree and a herdr workspace and gives `/fix-issue <N>`
-     to a fresh agent there; you report where the work went and go no
-     further. Two agents in two trees on one issue is the collision the
+     builds the worktree and a herdr workspace with a claude agent waiting
+     in it; you report where it is and that `/fix-issue <N>` is the user's
+     to type there, and go no further. Don't prompt that agent yourself. Two agents in two trees on one issue is the collision the
      worktree exists to prevent. Without herdr, `new-space` still makes the
      worktree; name the directory and stop. Only continue here when you're
      already on issue N's branch — or when the fix is a one-liner and the

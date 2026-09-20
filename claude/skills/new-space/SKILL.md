@@ -1,17 +1,17 @@
 ---
 name: new-space
-description: Create an isolated space for one unit of work — a sibling git worktree on a feature branch plus a herdr workspace with a claude agent in it, handed the first instruction. Use when asked to start work somewhere new or to move work out of the current worktree, e.g. "/new-space 931", "/new-space 931 masthead-freshness", "/new-space spike-caching", "make me a space for this".
+description: Create an isolated space for one unit of work — a sibling git worktree on a feature branch plus a herdr workspace with a claude agent waiting in it. Use when asked to start work somewhere new or to move work out of the current worktree, e.g. "/new-space 931", "/new-space 931 masthead-freshness", "/new-space spike-caching", "make me a space for this".
 ---
 
 # New space for a unit of work
 
-`/new-space [<issue>] [<slug>] [first instruction...]`
+`/new-space [<issue>] [<slug>]`
 
 One command for what `wt` and the `herdr-new-task` popup (prefix+n) do by
 hand: a sibling worktree on its own branch, a herdr workspace labelled the
-same, a claude agent in it already working on the thing. The session that
-runs this **does not do the work** — it builds the space, hands the task
-over, and stops.
+same, a claude agent sitting in it ready for work. The session that runs
+this **does not do the work, and does not start it** — it builds the space,
+focuses it, and stops. The first instruction is the user's to type.
 
 This is the one place allowed to run `wt` itself (`wt -y`, which prints its
 plan and skips the question). The global ban still holds everywhere else and
@@ -30,8 +30,6 @@ Both are optional, but you need one of them:
   things hardest to change afterwards, so it's worth one question. If the
   user names an issue by its title rather than its number, find it
   (`gh issue list --search '<words>'`) and confirm the number.
-- **anything after the key** — the first instruction for the new agent, used
-  verbatim in step 6.
 
 Issue with no slug: derive one with `wt slug <N>` (from the issue title,
 18-char cap, stopwords dropped). State it in the plan — `wt -y` won't offer
@@ -93,21 +91,19 @@ it for editing the way an interactive `wt` does.
      as a shell in the worktree, and carry on to the report — one retry at
      most, no loop.
 
-6. **Hand the work over.**
-
-   ```bash
-   herdr agent prompt <agent-name> "<first instruction>" --wait --until working --timeout 15000
-   ```
-
-   `--until working` waits for the agent to pick the prompt up, not for it to
-   finish the task. The instruction is whatever the user typed after the key;
-   with nothing there, issue work gets `/fix-issue <N>` and ad-hoc work gets
-   no prompt at all — leave that agent idle at its prompt and say so.
+6. **Leave the agent at its prompt.** Don't submit anything to it — no
+   `herdr agent prompt`, not even the obvious `/fix-issue <N>`. Starting the
+   work is the user's call and the user's first keystroke; the workspace is
+   focused, so they're already looking at the cursor. Tell them what to type
+   rather than typing it for them.
 
 7. **Report and stop.** Two lines: key, branch, directory, port, workspace,
-   and what the new agent was told. Then stop — the work now belongs to the
-   agent over there, and doing it here too is exactly the collision the
-   worktree was for.
+   and the command to run over there (`/fix-issue <N>` for issue work).
+   Anything you learned on the way that the next agent can't easily find —
+   a related worktree, a superseded PR, an open question on the issue — goes
+   in the report too, since the user is about to brief that agent. Then
+   stop — the work belongs to the space you just made, and doing it here as
+   well is exactly the collision the worktree was for.
 
 ## Related
 
