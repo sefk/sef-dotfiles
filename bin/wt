@@ -287,10 +287,18 @@ cmd_rm() {
   git -C "$MAIN" worktree remove "$d"
   echo "removed $d"
 
-  if git -C "$MAIN" branch -d "$branch" 2>/dev/null; then
-    echo "deleted merged branch $branch"
+  # Act on the plan's decision rather than letting `git branch -d` re-derive
+  # one: git also accepts a branch merged into its own UPSTREAM, which is true
+  # of every pushed branch, so a `-d` here would delete the branch the plan
+  # just promised to keep.
+  if [ "$merged" -eq 1 ]; then
+    if git -C "$MAIN" branch -d "$branch" 2>/dev/null; then
+      echo "deleted branch $branch (merged into $ref)"
+    else
+      echo "kept branch $branch (git declined to delete it)" >&2
+    fi
   else
-    echo "kept branch $branch (not merged; 'git branch -D $branch' to force)"
+    echo "kept branch $branch (not merged into $ref; 'git branch -D $branch' to force)"
   fi
 
   # If the shell was sitting in what we just deleted, move it somewhere real.
