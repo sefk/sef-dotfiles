@@ -122,12 +122,15 @@ find it later.
    rather than typing it for them.
 
 7. **Report and stop.** Two lines: key, branch, directory, port, workspace,
-   and the command to run over there (`/fix-issue <N>` for issue work).
+   the new agent's pane id (`$root` from step 5), and the command to run
+   over there (`/fix-issue <N>` for issue work). The pane id lets a calling
+   skill (e.g. `fix-issue`) submit that command itself instead of leaving
+   the agent idle; a human running `/new-space` directly just types it.
    Anything you learned on the way that the next agent can't easily find —
    a related worktree, a superseded PR, an open question on the issue — goes
-   in the report too, since the user is about to brief that agent. Then
-   stop — the work belongs to the space you just made, and doing it here as
-   well is exactly the collision the worktree was for.
+   in the report too, since whoever picks this up is about to brief that
+   agent. Then stop — the work belongs to the space you just made, and doing
+   it here as well is exactly the collision the worktree was for.
 
 ## Related
 

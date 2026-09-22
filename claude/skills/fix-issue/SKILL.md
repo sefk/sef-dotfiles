@@ -25,13 +25,18 @@ commits, working branch for multi-step work, never push).
      worktree — the main checkout, or another issue's tree — **stop and
      hand off**: invoke the `new-space` skill with the issue number. It
      builds the worktree and a herdr workspace with a claude agent waiting
-     in it; you report where it is and that `/fix-issue <N>` is the user's
-     to type there, and go no further. Don't prompt that agent yourself. Two agents in two trees on one issue is the collision the
-     worktree exists to prevent. Without herdr, `new-space` still makes the
-     worktree; name the directory and stop. Only continue here when you're
-     already on issue N's branch — or when the fix is a one-liner and the
-     current branch is already a working branch. Never `git worktree add`,
-     never `isolation: "worktree"`, never start work on the default branch.
+     in it. Once it reports the new agent's pane, continue the work there
+     yourself: `herdr agent prompt <pane-id> "/fix-issue <N>"` (no `--wait`
+     — fire it and move on). Then report where the space is and that
+     `/fix-issue <N>` was kicked off over there, and go no further. Two
+     agents in two trees on one issue is the collision the worktree exists
+     to prevent — that's why this session hands off instead of implementing
+     here, not a reason to leave the new one idle. Without herdr, `new-space`
+     still makes the worktree; name the directory and stop, since there's no
+     pane to prompt. Only continue here when you're already on issue N's
+     branch — or when the fix is a one-liner and the current branch is
+     already a working branch. Never `git worktree add`, never
+     `isolation: "worktree"`, never start work on the default branch.
    - **Individual repo (default)**: work happens in the main checkout.
      Small fixes commit straight onto the current branch (usually `main`);
      anything that needs to stay reviewable or reversible on its own gets a
