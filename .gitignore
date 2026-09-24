@@ -8,3 +8,4 @@ zsh_secret
 .claude/*
 !.claude/settings.json
 lazy-lock.json
+claude/skills/synced/
