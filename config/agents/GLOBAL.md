@@ -65,6 +65,9 @@ Git policies
 - When doing multiple changes concurrently, commit each change separately.
 - Never push; I review and push to GitHub myself.
 - Team repos: I'll do pull requests myself.
+- Exception: when I explicitly invoke a skill that pushes and opens a PR
+  (`commit-push-pr`), do both without asking. The explicit invocation is the
+  approval. Team-repo PR bodies still need `Closes #<N>` for issue branches.
 - You can always `git fetch`.
 - You can do fast-forward only merges.
 - Never rebase changes that have already been pushed to GitHub.
