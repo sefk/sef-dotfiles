@@ -6,9 +6,7 @@
     "lmstudio/**"
   ],
   "lastChangelogVersion": "0.85.1",
-  "packages": [
-    "npm:@ollama/pi-web-search"
-  ],
+  "packages": [],
   "theme": "dark",
   "hideThinkingBlock": true,
   "tuiMode": "regular",
