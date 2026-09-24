@@ -95,4 +95,5 @@ Concise, no filler:
 - **Fixed** — each thread, what changed, commit.
 - **Disagreed** — each thread, your reasoning.
 - **Codex** — rounds run, outcome, any escalated disagreement.
-- If commits are on an unpushed local branch, say so — you never push.
+- If commits are on an unpushed local branch, say so here — you never push.
+  Keep this out of PR thread replies; it goes stale once the user pushes.

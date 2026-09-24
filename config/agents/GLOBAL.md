@@ -108,6 +108,8 @@ Use the `gh` command line utility to update issues on GitHub. You don't need per
 
 When adding comments to pull requests and issues, make it clear the comment is authored by you — name yourself specifically (e.g. Claude or Codex), since it will be presented under sefk credentials. This is not necessary for commit messages, as those already carry co-author attribution naming the actual tool.
 
+Don't mention push state in PR/issue comments — no "not pushed yet", "local only", "committed locally", etc. I push soon after, and the comment then reads as stale to reviewers; I won't go back and edit it. Just describe the change and reference commits by SHA.
+
 ## Engineering Rules
 
 Work carefully

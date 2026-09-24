@@ -125,7 +125,8 @@ commits, working branch for multi-step work, never push).
 8. **Close the loop.**
    - **Team repo**: do not close the issue. Comment with what changed,
      files touched, branch name, and test results, marked as authored by
-     Claude Code. If commits are on an unpushed local branch, say so.
+     Claude Code. Don't mention push state ("not pushed", "local only") —
+     it goes stale as soon as the user pushes.
      **Never `gh issue close`** — it stays open through review and GitHub
      closes it when the PR merges. To make that happen, the PR body must
      carry `Closes #<N>`; if a PR already exists, verify the line is there
