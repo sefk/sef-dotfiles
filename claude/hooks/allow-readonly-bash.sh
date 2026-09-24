@@ -57,9 +57,12 @@ if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*sudo\s'; then
   echo "$ASK"; exit 0
 fi
 
-# ── 5. kill/killall/pkill → prompt ─────────────────────────────────
+# ── 5. kill/killall/pkill → no decision; defer to auto mode ────────
+# Auto mode's own rules allow killing processes Claude started this
+# session and soft-deny killing anything else. A hard "ask" here would
+# pre-empt that rule, so we return no decision and let it apply.
 if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*(kill|killall|pkill)\s'; then
-  echo "$ASK"; exit 0
+  exit 0
 fi
 
 # ── 6. brew install/uninstall → prompt ─────────────────────────────
@@ -68,8 +71,16 @@ if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*brew\s+(install|uninstall|remove)(\
 fi
 
 # ── 7. curl with mutating methods or POST data → prompt ────────────
+# Mutating requests to a local dev server publish nothing, so they are
+# allowed; only external hosts prompt.
 if echo "$COMMAND" | grep -qE '(^|&&|;|\|)\s*curl\s'; then
   if echo "$COMMAND" | grep -qE 'curl\s.*(-X\s*(POST|PUT|DELETE|PATCH)|-d\s|--data|--data-raw|--data-binary|--data-urlencode|-F\s|--form)'; then
+    # Allow only when the command names at least one URL and every URL
+    # host is local.
+    HOSTS=$(echo "$COMMAND" | grep -oE 'https?://[^/ "'"'"']+')
+    if [ -n "$HOSTS" ] && ! echo "$HOSTS" | grep -vqE '^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:[0-9]+)?$'; then
+      echo "$ALLOW"; exit 0
+    fi
     echo "$ASK"; exit 0
   fi
 fi
