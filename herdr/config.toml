@@ -38,16 +38,12 @@ hide_tab_bar_when_single_tab = true  # workspaces are mostly single-tab
 # width; a shell prompt never reaches the edge, which is why only editing broke.
 pane_scrollbars = false
 
-# Space rows show the tokens `task herdr-sync` paints onto each workspace
-# (bin/task; refreshed by wrangle-tick): kind icon + priority on the name row,
-# then what the task needs from you, then its PR / dev-server port. Rows with
-# no values collapse, so ad-hoc spaces stay one line.
-[ui.sidebar.spaces]
-rows = [
-  ["state_icon", "$kind", "workspace", "$pri"],
-  [{ token = "$need", fg = "#fabd2f" }],
-  ["$pr", "$port"],
-]
+# Leave the Ghostty title alone. Each project is its own herdr session in its
+# own window, and bin/herdr-windows titles the window "<host>: <session>"
+# before starting herdr. The title template has no {session} token, and the
+# config is shared by every session, so herdr would otherwise overwrite that
+# with "{hostname}: {workspace}" -- losing which project the window is.
+window_title = ""
 
 [ui.toast]
 delivery = "system"                  # macOS desktop notification when herdr isn't focused

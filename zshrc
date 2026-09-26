@@ -342,7 +342,7 @@ alias jpp=json_pp
 # the remote host. Config is dotfiles-synced, so local muscle memory is unchanged.
 studio() { herdr-windows --remote studio "$@"; }
 # studio-here: attach one session in *this* terminal instead of new windows.
-studio-here() { herdr --remote studio --remote-keybindings server --session "${1:-default}"; }
+studio-here() { herdr-windows --attach "${1:-default}" studio; }
 # studio-mosh [SESSION]: attach over mosh (roaming + local echo, the
 # tmux-over-mosh feel). herdr runs server-side on studio; mosh ships the TUI.
 # The login shell (-lc) makes sure herdr is on PATH under mosh-server.

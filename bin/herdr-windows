@@ -3,6 +3,7 @@
 # herdr-windows -- one Ghostty window per herdr session.
 #
 #   herdr-windows [--remote HOST] [SESSION ...]
+#   herdr-windows --attach SESSION [HOST]
 #
 # Each project gets its own herdr session (default, leafletter, datatalk, ...),
 # and each session gets its own Ghostty window. With no SESSION arguments, opens
@@ -13,8 +14,22 @@
 # Windows are opened through Ghostty's AppleScript `new window`, so they all
 # live in one Ghostty instance (unlike `open -na`, which spawns an app per
 # window).
+#
+# --attach is what each window runs: title the terminal "<host>: <session>",
+# then attach herdr in place (locally, or to HOST over --remote). herdr leaves
+# the title alone (window_title = "" in herdr/config.toml), so it sticks.
 
 set -euo pipefail
+
+if [[ "${1:-}" == "--attach" ]]; then
+    session="${2:?--attach needs a session}"
+    host="${3:-}"
+    printf '\e]2;%s: %s\a' "${host:-$(hostname -s)}" "$session"
+    if [[ -n "$host" ]]; then
+        exec herdr --remote "$host" --remote-keybindings server --session "$session"
+    fi
+    exec herdr --session "$session"
+fi
 
 remote=""
 if [[ "${1:-}" == "--remote" ]]; then
@@ -39,17 +54,13 @@ if [[ ${#sessions[@]} -eq 0 ]]; then
 fi
 
 for s in "${sessions[@]}"; do
-    if [[ -n "$remote" ]]; then
-        cmd="herdr --remote $remote --remote-keybindings server --session $s"
-    else
-        cmd="herdr --session $s"
-    fi
-    # Login shell so PATH (herdr, ssh) matches an interactive terminal.
-    osascript - "$cmd" <<'EOF' >/dev/null
+    # Login shell so PATH (herdr, ssh, this script in ~/bin) matches an
+    # interactive terminal.
+    osascript - "/bin/zsh -lc 'herdr-windows --attach $s $remote'" <<'EOF' >/dev/null
 on run argv
     tell application "Ghostty"
         set cfg to new surface configuration
-        set command of cfg to "/bin/zsh -lc '" & item 1 of argv & "'"
+        set command of cfg to item 1 of argv
         new window with configuration cfg
     end tell
 end run
