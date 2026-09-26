@@ -76,8 +76,10 @@ here.)
    - the remote branch stays. Deleting it is a push, and you never push —
      mention it's still on origin if it is, and leave it to the user.
    - other tasks' herdr workspaces (batch mode, workspaces you are not
-     sitting in) close cleanly: `herdr workspace close <id>`. The agent
-     inside goes with them, so name them in the plan.
+     sitting in) close cleanly: `herdr --session <session> workspace close
+     <id>`, with the session from that workspace's record in `task status
+     --json` (ids are only unique within one session). The agent inside
+     goes with them, so name them in the plan.
 
 7. **Report, then hand back your own workspace.** What was removed, what was
    kept and why, what's left on origin. Then end with the handoff line:

@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# herdr-windows -- one Ghostty window per herdr session.
+#
+#   herdr-windows [--remote HOST] [SESSION ...]
+#
+# Each project gets its own herdr session (default, leafletter, datatalk, ...),
+# and each session gets its own Ghostty window. With no SESSION arguments, opens
+# a window for every *running* session -- so on the laptop, `herdr-windows
+# --remote studio` mirrors whatever studio has up. Name sessions explicitly to
+# start ones that aren't running yet (herdr creates a session on first attach).
+#
+# Windows are opened through Ghostty's AppleScript `new window`, so they all
+# live in one Ghostty instance (unlike `open -na`, which spawns an app per
+# window).
+
+set -euo pipefail
+
+remote=""
+if [[ "${1:-}" == "--remote" ]]; then
+    remote="${2:?--remote needs a host}"
+    shift 2
+fi
+
+sessions=("$@")
+if [[ ${#sessions[@]} -eq 0 ]]; then
+    if [[ -n "$remote" ]]; then
+        json=$(ssh "$remote" zsh -lc "'herdr session list --json'")
+    else
+        json=$(herdr session list --json)
+    fi
+    while IFS= read -r s; do
+        sessions+=("$s")
+    done < <(jq -r '.sessions[] | select(.running) | .name' <<<"$json")
+fi
+if [[ ${#sessions[@]} -eq 0 ]]; then
+    echo "herdr-windows: no running sessions${remote:+ on $remote}; name some to start them" >&2
+    exit 1
+fi
+
+for s in "${sessions[@]}"; do
+    if [[ -n "$remote" ]]; then
+        cmd="herdr --remote $remote --remote-keybindings server --session $s"
+    else
+        cmd="herdr --session $s"
+    fi
+    # Login shell so PATH (herdr, ssh) matches an interactive terminal.
+    osascript - "$cmd" <<'EOF' >/dev/null
+on run argv
+    tell application "Ghostty"
+        set cfg to new surface configuration
+        set command of cfg to "/bin/zsh -lc '" & item 1 of argv & "'"
+        new window with configuration cfg
+    end tell
+end run
+EOF
+    echo "opened: $s${remote:+ on $remote}"
+done

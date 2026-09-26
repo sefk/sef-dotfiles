@@ -38,6 +38,17 @@ hide_tab_bar_when_single_tab = true  # workspaces are mostly single-tab
 # width; a shell prompt never reaches the edge, which is why only editing broke.
 pane_scrollbars = false
 
+# Space rows show the tokens `task herdr-sync` paints onto each workspace
+# (bin/task; refreshed by wrangle-tick): kind icon + priority on the name row,
+# then what the task needs from you, then its PR / dev-server port. Rows with
+# no values collapse, so ad-hoc spaces stay one line.
+[ui.sidebar.spaces]
+rows = [
+  ["state_icon", "$kind", "workspace", "$pri"],
+  [{ token = "$need", fg = "#fabd2f" }],
+  ["$pr", "$port"],
+]
+
 [ui.toast]
 delivery = "system"                  # macOS desktop notification when herdr isn't focused
 

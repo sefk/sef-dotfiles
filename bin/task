@@ -104,10 +104,11 @@ COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
 
 # --- small helpers -----------------------------------------------------------
 
-def run(cmd, cwd=None, timeout=15):
+def run(cmd, cwd=None, timeout=15, env=None):
     """stdout of a command, or None when it fails or isn't installed."""
     try:
-        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout,
+                           env={**os.environ, **env} if env else None)
     except (OSError, subprocess.TimeoutExpired):
         return None
     if p.returncode != 0:
@@ -115,8 +116,8 @@ def run(cmd, cwd=None, timeout=15):
     return p.stdout
 
 
-def run_json(cmd, cwd=None, timeout=15):
-    out = run(cmd, cwd=cwd, timeout=timeout)
+def run_json(cmd, cwd=None, timeout=15, env=None):
+    out = run(cmd, cwd=cwd, timeout=timeout, env=env)
     if not out:
         return None
     try:
@@ -400,16 +401,39 @@ def github_state(main, issue_keys, refresh=False, offline=False):
 
 # --- herdr -------------------------------------------------------------------
 
+def herdr_sessions():
+    """Running herdr sessions as (name, socket path). One per project window
+    (default, leafletter, datatalk, ...); see bin/herdr-windows."""
+    data = run_json(["herdr", "session", "list", "--json"], timeout=5)
+    return [(s["name"], s["socket_path"]) for s in (data or {}).get("sessions", [])
+            if s.get("running")]
+
+
+def herdr_env(ws):
+    """Environment that points herdr CLI calls at a workspace's session."""
+    return {"HERDR_SOCKET_PATH": ws["sock"]}
+
+
 def herdr_state():
-    """Workspaces with the cwds and agents of their panes. Empty when herdr is down."""
-    ws = run_json(["herdr", "workspace", "list"], timeout=5)
-    ag = run_json(["herdr", "agent", "list"], timeout=5)
+    """Workspaces, across every running session, with the cwds and agents of
+    their panes. Empty when herdr is down."""
+    out = []
+    for name, sock in herdr_sessions():
+        out.extend(herdr_session_state(name, sock))
+    return out
+
+
+def herdr_session_state(session, sock):
+    env = {"HERDR_SOCKET_PATH": sock}
+    ws = run_json(["herdr", "workspace", "list"], timeout=5, env=env)
+    ag = run_json(["herdr", "agent", "list"], timeout=5, env=env)
     if not ws:
         return []
     spaces = {}
     for w in ws["result"].get("workspaces", []):
         spaces[w["workspace_id"]] = {
             "id": w["workspace_id"], "label": w["label"], "number": w.get("number"),
+            "session": session, "sock": sock,
             "status": w.get("agent_status"), "focused": w.get("focused", False),
             "cwds": set(), "agents": [],
         }
@@ -657,7 +681,8 @@ def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
             matched["branch"] = matched["branch"].strip()
         if matched is None:
             continue
-        matched["workspaces"].append({"id": ws["id"], "label": ws["label"], "status": ws["status"], "number": ws.get("number")})
+        matched["workspaces"].append({"id": ws["id"], "label": ws["label"], "status": ws["status"], "number": ws.get("number"),
+                                      "session": ws["session"], "sock": ws["sock"]})
         matched["agents"].extend(ws["agents"])
 
     for r in rows.values():
@@ -875,8 +900,14 @@ def fmt_issue(r):
     return f"#{n} {i['state']}" if not r["key"].isdigit() else i["state"]
 
 
+def ws_name(w):
+    """Workspace label, prefixed with its session unless that's the default."""
+    s = w.get("session")
+    return w["label"] if s in (None, "default") else f"{s}:{w['label']}"
+
+
 def fmt_ws(r):
-    return ", ".join(w["label"] for w in r["workspaces"])
+    return ", ".join(ws_name(w) for w in r["workspaces"])
 
 
 def fmt_agent(r):
@@ -1169,7 +1200,7 @@ def cmd_herdr_sync(args):
                 for k in TOKEN_NAMES:
                     if not tokens.get(k):
                         cmd += ["--clear-token", k]
-                if run(cmd, timeout=5) is not None:
+                if run(cmd, timeout=5, env=herdr_env(ws)) is not None:
                     n += 1
     print(f"updated {n} workspace(s)")
 
@@ -1214,7 +1245,7 @@ def attention(rows, loose):
                      default=None)
         ctx = dict(key=key, repo=r["repo"], name=name, pri=pri, tags=r.get("tags"), task_kind=r.get("kind"),
                    pr_number=pr["number"] if pr else None, issue_number=(issue or {}).get("number"),
-                   ws=[(w.get("number"), w["label"]) for w in r["workspaces"]])
+                   ws=[(w.get("number"), ws_name(w)) for w in r["workspaces"]])
 
         if not r["worktree"] and not r["workspaces"]:
             # A bare branch. Only interesting when it's a P0/P1 of mine that

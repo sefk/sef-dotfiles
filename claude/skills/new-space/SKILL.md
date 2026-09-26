@@ -99,12 +99,18 @@ find it later.
    report the worktree and stop there.
 
    ```bash
-   ws=$(herdr workspace create --label <label> --cwd <dir> --focus)
+   s=$(herdr-session-for <dir>)   # datatalk, leafletter, or default
+   ws=$(herdr --session "$s" workspace create --label <label> --cwd <dir> --focus)
    root=$(printf '%s' "$ws" | jq -r '.result.root_pane.pane_id')
-   herdr pane split "$root" --direction right --cwd <dir> --no-focus
-   herdr agent start <agent-name> --kind claude --pane "$root" --timeout 60000
+   herdr --session "$s" pane split "$root" --direction right --cwd <dir> --no-focus
+   herdr --session "$s" agent start <agent-name> --kind claude --pane "$root" --timeout 60000
    ```
 
+   - each project has its own herdr session and Ghostty window;
+     `herdr-session-for` picks the one the repo belongs in. Pass
+     `--session "$s"` on every herdr call for the new workspace — without it
+     herdr talks to the session *this* pane is in. When `$s` differs from
+     the current session, say which window the workspace landed in.
    - label is `<N>-<slug>` for issue work, `<slug>` for ad-hoc.
    - agent name is the slug — herdr names can't start with a digit, so a slug
      that does (`2fa-login`) becomes `<repo>-<slug>`.

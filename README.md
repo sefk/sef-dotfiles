@@ -97,6 +97,16 @@ with a chosen pane layout and starts the agent, named after the workspace. Run
 `wt` first and give the workspace the same `<N>-<slug>` name as the directory
 and branch, so `task status` can join them (see below).
 
+Each project runs in its own named herdr session with its own Ghostty window:
+`default` (misc, the wrangler), `leafletter`, `datatalk`. `bin/herdr-windows
+[--remote HOST] [SESSION ...]` opens one window per session (every running
+one when none are named), and the `studio` zsh function runs it with `--remote
+studio`, so the laptop gets the same set of windows as studio. `studio-here
+[SESSION]` and `studio-mosh [SESSION]` attach one session in the current
+terminal. `bin/herdr-session-for DIR` maps a repo to its session; the
+`new-space` and `task` skills use it to put new workspaces in the right
+window. `task` and `wrangle-tick` look across every running session.
+
 The zsh prompt (`oh-my-zsh/custom/themes/sefk.zsh-theme`) squashes the last
 path component to a letter when it would just repeat the branch — a worktree
 directory is its branch with the project name in front. Ordinary checkouts

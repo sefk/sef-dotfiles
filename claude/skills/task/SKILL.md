@@ -103,7 +103,9 @@ something that half-exists).
    - ad-hoc, individual repo: a branch (or just the current branch) in the
      main checkout — no worktree.
 4. herdr workspace, only when running inside herdr (`HERDR_ENV=1`):
-   `herdr workspace create --label <label> --cwd <dir> --focus`, split a
+   `herdr --session "$(herdr-session-for <dir>)" workspace create --label
+   <label> --cwd <dir> --focus` (each project has its own session/window;
+   pass the same `--session` on the follow-up calls), split a
    shell pane to the right, wait for the shell's prompt (direnv output on a
    fresh worktree takes a second), then `herdr agent start <slug> --kind
    <kind> --pane <root>`. Agent names must start with a letter, so the name
@@ -155,7 +157,8 @@ ones the user explicitly abandons.
    `dirty` or `unpushed N` is not a candidate until the user says the work is
    disposable; quote the commit subjects (`git log <base>..<branch>`).
 2. Show the plan per task: remove worktree, delete local branch, close herdr
-   workspace (`herdr workspace close <id>`; the agent inside exits), and
+   workspace (`herdr --session <session> workspace close <id>`, session from
+   the workspace's record in `task status --json`; the agent inside exits), and
    whether the remote branch is already gone. Wait for a yes.
 3. Team repo: `wt rm <N>` does worktree plus merged-branch removal for issue
    work; for the rest, `git worktree remove <dir>` then `git branch -d

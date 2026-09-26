@@ -38,9 +38,10 @@ AGENT = os.environ.get("WRANGLER_AGENT", "wrangler")
 TOP_BAND = 90
 
 
-def run(cmd, timeout=120):
+def run(cmd, timeout=120, env=None):
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                              env={**os.environ, **env} if env else None)
     except (OSError, subprocess.TimeoutExpired) as e:
         print(f"wrangle-tick: {cmd[0]}: {e}", file=sys.stderr)
         return None
@@ -64,16 +65,33 @@ def save_state(s):
     STATE.write_text(json.dumps(s))
 
 
-def wrangler():
-    """The wrangler agent's record from herdr, or None."""
-    p = run(["herdr", "agent", "list"], timeout=10)
+def sessions():
+    """Socket paths of the running herdr sessions (one per project window)."""
+    p = run(["herdr", "session", "list", "--json"], timeout=10)
     if not p or p.returncode:
-        return None
+        return []
     try:
-        agents = json.loads(p.stdout)["result"]["agents"]
+        return [s["socket_path"] for s in json.loads(p.stdout)["sessions"] if s.get("running")]
     except (ValueError, KeyError):
-        return None
-    return next((a for a in agents if a.get("name") == AGENT), None)
+        return []
+
+
+def wrangler():
+    """(agent record, env for its session) of the wrangler agent, searching
+    every running herdr session; (None, None) when there isn't one."""
+    for sock in sessions():
+        env = {"HERDR_SOCKET_PATH": sock}
+        p = run(["herdr", "agent", "list"], timeout=10, env=env)
+        if not p or p.returncode:
+            continue
+        try:
+            agents = json.loads(p.stdout)["result"]["agents"]
+        except (ValueError, KeyError):
+            continue
+        a = next((a for a in agents if a.get("name") == AGENT), None)
+        if a:
+            return a, env
+    return None, None
 
 
 def main():
@@ -114,7 +132,7 @@ def main():
         save_state(state)
         return
 
-    agent = wrangler()
+    agent, env = wrangler()
     if not agent or agent.get("agent_status") not in ("idle", "done"):
         save_state(state)
         return
@@ -122,7 +140,7 @@ def main():
     msg = (f"/wrangle tick ({reason}): {len(new)} new attention item(s)"
            + (f": {heads}" if heads else "")
            + f". You have been idle {int(idle // 60)}m. Read ~/.cache/task/brief.json and brief me.")
-    r = run(["herdr", "agent", "prompt", AGENT, msg], timeout=30)
+    r = run(["herdr", "agent", "prompt", AGENT, msg], timeout=30, env=env)
     if r and r.returncode == 0:
         state["last_nudge"] = now
         state["last_reason"] = reason

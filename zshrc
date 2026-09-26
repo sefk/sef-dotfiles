@@ -331,16 +331,19 @@ export PATH="$PATH:/Users/sefk/.lmstudio/bin"
 
 alias jpp=json_pp
 
-# studio-mosh: attach to studio's herdr over mosh (roaming + local echo, the
+# studio: one Ghostty window per herdr session running on studio (default,
+# leafletter, datatalk, ...) -- mirrors studio's windows onto this machine.
+# `studio leafletter` opens just that one. See bin/herdr-windows.
+#
+# Each project is its own named herdr session; bare `herdr` is the `default`
+# one. --remote-keybindings server (set in herdr-windows): use studio's keybinds
+# for the attach, not the laptop's. Needed for [[keys.command]] custom bindings
+# (e.g. Ctrl-A n new-task), which --remote drops by default since they run on
+# the remote host. Config is dotfiles-synced, so local muscle memory is unchanged.
+studio() { herdr-windows --remote studio "$@"; }
+# studio-here: attach one session in *this* terminal instead of new windows.
+studio-here() { herdr --remote studio --remote-keybindings server --session "${1:-default}"; }
+# studio-mosh [SESSION]: attach over mosh (roaming + local echo, the
 # tmux-over-mosh feel). herdr runs server-side on studio; mosh ships the TUI.
 # The login shell (-lc) makes sure herdr is on PATH under mosh-server.
-#
-# Bare `herdr` attaches the *default* persistent session — the same one the
-# `studio` alias (herdr --remote studio) reaches. `--session studio` would be a
-# *separate* named session, so it'd never reattach to your real work.
-# --remote-keybindings server: use studio's keybinds for the attach, not the
-# laptop's. Needed for [[keys.command]] custom bindings (e.g. Ctrl-A n new-task),
-# which --remote drops by default since they run on the remote host. Config is
-# dotfiles-synced, so local muscle memory is unchanged.
-alias studio="herdr --remote studio --remote-keybindings server"
-alias studio-mosh='mosh studio -- zsh -lc "herdr"'
+studio-mosh() { mosh studio -- zsh -lc "herdr --session ${1:-default}"; }
