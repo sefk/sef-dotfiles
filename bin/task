@@ -135,6 +135,16 @@ def under(path, root):
         return False
 
 
+def in_repo_family(path, main):
+    """True when path is in main's checkout or one of its sibling worktrees
+    (`../<repo>-<N>`, `../<repo>-<slug>`, `../<repo>-pr<N>`)."""
+    if under(path, main):
+        return True
+    m = Path(main).resolve()
+    p = Path(path).resolve()
+    return any(a.parent == m.parent and a.name.startswith(m.name + "-") for a in (p, *p.parents))
+
+
 def slug_of(name):
     """The human part of a name: drop issue-/N- prefixes and the repo prefix."""
     m = ISSUE_BRANCH.match(name)
@@ -669,7 +679,11 @@ def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
             if r["worktree"] and any(under(c, r["worktree"]) for c in ws["cwds"]):
                 matched = r
                 break
-        if matched is None:
+        # The label fallback only for workspaces that aren't visibly sitting in
+        # another repo: every session is collected, so a leafletter `42-*`
+        # workspace must not claim datatalk's issue 42.
+        foreign = ws["cwds"] and not any(in_repo_family(c, main) for c in ws["cwds"])
+        if matched is None and not foreign:
             m = re.match(r"^(\d+)", ws["label"])
             if m and m.group(1) in rows:
                 matched = rows[m.group(1)]
@@ -1245,7 +1259,7 @@ def attention(rows, loose):
                      default=None)
         ctx = dict(key=key, repo=r["repo"], name=name, pri=pri, tags=r.get("tags"), task_kind=r.get("kind"),
                    pr_number=pr["number"] if pr else None, issue_number=(issue or {}).get("number"),
-                   ws=[(w.get("number"), ws_name(w)) for w in r["workspaces"]])
+                   ws=[(w.get("number"), ws_name(w), w.get("session")) for w in r["workspaces"]])
 
         if not r["worktree"] and not r["workspaces"]:
             # A bare branch. Only interesting when it's a P0/P1 of mine that
@@ -1361,7 +1375,8 @@ def attention(rows, loose):
 
 def ident(it):
     """Who an item is about, every handle the user might reach for: kind icon,
-    slug, issue and PR numbers, herdr workspace number."""
+    slug, issue and PR numbers, herdr workspace number (session-qualified
+    outside the default session, since numbers restart per session)."""
     parts = [f"{KIND_ICON.get(it.get('task_kind'), '')} {it.get('name') or it.get('key')}".strip()]
     n = it.get("issue_number") or (it.get("key") if str(it.get("key", "")).isdigit() and not it.get("pr_number") else None)
     if n:
@@ -1370,7 +1385,12 @@ def ident(it):
         parts.append(f"PR #{it['pr_number']}")
     ws = it.get("ws") or []
     if ws:
-        parts.append(", ".join(f"ws{w[0]}" if w[0] is not None else w[1] for w in ws))
+        def one(w):
+            if w[0] is None:
+                return w[1]
+            s = w[2] if len(w) > 2 else None
+            return f"ws{w[0]}" if s in (None, "default") else f"{s}:ws{w[0]}"
+        parts.append(", ".join(one(w) for w in ws))
     elif it.get("kind") == "loose" or it.get("task_kind"):
         parts.append("no ws")
     return " · ".join(parts)
