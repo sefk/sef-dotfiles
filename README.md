@@ -103,7 +103,11 @@ Each project runs in its own named herdr session with its own Ghostty window:
 one when none are named), and the `studio` zsh function runs it with `--remote
 studio`, so the laptop gets the same set of windows as studio. `studio-here
 [SESSION]` and `studio-mosh [SESSION]` attach one session in the current
-terminal. `bin/herdr-session-for DIR` maps a repo to its session; the
+terminal. Windows are titled `<host>: <session>`, and leafletter (green) and
+datatalk (cardinal) get a tinted sidebar and accent: `herdr-windows` writes a
+per-session config (shared config plus a `[theme.custom]` overlay) and starts
+the session with `HERDR_CONFIG_PATH` pointing at it, so a tint change takes a
+session restart. `bin/herdr-session-for DIR` maps a repo to its session; the
 `new-space` and `task` skills use it to put new workspaces in the right
 window. `task` and `wrangle-tick` look across every running session.
 
