@@ -134,7 +134,10 @@ $(SERVICES_DIR):
 
 # Deep links for ~/.pi/agent/: link each file directly to the pi/ subdir in the repo.
 # Excludes auth.json (secrets), bin/ (vendored fd/rg), npm/ (extension package
-# state), sessions/ (transcripts) -- none of those are checked in.
+# state), sessions/ (transcripts) -- none of those are checked in. settings.json
+# is also excluded (gitignored, like codex/config.toml): it mixes in
+# machine-specific choices (default model/provider, local model server
+# endpoints) that vary by what hardware/servers each host has available.
 ~/.pi/agent/%: $(LINK_TARGET_PREFIX)/pi/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi

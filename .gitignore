@@ -9,3 +9,4 @@ zsh_secret
 !.claude/settings.json
 lazy-lock.json
 claude/skills/synced/
+pi/settings.json

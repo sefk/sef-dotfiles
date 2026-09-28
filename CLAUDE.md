@@ -19,7 +19,10 @@ instructions live in the global `claude/CLAUDE.md` (deep-linked to
   state (sockets, logs, sessions, sqlite DBs) and secrets (`auth.json`) that
   must **not** land in the repo, so only the checked-in files are linked — for
   herdr just `config.toml`; for codex just `AGENTS.md`, `hooks.json`, and the
-  herdr hook (**not** `config.toml`, which codex rewrites at runtime).
+  herdr hook (**not** `config.toml`, which codex rewrites at runtime); for pi
+  everything except `settings.json`, which is gitignored since it mixes in
+  machine-specific choices (default model/provider, local model server
+  endpoints) that vary per host.
 - `bash_secret` is **not** checked in but is treated as a link target (special
   create/cleanup logic in the Makefile). It defines things like
   `RESUME_ADDRESS` and `RESTIC_PASSWORD` (encrypts the nightly
