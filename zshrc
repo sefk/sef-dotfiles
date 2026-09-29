@@ -346,4 +346,6 @@ studio-here() { herdr-windows --attach "${1:-default}" studio; }
 # studio-mosh [SESSION]: attach over mosh (roaming + local echo, the
 # tmux-over-mosh feel). herdr runs server-side on studio; mosh ships the TUI.
 # The login shell (-lc) makes sure herdr is on PATH under mosh-server.
-studio-mosh() { mosh studio -- zsh -lc "herdr --session ${1:-default}"; }
+# Runs herdr-windows --attach on studio (no host arg = local there), so the
+# session gets its title and per-project tint like the Ghostty windows do.
+studio-mosh() { mosh studio -- zsh -lc "herdr-windows --attach ${1:-default}"; }
