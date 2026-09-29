@@ -340,7 +340,20 @@ alias jpp=json_pp
 # for the attach, not the laptop's. Needed for [[keys.command]] custom bindings
 # (e.g. Ctrl-A n new-task), which --remote drops by default since they run on
 # the remote host. Config is dotfiles-synced, so local muscle memory is unchanged.
-studio() { herdr-windows --remote studio "$@"; }
+# With no SESSION, both pick from studio's sessions with fzf (see _studio_pick).
+_studio_pick() {
+  local json lines
+  json=$(ssh studio zsh -lc "'herdr session list --json'") || return 1
+  lines=$(jq -r '.sessions[] | "\(.name)\t\(if .running then "running" else "stopped" end)"' <<<"$json")
+  print -r -- "$lines" | fzf "$@" --delimiter=$'\t' --with-nth=1,2 --prompt='studio session> ' | cut -f1
+}
+studio() {
+  if (( $# == 0 )); then
+    local picked; picked=(${(f)"$(_studio_pick --multi --header='tab: multi-select, enter: open, esc: all running')"})
+    set -- "${picked[@]}"   # none picked -> herdr-windows opens every running session
+  fi
+  herdr-windows --remote studio "$@"
+}
 # studio-here: attach one session in *this* terminal instead of new windows.
 studio-here() { herdr-windows --attach "${1:-default}" studio; }
 # studio-mosh [SESSION]: attach over mosh (roaming + local echo, the
@@ -348,4 +361,8 @@ studio-here() { herdr-windows --attach "${1:-default}" studio; }
 # The login shell (-lc) makes sure herdr is on PATH under mosh-server.
 # Runs herdr-windows --attach on studio (no host arg = local there), so the
 # session gets its title and per-project tint like the Ghostty windows do.
-studio-mosh() { mosh studio -- zsh -lc "herdr-windows --attach ${1:-default}"; }
+studio-mosh() {
+  local session=${1:-$(_studio_pick)}
+  [[ -n $session ]] || return 1
+  mosh studio -- zsh -lc "herdr-windows --attach $session"
+}
