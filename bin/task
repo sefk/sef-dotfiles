@@ -4,25 +4,25 @@ task -- where is every piece of work, across git, GitHub, herdr, and dev servers
 
 A "task" is one unit of work. Its state is scattered over five places that
 don't know about each other: git worktrees, branches, GitHub issues, GitHub
-pull requests, herdr workspaces (and the agents in them), and whatever dev
+pull requests, herdr tabs (and the agents in them), and whatever dev
 servers happen to be listening. This tool joins them on one key -- the issue
-number when there is one, otherwise the branch/workspace slug -- and reports
+number when there is one, otherwise the branch/tab slug -- and reports
 the result. It is read-only: the flexible, judgment-laden actions (set up,
 fork, wrap up) live in the `task` agent skill, which reads this output and
 composes `wt`, `git`, `gh`, and `herdr` as needed.
 
   task status [--repo PATH] [--all] [--branches] [--json] [--refresh] [--offline]
         one row per task. Repos come from the cwd plus every repo a herdr
-        workspace is sitting in (--all); --repo restricts to one. Branches
-        with no worktree, workspace, or open PR are hidden unless --branches
+        tab is sitting in (--all); --repo restricts to one. Branches
+        with no worktree, tab, or open PR are hidden unless --branches
         (--json always includes them).
   task here [PATH] [--short] [--json]
         the task for a directory (default cwd). --short is a one-line
         summary for prompts and statuslines: it prints a cached line and
         refreshes it in the background when stale, so it never waits.
   task herdr-sync
-        push kind/pri/pr/issue/port/need tokens onto matching herdr
-        workspaces as display-only metadata (herdr workspace report-metadata).
+        push kind/pri/pr/issue/port/need tokens onto the panes of matching
+        herdr tabs as display-only metadata (herdr pane report-metadata).
   task brief [--repo PATH] [--json] [--since-last] [--refresh] [--offline]
         where attention belongs: every task plus the agent's last words,
         PR review state, and open P0/P1 issues and review requests that have
@@ -44,13 +44,13 @@ sources, which is what "stranded work" and "which session is this" are.
 
   merged        PR merged (or, in a non-team repo, the branch is already an
                 ancestor of the default branch via local merge/rebase) but
-                the branch/worktree/workspace is still here
+                the branch/worktree/tab is still here
   closed        the issue is closed (and no open PR explains why)
   no-wt         branch exists, no worktree (team repos only; see below)
-  no-ws         worktree exists, no herdr workspace on it
-  no-agent      workspace exists but no agent is running in it
-  adhoc         herdr workspace with no branch of its own (sits on main)
-  name?         branch, directory, and workspace slugs disagree
+  no-tab        worktree exists, no herdr tab on it
+  no-agent      tab exists but no agent is running in it
+  adhoc         herdr tab with no branch of its own (sits on main)
+  name?         branch, directory, and tab slugs disagree
   dirty         uncommitted changes
   ahead N       commits not on the upstream (unpushed if no upstream)
   no-pr         worktree with commits ahead of the default branch, no PR
@@ -411,56 +411,45 @@ def github_state(main, issue_keys, refresh=False, offline=False):
 
 # --- herdr -------------------------------------------------------------------
 
-def herdr_sessions():
-    """Running herdr sessions as (name, socket path). One per project window
-    (default, leafletter, datatalk, ...); see bin/herdr-windows."""
-    data = run_json(["herdr", "session", "list", "--json"], timeout=5)
-    return [(s["name"], s["socket_path"]) for s in (data or {}).get("sessions", [])
-            if s.get("running")]
-
-
-def herdr_env(ws):
-    """Environment that points herdr CLI calls at a workspace's session."""
-    return {"HERDR_SOCKET_PATH": ws["sock"]}
-
-
 def herdr_state():
-    """Workspaces, across every running session, with the cwds and agents of
-    their panes. Empty when herdr is down."""
-    out = []
-    for name, sock in herdr_sessions():
-        out.extend(herdr_session_state(name, sock))
-    return out
-
-
-def herdr_session_state(session, sock):
-    env = {"HERDR_SOCKET_PATH": sock}
-    ws = run_json(["herdr", "workspace", "list"], timeout=5, env=env)
-    ag = run_json(["herdr", "agent", "list"], timeout=5, env=env)
+    """Tabs across every workspace, with the cwds, panes, and agents in them.
+    Workspaces are projects (leafletter, datatalk, ...) and a task is a tab
+    inside one (see bin/herdr-project-for). Empty when herdr is down."""
+    ws = run_json(["herdr", "workspace", "list"], timeout=5)
+    ag = run_json(["herdr", "agent", "list"], timeout=5)
     if not ws:
         return []
-    spaces = {}
+    tabs = {}
     for w in ws["result"].get("workspaces", []):
-        spaces[w["workspace_id"]] = {
-            "id": w["workspace_id"], "label": w["label"], "number": w.get("number"),
-            "session": session, "sock": sock,
-            "status": w.get("agent_status"), "focused": w.get("focused", False),
-            "cwds": set(), "agents": [],
-        }
+        tl = run_json(["herdr", "tab", "list", "--workspace", w["workspace_id"]], timeout=5)
+        for t in (tl or {}).get("result", {}).get("tabs", []):
+            tabs[t["tab_id"]] = {
+                "id": t["tab_id"], "label": t["label"], "number": t.get("number"),
+                "workspace": w["label"], "workspace_id": w["workspace_id"],
+                "status": t.get("agent_status"), "focused": t.get("focused", False),
+                "cwds": set(), "panes": [], "agents": [],
+            }
     for a in (ag or {}).get("result", {}).get("agents", []):
-        s = spaces.get(a.get("workspace_id"))
-        if not s:
+        t = tabs.get(a.get("tab_id"))
+        if not t:
             continue
+        t["panes"].append(a["pane_id"])
         for k in ("cwd", "foreground_cwd"):
             if a.get(k):
-                s["cwds"].add(a[k])
+                t["cwds"].add(a[k])
         if a.get("agent"):
-            s["agents"].append({"kind": a["agent"], "status": a.get("agent_status"),
+            t["agents"].append({"kind": a["agent"], "status": a.get("agent_status"),
                                 "pane": a["pane_id"], "cwd": a.get("cwd"),
                                 "name": a.get("name"),
                                 "session": (a.get("agent_session") or {}).get("value"),
                                 "title": a.get("terminal_title_stripped")})
-    return list(spaces.values())
+    return list(tabs.values())
+
+
+def project_for(main):
+    """The herdr workspace label a repo belongs in (bin/herdr-project-for)."""
+    out = run([str(Path(__file__).resolve().with_name("herdr-project-for")), main], timeout=5)
+    return (out or "").strip() or Path(main).name
 
 
 # --- agent transcripts -------------------------------------------------------
@@ -641,7 +630,7 @@ def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
     def row(key):
         return rows.setdefault(key, {
             "key": key, "repo": repo, "team": team, "slug": None, "branch": None, "worktree": None,
-            "dir_slug": None, "pr": None, "issue": None, "workspaces": [], "agents": [],
+            "dir_slug": None, "pr": None, "issue": None, "tabs": [], "agents": [],
             "port": None, "listening": [], "db": None, "git": {}, "flags": [],
         })
 
@@ -671,33 +660,35 @@ def collect_repo(main, herdr, ports, refresh=False, offline=False, only=None):
         for r, facts in zip(todo, ex.map(lambda r: branch_facts(main, r["worktree"], r["branch"], base), todo)):
             r["git"] = facts
 
-    # herdr workspaces: matched by pane cwd inside a worktree, else by label key,
+    # herdr tabs: matched by pane cwd inside a worktree, else by label key,
     # else (sitting in the main checkout) an ad-hoc row keyed by label.
-    for ws in herdr:
+    project = project_for(main)
+    for t in herdr:
         matched = None
         for r in rows.values():
-            if r["worktree"] and any(under(c, r["worktree"]) for c in ws["cwds"]):
+            if r["worktree"] and any(under(c, r["worktree"]) for c in t["cwds"]):
                 matched = r
                 break
-        # The label fallback only for workspaces that aren't visibly sitting in
-        # another repo: every session is collected, so a leafletter `42-*`
-        # workspace must not claim datatalk's issue 42.
-        foreign = ws["cwds"] and not any(in_repo_family(c, main) for c in ws["cwds"])
+        # The label fallback only for tabs that aren't visibly sitting in
+        # another repo: every workspace is collected, so a leafletter `42-*`
+        # tab must not claim datatalk's issue 42.
+        foreign = t["cwds"] and not any(in_repo_family(c, main) for c in t["cwds"])
         if matched is None and not foreign:
-            m = re.match(r"^(\d+)", ws["label"])
+            m = re.match(r"^(\d+)", t["label"])
             if m and m.group(1) in rows:
                 matched = rows[m.group(1)]
-        if matched is None and any(under(c, main) for c in ws["cwds"]):
-            matched = row(ws["label"])
+        if matched is None and any(under(c, main) for c in t["cwds"]):
+            matched = row(t["label"])
             matched["adhoc"] = True
             matched["worktree"] = main
             matched["branch"] = run(["git", "-C", main, "symbolic-ref", "--short", "HEAD"]) or ""
             matched["branch"] = matched["branch"].strip()
         if matched is None:
             continue
-        matched["workspaces"].append({"id": ws["id"], "label": ws["label"], "status": ws["status"], "number": ws.get("number"),
-                                      "session": ws["session"], "sock": ws["sock"]})
-        matched["agents"].extend(ws["agents"])
+        matched["tabs"].append({"id": t["id"], "label": t["label"], "status": t["status"], "number": t.get("number"),
+                                "workspace": t["workspace"], "workspace_id": t["workspace_id"],
+                                "panes": t["panes"], "home": t["workspace"] == project})
+        matched["agents"].extend(t["agents"])
 
     for r in rows.values():
         wt_path = r["worktree"]
@@ -800,13 +791,13 @@ def flags_for(r):
     elif r["worktree"] is None:
         if team:
             f.append("no-wt")
-    elif not r["workspaces"]:
-        f.append("no-ws")
-    if r["workspaces"] and not r["agents"]:
+    elif not r["tabs"]:
+        f.append("no-tab")
+    if r["tabs"] and not r["agents"]:
         f.append("no-agent")
     slugs = {s for s in (r["slug"], r["dir_slug"]) if s}
-    for ws in r["workspaces"]:
-        m = re.match(r"^(?:\d+-)?(.*)$", ws["label"])
+    for t in r["tabs"]:
+        m = re.match(r"^(?:\d+-)?(.*)$", t["label"])
         if m and m.group(1):
             slugs.add(m.group(1))
     if len(slugs) > 1 and not r.get("adhoc"):
@@ -835,8 +826,8 @@ def discover_repos(args, herdr):
     if m:
         mains.append(m)
     if args.all or not m:
-        for ws in herdr:
-            for c in ws["cwds"]:
+        for t in herdr:
+            for c in t["cwds"]:
                 mm = main_worktree(c)
                 if mm and mm not in mains:
                     mains.append(mm)
@@ -914,14 +905,14 @@ def fmt_issue(r):
     return f"#{n} {i['state']}" if not r["key"].isdigit() else i["state"]
 
 
-def ws_name(w):
-    """Workspace label, prefixed with its session unless that's the default."""
-    s = w.get("session")
-    return w["label"] if s in (None, "default") else f"{s}:{w['label']}"
+def tab_name(t):
+    """Tab label, prefixed with its workspace when that isn't the repo's own
+    project workspace (a datatalk tab parked in `default`, say)."""
+    return t["label"] if t.get("home", True) else f"{t['workspace']}:{t['label']}"
 
 
 def fmt_ws(r):
-    return ", ".join(ws_name(w) for w in r["workspaces"])
+    return ", ".join(tab_name(t) for t in r["tabs"])
 
 
 def fmt_agent(r):
@@ -1089,7 +1080,7 @@ def short_line(r):
     if r["db"] and r["db"] != "local":
         parts.append(r["db"])
     for fl in r["flags"]:
-        if fl.split()[0] in ("merged", "no-ws", "no-pr", "name?") or fl.startswith("unpushed"):
+        if fl.split()[0] in ("merged", "no-tab", "no-pr", "name?") or fl.startswith("unpushed"):
             parts.append(fl)
     return " · ".join(parts)
 
@@ -1100,7 +1091,7 @@ def cmd_status(args):
     herdr = herdr_state()
     mains = discover_repos(args, herdr)
     if not mains:
-        sys.exit("task: no repository here and no herdr workspaces to look in")
+        sys.exit("task: no repository here and no herdr tabs to look in")
     ports = listeners()
     rows, sources = [], {}
     for m in mains:
@@ -1113,7 +1104,7 @@ def cmd_status(args):
         return
     hidden = 0
     if not args.branches:
-        keep = [r for r in rows if r["worktree"] or r["workspaces"] or (r["pr"] and r["pr"]["state"] == "open")]
+        keep = [r for r in rows if r["worktree"] or r["tabs"] or (r["pr"] and r["pr"]["state"] == "open")]
         hidden = len(rows) - len(keep)
         rows = keep
     print(render_table(rows, len(mains) > 1))
@@ -1205,8 +1196,11 @@ def cmd_herdr_sync(args):
                 tokens["drift"] = " ".join(drift)
             if r["key"] in needs:
                 tokens["need"] = needs[r["key"]]["short"]
-            for ws in r["workspaces"]:
-                cmd = ["herdr", "workspace", "report-metadata", ws["id"], "--source", "task",
+            # Metadata is per pane (tabs have none); the tab's first pane carries it.
+            for t in r["tabs"]:
+                if not t["panes"]:
+                    continue
+                cmd = ["herdr", "pane", "report-metadata", t["panes"][0], "--source", "task",
                        "--ttl-ms", str(CACHE_TTL * 1000)]
                 for k, v in tokens.items():
                     if v:
@@ -1214,9 +1208,9 @@ def cmd_herdr_sync(args):
                 for k in TOKEN_NAMES:
                     if not tokens.get(k):
                         cmd += ["--clear-token", k]
-                if run(cmd, timeout=5, env=herdr_env(ws)) is not None:
+                if run(cmd, timeout=5) is not None:
                     n += 1
-    print(f"updated {n} workspace(s)")
+    print(f"updated {n} pane(s)")
 
 
 TOKEN_NAMES = ("kind", "pri", "pr", "issue", "port", "drift", "need")
@@ -1259,9 +1253,9 @@ def attention(rows, loose):
                      default=None)
         ctx = dict(key=key, repo=r["repo"], name=name, pri=pri, tags=r.get("tags"), task_kind=r.get("kind"),
                    pr_number=pr["number"] if pr else None, issue_number=(issue or {}).get("number"),
-                   ws=[(w.get("number"), ws_name(w), w.get("session")) for w in r["workspaces"]])
+                   tabs=[(t["id"], tab_name(t)) for t in r["tabs"]])
 
-        if not r["worktree"] and not r["workspaces"]:
+        if not r["worktree"] and not r["tabs"]:
             # A bare branch. Only interesting when it's a P0/P1 of mine that
             # nothing is running on: the work was started and then dropped.
             if issue and issue["state"] == "open" and pri in ("P0", "P1") and me in issue.get("assignees", []):
@@ -1344,8 +1338,8 @@ def attention(rows, loose):
                 items.append(item(52 + bonus, "work", "unpushed commits",
                                   f"{g['ahead']} commit(s) {what} behind PR #{pr['number']}", **ctx))
 
-        if merged and (r["worktree"] or r["workspaces"]):
-            items.append(item(30, "cleanup", "merged, wrap up", f"branch merged, worktree/workspace still here", **ctx))
+        if merged and (r["worktree"] or r["tabs"]):
+            items.append(item(30, "cleanup", "merged, wrap up", f"branch merged, worktree/tab still here", **ctx))
         elif issue and issue["state"] == "closed" and not (pr and pr["state"] == "open") and not merged:
             items.append(item(28, "cleanup", "issue closed", f"issue closed, work still checked out", **ctx))
 
@@ -1375,24 +1369,18 @@ def attention(rows, loose):
 
 def ident(it):
     """Who an item is about, every handle the user might reach for: kind icon,
-    slug, issue and PR numbers, herdr workspace number (session-qualified
-    outside the default session, since numbers restart per session)."""
+    slug, issue and PR numbers, herdr tab id (what `herdr tab focus` takes)."""
     parts = [f"{KIND_ICON.get(it.get('task_kind'), '')} {it.get('name') or it.get('key')}".strip()]
     n = it.get("issue_number") or (it.get("key") if str(it.get("key", "")).isdigit() and not it.get("pr_number") else None)
     if n:
         parts.append(f"#{n}")
     if it.get("pr_number"):
         parts.append(f"PR #{it['pr_number']}")
-    ws = it.get("ws") or []
-    if ws:
-        def one(w):
-            if w[0] is None:
-                return w[1]
-            s = w[2] if len(w) > 2 else None
-            return f"ws{w[0]}" if s in (None, "default") else f"{s}:ws{w[0]}"
-        parts.append(", ".join(one(w) for w in ws))
+    tabs = it.get("tabs") or []
+    if tabs:
+        parts.append(", ".join(f"{name} ({tid})" for tid, name in tabs))
     elif it.get("kind") == "loose" or it.get("task_kind"):
-        parts.append("no ws")
+        parts.append("no tab")
     return " · ".join(parts)
 
 
@@ -1418,7 +1406,7 @@ def cmd_brief(args):
     args.all = not args.repo
     mains = discover_repos(args, herdr)
     if not mains:
-        sys.exit("task: no repository here and no herdr workspaces to look in")
+        sys.exit("task: no repository here and no herdr tabs to look in")
     ports = listeners()
     rows, loose, sources = [], {}, {}
     for m in mains:
@@ -1441,7 +1429,7 @@ def cmd_brief(args):
     idle = user_idle_s()
     snapshot = {"at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "user_idle_s": idle, "repos": sources,
                 "attention": items, "loose": loose,
-                "tasks": [r for r in rows if r["worktree"] or r["workspaces"] or (r["pr"] and r["pr"]["state"] == "open")]}
+                "tasks": [r for r in rows if r["worktree"] or r["tabs"] or (r["pr"] and r["pr"]["state"] == "open")]}
     if not args.dry_run:
         try:
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -1501,7 +1489,7 @@ def main():
 
     p = sub.add_parser("status")
     p.add_argument("--repo")
-    p.add_argument("--all", action="store_true", help="every repo a herdr workspace sits in")
+    p.add_argument("--all", action="store_true", help="every repo a herdr tab sits in")
     p.add_argument("--branches", action="store_true", help="also list branches with no worktree")
     p.add_argument("--json", action="store_true")
     p.add_argument("--refresh", action="store_true")

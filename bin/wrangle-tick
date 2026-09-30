@@ -65,33 +65,16 @@ def save_state(s):
     STATE.write_text(json.dumps(s))
 
 
-def sessions():
-    """Socket paths of the running herdr sessions (one per project window)."""
-    p = run(["herdr", "session", "list", "--json"], timeout=10)
-    if not p or p.returncode:
-        return []
-    try:
-        return [s["socket_path"] for s in json.loads(p.stdout)["sessions"] if s.get("running")]
-    except (ValueError, KeyError):
-        return []
-
-
 def wrangler():
-    """(agent record, env for its session) of the wrangler agent, searching
-    every running herdr session; (None, None) when there isn't one."""
-    for sock in sessions():
-        env = {"HERDR_SOCKET_PATH": sock}
-        p = run(["herdr", "agent", "list"], timeout=10, env=env)
-        if not p or p.returncode:
-            continue
-        try:
-            agents = json.loads(p.stdout)["result"]["agents"]
-        except (ValueError, KeyError):
-            continue
-        a = next((a for a in agents if a.get("name") == AGENT), None)
-        if a:
-            return a, env
-    return None, None
+    """The wrangler agent's record, or None when there isn't one."""
+    p = run(["herdr", "agent", "list"], timeout=10)
+    if not p or p.returncode:
+        return None
+    try:
+        agents = json.loads(p.stdout)["result"]["agents"]
+    except (ValueError, KeyError):
+        return None
+    return next((a for a in agents if a.get("name") == AGENT), None)
 
 
 def main():
@@ -132,7 +115,7 @@ def main():
         save_state(state)
         return
 
-    agent, env = wrangler()
+    agent = wrangler()
     if not agent or agent.get("agent_status") not in ("idle", "done"):
         save_state(state)
         return
@@ -140,7 +123,7 @@ def main():
     msg = (f"/wrangle tick ({reason}): {len(new)} new attention item(s)"
            + (f": {heads}" if heads else "")
            + f". You have been idle {int(idle // 60)}m. Read ~/.cache/task/brief.json and brief me.")
-    r = run(["herdr", "agent", "prompt", AGENT, msg], timeout=30, env=env)
+    r = run(["herdr", "agent", "prompt", AGENT, msg], timeout=30)
     if r and r.returncode == 0:
         state["last_nudge"] = now
         state["last_reason"] = reason
