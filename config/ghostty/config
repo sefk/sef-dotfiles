@@ -17,6 +17,12 @@ shell-integration-features = ssh-terminfo
 keybind = shift+page_up=unbind
 keybind = shift+page_down=unbind
 
+# herdr tab navigation on Cmd-Ctrl-[ / ] (browser muscle memory). Cmd chords
+# never reach the pty, so send herdr's prefix chord (Ctrl-A [ / ]) as bytes;
+# herdr/config.toml binds previous_tab/next_tab to those.
+keybind = super+ctrl+left_bracket=text:\x01\x5b
+keybind = super+ctrl+right_bracket=text:\x01\x5d
+
 # Allow remote apps (e.g. tmux on studio over ssh) to set the Mac clipboard via OSC 52.
 clipboard-write = allow
 clipboard-read = ask
