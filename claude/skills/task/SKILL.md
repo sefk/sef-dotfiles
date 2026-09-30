@@ -1,13 +1,13 @@
 ---
 name: task
-description: Manage the lifecycle of a unit of work across git worktrees, branches, GitHub issues/PRs, herdr workspaces, and agent sessions. Use when asked to set up, find, fork/split, rename, adopt, or wrap up a task, or to report what work is where, e.g. "set up a project for bug 931", "what's stale?", "split this into two tasks", "wrap up 927", "make a workspace to review PR 930", "task status".
+description: Manage the lifecycle of a unit of work across git worktrees, branches, GitHub issues/PRs, herdr tabs, and agent sessions. Use when asked to set up, find, fork/split, rename, adopt, or wrap up a task, or to report what work is where, e.g. "set up a project for bug 931", "what's stale?", "split this into two tasks", "wrap up 927", "make a workspace to review PR 930", "task status".
 ---
 
 # Task lifecycle
 
 A *task* is one unit of work. Its state lives in five places that don't know
 about each other: a git worktree, a branch, a GitHub issue, a GitHub PR, and a
-herdr workspace with an agent in it. `task status` joins them; this skill does
+herdr tab (in the project's workspace) with an agent in it. `task status` joins them; this skill does
 the judgment-laden part: deciding what to create, reuse, rename, or remove,
 by composing plain primitives (`git`, `gh`, `wt`, `herdr`). Nothing here is
 Claude-specific; the same steps apply from pi, codex, or a shell.
@@ -34,11 +34,13 @@ identifies the rest:
 |------------------|-----------------------------|----------------------|
 | branch           | `issue-<N>-<slug>`          | `<slug>`             |
 | worktree dir     | `../<repo>-<N>-<slug>`      | `../<repo>-<slug>`   |
-| herdr workspace  | `<N>-<slug>`                | `<slug>`             |
+| herdr tab        | `<N>-<slug>`                | `<slug>`             |
 | agent name       | `<slug>` (herdr names can't start with a digit) | `<slug>` |
 
-The slug is short (`wt slug <N>` derives one from the issue title, capped at
-18 chars), lowercase, dash-separated. **Branch and directory names are the
+Workspaces are projects (`leafletter`, `datatalk`, this repo's `sef-dotfiles`);
+`herdr-project-for <dir>` names the one a repo belongs in, and tabs inside it
+are the tasks. The slug is short (`wt slug <N>` derives one from the issue
+title, capped at 18 chars), lowercase, dash-separated. **Branch and directory names are the
 hard ones to change later** (the PR pins the branch; open shells and agents
 pin the directory), so when there is no issue, ask for the slug before
 creating anything and say so. When the repo isn't organized around issues
@@ -63,14 +65,14 @@ global Version Control policy for the full rationale):
 
 Each verb starts with `task status`, states a plan (what will be created,
 reused, moved, or deleted), and **waits for a yes before anything destructive
-or hard to rename**: deleting a branch or worktree, closing a workspace,
+or hard to rename**: deleting a branch or worktree, closing a tab,
 renaming a branch that has been pushed. Creating things is not destructive;
 do it after a one-line statement of intent.
 
 ### new — "set up a project for bug 931" / "set up somewhere to explore X"
 
 For the common case — a team repo, one issue or slug, a worktree plus a herdr
-workspace with an agent in it — invoke the `new-space` skill instead; it is
+tab with an agent in it — invoke the `new-space` skill instead; it is
 this verb with the questions already answered. What follows is the general
 form, for what it doesn't cover (PR review trees, individual repos, adopting
 something that half-exists).
@@ -83,7 +85,7 @@ something that half-exists).
    for their own words. Branch and directory are the hardest names to
    change later; ask while it's still just text.
 2. Check `task status --json` for anything already carrying that key: an
-   existing branch (local or `origin/`), worktree, or workspace. Reuse what
+   existing branch (local or `origin/`), worktree, or tab. Reuse what
    exists; never create a second worktree or branch for the same key. `wt`
    already handles "branch exists locally / on origin / not at all" for issue
    work.
@@ -98,27 +100,26 @@ something that half-exists).
      worktree, say so.
    - PR review (implies a team repo — reviewing someone else's PR): `gh pr
      checkout <N>` in a sibling worktree
-     (`git worktree add ../<repo>-pr<N> <head-branch>`), workspace label `pr<N>-<slug>`.
+     (`git worktree add ../<repo>-pr<N> <head-branch>`), tab label `pr<N>-<slug>`.
    - ad-hoc, team repo: `git worktree add -b <slug> ../<repo>-<slug> origin/<default>`.
    - ad-hoc, individual repo: a branch (or just the current branch) in the
      main checkout — no worktree.
-4. herdr workspace, only when running inside herdr (`HERDR_ENV=1`):
-   `herdr --session "$(herdr-session-for <dir>)" workspace create --label
-   <label> --cwd <dir> --focus` (each project has its own session/window;
-   pass the same `--session` on the follow-up calls), split a
-   shell pane to the right, wait for the shell's prompt (direnv output on a
+4. herdr tab, only when running inside herdr (`HERDR_ENV=1`):
+   `herdr tab create --workspace "$(herdr-project-for --ensure <dir>)"
+   --label <label> --cwd <dir> --focus` (the project's workspace, created
+   if it isn't there yet), split a shell pane to the right, wait for the shell's prompt (direnv output on a
    fresh worktree takes a second), then `herdr agent start <slug> --kind
    <kind> --pane <root>`. Agent names must start with a letter, so the name
    is the slug, not the `<N>-<slug>` label. The `new-space` skill does all of
    this end-to-end, and the `herdr-new-task` popup (prefix+n) does it
    interactively when the user prefers.
-5. Report the key, branch, directory, port (`task here`), and workspace.
+5. Report the key, branch, directory, port (`task here`), and tab.
 
-### adopt — "put this branch in a workspace" / "I already have a checkout for this"
+### adopt — "put this branch in a tab" / "I already have a checkout for this"
 
 Same as *new* but starting from whatever exists: attach a worktree to an
-existing branch, create a workspace on an existing worktree, or rename a
-workspace to match. Report `name?` drift and offer *rename* for it.
+existing branch, create a tab on an existing worktree, or rename a tab to
+match. Report `name?` drift and offer *rename* for it.
 
 ### fork / split — "this turned into two things"
 
@@ -138,16 +139,16 @@ The current task is A. The user wants some of its work to become task B.
 
 *Rename* is the degenerate fork: nothing moves, only names change. For a
 branch that is not yet pushed: `git branch -m`, `git worktree move`,
-`herdr workspace rename`, `herdr agent rename`, and rewrite `.env.worktree`
+`herdr tab rename`, `herdr agent rename`, and rewrite `.env.worktree`
 if the number changed. For a pushed branch, keep the branch name (the PR
-pins it) and rename only the directory and workspace, or leave everything and
+pins it) and rename only the directory and tab, or leave everything and
 accept the `name?` flag; ask which.
 
 ### wrap up — "wrap up 927" / "clean up everything that's merged"
 
 The `cleanup` skill is this verb with the questions answered — reluctance
 about unpushed work, git run from the main checkout, the worktree removed
-last, and your own herdr workspace left for you to close. Use it unless the
+last, and your own herdr tab left for you to close. Use it unless the
 situation is odd enough to want the general form below.
 
 Only for rows flagged `merged`, or `closed` with no unpushed commits, or
@@ -156,15 +157,15 @@ ones the user explicitly abandons.
 1. `task status --branches` and list the candidates with their flags. Anything
    `dirty` or `unpushed N` is not a candidate until the user says the work is
    disposable; quote the commit subjects (`git log <base>..<branch>`).
-2. Show the plan per task: remove worktree, delete local branch, close herdr
-   workspace (`herdr --session <session> workspace close <id>`, session from
-   the workspace's record in `task status --json`; the agent inside exits), and
+2. Show the plan per task: remove worktree, delete local branch, close its
+   herdr tab (`herdr tab close <id>`, id from the tab's record in `task
+   status --json`; the agent inside exits), and
    whether the remote branch is already gone. Wait for a yes.
 3. Team repo: `wt rm <N>` does worktree plus merged-branch removal for issue
    work; for the rest, `git worktree remove <dir>` then `git branch -d
    <branch>` (`-D` only when the user said abandon). Individual repo: no
    worktree to remove — just `git branch -d <branch>` (or `-D` to abandon) in
-   the main checkout. Either way, then close the herdr workspace.
+   the main checkout. Either way, then close the herdr tab.
 4. Team repo: never close the GitHub issue; the PR merge does that. If a
    merged PR left its issue open, say so rather than closing it. Individual
    repo: nothing closed it automatically — close it yourself
@@ -188,5 +189,5 @@ Each worktree owns one app port, written by `wt` into `.env.worktree`
 worth mentioning before starting a server. One local Postgres serves every
 worktree; never stand up a second database per task.
 
-`task herdr-sync` pushes pr/issue/port/drift tokens onto the herdr
-workspaces so the sidebar carries the same answers.
+`task herdr-sync` pushes pr/issue/port/drift tokens onto the tasks' herdr
+panes so the sidebar carries the same answers.

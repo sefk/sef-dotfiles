@@ -1,6 +1,6 @@
 ---
 name: new-space
-description: Create an isolated space for one unit of work — a sibling git worktree on a feature branch plus a herdr workspace with a claude agent waiting in it. Use when asked to start work somewhere new or to move work out of the current worktree, e.g. "/new-space 931", "/new-space 931 masthead-freshness", "/new-space spike-caching", "make me a space for this".
+description: Create an isolated space for one unit of work — a sibling git worktree on a feature branch plus a herdr tab in the project's workspace with a claude agent waiting in it. Use when asked to start work somewhere new or to move work out of the current worktree, e.g. "/new-space 931", "/new-space 931 masthead-freshness", "/new-space spike-caching", "make me a space for this".
 ---
 
 # New space for a unit of work
@@ -8,8 +8,8 @@ description: Create an isolated space for one unit of work — a sibling git wor
 `/new-space [<issue>] [<slug>]`
 
 One command for what `wt` and the `herdr-new-task` popup (prefix+n) do by
-hand: a sibling worktree on its own branch, a herdr workspace labelled the
-same, a claude agent sitting in it ready for work. The session that runs
+hand: a sibling worktree on its own branch, a herdr tab labelled the same
+in the project's workspace, a claude agent sitting in it ready for work. The session that runs
 this **does not do the work, and does not start it** — it builds the space,
 focuses it, and stops. The first instruction is the user's to type.
 
@@ -61,11 +61,11 @@ find it later.
 
 1. **Read the state first.** `task status --json` in the current repo, plus
    `task here`. Everything carrying the key already exists or it doesn't:
-   - worktree *and* workspace already there → focus the workspace
-     (`herdr workspace focus <id>`), say so, stop. Never a second worktree or
+   - worktree *and* tab already there → focus the tab
+     (`herdr tab focus <id>`), say so, stop. Never a second worktree or
      branch for one key.
-   - worktree but no workspace → skip step 4, build the workspace on the
-     existing directory.
+   - worktree but no tab → skip step 4, build the tab on the existing
+     directory.
    - branch on `origin/` but no worktree → fine, `wt` checks it out rather
      than branching afresh.
 
@@ -80,7 +80,7 @@ find it later.
    first if you derived it (above) — that question comes before the plan,
    because the plan is written in terms of its answer. Then one block:
    issue/slug, branch name, worktree directory, port from `.wtconfig`'s
-   `WT_PORT_VARS`, workspace label, agent name. Creating is not destructive —
+   `WT_PORT_VARS`, tab label, agent name. Creating is not destructive —
    with the slug settled, don't wait for a second yes unless step 2 asked for
    one.
 
@@ -95,22 +95,21 @@ find it later.
    every later command with `git -C <dir>` or `--cwd <dir>`; don't try to
    move this session into the worktree.
 
-5. **Workspace** — only when herdr is running (`HERDR_ENV=1`); without it,
+5. **Tab** — only when herdr is running (`HERDR_ENV=1`); without it,
    report the worktree and stop there.
 
    ```bash
-   s=$(herdr-session-for <dir>)   # datatalk, leafletter, or default
-   ws=$(herdr --session "$s" workspace create --label <label> --cwd <dir> --focus)
-   root=$(printf '%s' "$ws" | jq -r '.result.root_pane.pane_id')
-   herdr --session "$s" pane split "$root" --direction right --cwd <dir> --no-focus
-   herdr --session "$s" agent start <agent-name> --kind claude --pane "$root" --timeout 60000
+   ws=$(herdr-project-for --ensure <dir>)   # the project's workspace id (created if missing)
+   tab=$(herdr tab create --workspace "$ws" --label <label> --cwd <dir> --focus)
+   root=$(printf '%s' "$tab" | jq -r '.result.root_pane.pane_id')
+   herdr pane split "$root" --direction right --cwd <dir> --no-focus
+   herdr agent start <agent-name> --kind claude --pane "$root" --timeout 60000
    ```
 
-   - each project has its own herdr session and Ghostty window;
-     `herdr-session-for` picks the one the repo belongs in. Pass
-     `--session "$s"` on every herdr call for the new workspace — without it
-     herdr talks to the session *this* pane is in. When `$s` differs from
-     the current session, say which window the workspace landed in.
+   - workspaces are projects (`leafletter`, `datatalk`, ...) and a task is a
+     tab inside one; `herdr-project-for` maps the repo to its workspace.
+     When that's a different workspace from the one *this* pane is in, say
+     which one the tab landed in.
    - label is `<N>-<slug>` for issue work, `<slug>` for ad-hoc.
    - agent name is the slug — herdr names can't start with a digit, so a slug
      that does (`2fa-login`) becomes `<repo>-<slug>`.
@@ -123,11 +122,11 @@ find it later.
 
 6. **Leave the agent at its prompt.** Don't submit anything to it — no
    `herdr agent prompt`, not even the obvious `/fix-issue <N>`. Starting the
-   work is the user's call and the user's first keystroke; the workspace is
+   work is the user's call and the user's first keystroke; the tab is
    focused, so they're already looking at the cursor. Tell them what to type
    rather than typing it for them.
 
-7. **Report and stop.** Two lines: key, branch, directory, port, workspace,
+7. **Report and stop.** Two lines: key, branch, directory, port, tab,
    the new agent's pane id (`$root` from step 5), and the command to run
    over there (`/fix-issue <N>` for issue work). The pane id lets a calling
    skill (e.g. `fix-issue`) submit that command itself instead of leaving

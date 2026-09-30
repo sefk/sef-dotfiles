@@ -1,6 +1,6 @@
 ---
 name: cleanup
-description: Tear down a finished unit of work — remove its worktree, delete its branch, close its issue if the repo expects that, and hand the herdr workspace back for you to close. Use when work is merged, landed, or abandoned and the space should be reclaimed, e.g. "/cleanup", "/cleanup 931", "clean up everything that's merged", "I'm done with this worktree".
+description: Tear down a finished unit of work — remove its worktree, delete its branch, close its issue if the repo expects that, and hand the herdr tab back for you to close. Use when work is merged, landed, or abandoned and the space should be reclaimed, e.g. "/cleanup", "/cleanup 931", "clean up everything that's merged", "I'm done with this worktree".
 ---
 
 # Clean up a finished unit of work
@@ -8,7 +8,7 @@ description: Tear down a finished unit of work — remove its worktree, delete i
 `/cleanup [<issue> | <slug> | all]`
 
 The bookend to `new-space`. That skill makes a worktree, a branch, and a
-herdr workspace; this one takes them away once the work has landed. With no
+herdr tab; this one takes them away once the work has landed. With no
 argument it means the task you're standing in (`task here`); with `all` (or
 "everything that's merged") it means every row `task status` flags as done.
 
@@ -47,7 +47,7 @@ here.)
 
 3. **State the plan and wait for a yes.** Per task: worktree to remove,
    branch to delete and whether it's merged, issue to close or leave, the
-   workspace that will be left open, and anything being abandoned. This is
+   tab that will be left open, and anything being abandoned. This is
    the destructive verb — the approval is not optional.
 
 4. **Gather everything before you remove anything.** You are usually standing
@@ -75,18 +75,19 @@ here.)
      in those words.
    - the remote branch stays. Deleting it is a push, and you never push —
      mention it's still on origin if it is, and leave it to the user.
-   - other tasks' herdr workspaces (batch mode, workspaces you are not
-     sitting in) close cleanly: `herdr --session <session> workspace close
-     <id>`, with the session from that workspace's record in `task status
-     --json` (ids are only unique within one session). The agent inside
-     goes with them, so name them in the plan.
+   - other tasks' herdr tabs (batch mode, tabs you are not sitting in)
+     close cleanly: `herdr tab close <id>`, with the id from that tab's
+     record in `task status --json`. The agent inside goes with them, so
+     name them in the plan. Closing a workspace's last tab closes the
+     workspace too -- fine for a task, but check it isn't the project's
+     only tab.
 
-7. **Report, then hand back your own workspace.** What was removed, what was
+7. **Report, then hand back your own tab.** What was removed, what was
    kept and why, what's left on origin. Then end with the handoff line:
 
-   > all done — close the herdr space with Ctrl-A Shift-D
+   > all done — close the herdr tab with Ctrl-A Shift-X
 
-   Do **not** run `herdr workspace close` on the workspace you're in. It
+   Do **not** run `herdr tab close` on the tab you're in. It
    takes this agent, this report, and the shell pane beside it with it, and
    the confirmation vanishes before it's read. Closing it is one keystroke
    for the user and nothing for them to verify afterwards.
@@ -95,5 +96,5 @@ here.)
 
 `new-space` builds what this removes. `task` holds the rest of the lifecycle
 (adopt, fork/split, rename) and the one-key-one-name convention that lets
-`task status` join a branch, a worktree, an issue, a PR, and a workspace into
+`task status` join a branch, a worktree, an issue, a PR, and a tab into
 one row.
