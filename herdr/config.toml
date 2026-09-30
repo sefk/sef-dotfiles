@@ -11,6 +11,8 @@ split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 # is the new-task popup below.
 previous_tab       = "prefix+["
 next_tab           = "prefix+]"
+# Direct chord (Ghostty sends it on Cmd-1..9); replaces the default prefix+1..9.
+switch_tab         = "alt+1..9"
 
 # pane focus on prefix+arrows (native actions, so they forward over --remote).
 # Reassigning these unmaps the herdr default prefix+{hjkl}.
