@@ -97,21 +97,16 @@ with a chosen pane layout and starts the agent, named after the workspace. Run
 `wt` first and give the workspace the same `<N>-<slug>` name as the directory
 and branch, so `task status` can join them (see below).
 
-Each project runs in its own named herdr session with its own Ghostty window:
-`default` (misc, the wrangler), `leafletter`, `datatalk`. `bin/herdr-windows
-[--remote HOST] [SESSION ...]` opens one window per session (every running
-one when none are named), and the `studio` zsh function runs it with `--remote
-studio`, so the laptop gets the same set of windows as studio. `studio-here
-[SESSION]` and `studio-mosh [SESSION]` attach one session in the current
-terminal. With no session named, `studio` and `studio-mosh` show an fzf
-picker of studio's sessions (`studio` is multi-select; esc opens every
-running one). Windows are titled `<host>: <session>`, and leafletter (green) and
-datatalk (cardinal) get a tinted sidebar and accent: `herdr-windows` writes a
-per-session config (shared config plus a `[theme.custom]` overlay) and starts
-the session with `HERDR_CONFIG_PATH` pointing at it, so a tint change takes a
-session restart. `bin/herdr-session-for DIR` maps a repo to its session; the
-`new-space` and `task` skills use it to put new workspaces in the right
-window. `task` and `wrangle-tick` look across every running session.
+herdr runs one session in one Ghostty window. Each project is a workspace
+(`leafletter`, `datatalk`, `sef-dotfiles`, ...) and each task is a tab inside
+it, labelled `<N>-<slug>`, with the claude + shell split in the tab. The tab
+row is always shown; Cmd-Ctrl-[ / ] step between tabs (a Ghostty keybind in
+`config/ghostty/config` sends herdr's `prefix+[` / `prefix+]`, since Cmd
+chords never reach the pty). `bin/herdr-project-for DIR` maps a repo to its
+workspace label (`--ensure` prints the id, creating it if missing); the
+`new-space` and `task` skills and the prefix+n `herdr-new-task` popup use it
+to put new tabs in the right workspace. The `studio` / `studio-mosh` zsh
+functions attach to studio's session in the current terminal.
 
 The zsh prompt (`oh-my-zsh/custom/themes/sefk.zsh-theme`) squashes the last
 path component to a letter when it would just repeat the branch — a worktree
