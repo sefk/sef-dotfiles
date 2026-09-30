@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 #
-# herdr-new-task -- scaffold a task workspace in Herdr with one keystroke.
+# herdr-new-task -- scaffold a task tab in Herdr with one keystroke.
 #
 # Bound to Ctrl-A n (prefix+n) via a `[[keys.command]]` popup in herdr/config.toml.
 # Herdr runs this inside an interactive popup pane, so `read` has a real TTY, and
 # injects HERDR_BIN_PATH plus HERDR_ACTIVE_PANE_CWD (the cwd of the pane you were
 # on when you hit the key).
 #
-# Prompts for a task name, a directory, and a layout, then builds the workspace.
-# Agents (pi) are named after the workspace so the sidebar reads cleanly.
+# Workspaces are projects (leafletter, datatalk, default); a task is a tab in
+# the workspace you're in. Prompts for a task name, a directory, and a layout,
+# then builds the tab. Agents (pi) are named after the tab so the sidebar
+# reads cleanly.
 #
 # ADDING A LAYOUT: add a menu line in show_menu(), then a `layout_<key>` function,
 # then one `case` arm in build_layout(). Nothing else needs to change.
@@ -144,11 +146,12 @@ choice="${choice:-1}"
 
 # --- build ---------------------------------------------------------------------
 
-printf '\n  creating workspace "%s" in %s ...\n' "$name" "$dir"
+printf '\n  creating tab "%s" in %s ...\n' "$name" "$dir"
 
-created=$("$herdr" workspace create --label "$name" --cwd "$dir" --focus)
+# No --workspace: the active one, i.e. the project this popup was opened in.
+created=$("$herdr" tab create --label "$name" --cwd "$dir" --focus)
 if [[ $? -ne 0 || -z "$created" ]]; then
-  printf '  workspace create failed.\n'
+  printf '  tab create failed.\n'
   sleep 2
   exit 1
 fi
