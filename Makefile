@@ -15,7 +15,7 @@ LINK_TARGET_PREFIX := $(shell pwd)
 HOME                ?= $(shell echo $$HOME)
 # LINK_TARGET_PREFIX := $(subst $(HOME),.,$(LINK_TARGET_PREFIX))
 
-FILE_EXCLUDES          = README README.md CLAUDE.md AGENTS.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr codex zsh_secret.example
+FILE_EXCLUDES          = README README.md CLAUDE.md AGENTS.md Makefile %.swp .% %.ignore bin config osx_services brewlist claude oh-my-zsh ssh_rc launchd sshconfig docs pi herdr codex control zsh_secret.example
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
@@ -40,8 +40,11 @@ HERDR_FILES_TO_LINK    = $(sort $(wildcard herdr/*))
 HERDR_DEEP_LINKS       = $(patsubst herdr/%,~/.config/herdr/%,$(HERDR_FILES_TO_LINK))
 CODEX_FILES_TO_LINK    = $(sort $(wildcard codex/*))
 CODEX_DEEP_LINKS       = $(patsubst codex/%,~/.codex/%,$(CODEX_FILES_TO_LINK))
+# control/* -> ~/src/*: the project registry the control session reads.
+CONTROL_FILES_TO_LINK  = $(sort $(wildcard control/*))
+CONTROL_DEEP_LINKS     = $(patsubst control/%,~/src/%,$(CONTROL_FILES_TO_LINK))
 
-all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(CODEX_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/.zsh_secret
+all: ~/bin ~/.ssh/config ~/.ssh/rc $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(SERVICES_DIR) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(CODEX_DEEP_LINKS) $(CONTROL_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/.zsh_secret
 
 # For directories, test
 # 1. if exists (-e), but not symlink (-h), halt (don't clobber!)
@@ -108,7 +111,7 @@ $(SECRETS_FILE):
 # Plain rm (no -r): every target here is a symlink; if one is somehow a real
 # directory, failing beats recursively deleting its contents.
 clean:
-	-rm $(RMFLAG) $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(CODEX_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/bin
+	-rm $(RMFLAG) $(FILE_LINKS) $(CONFIG_SUBDIR_LINKS) $(OMZ_THEME_LINKS) $(OMZ_COMPLETION_LINKS) $(CLAUDE_DEEP_LINKS) $(PI_DEEP_LINKS) $(HERDR_DEEP_LINKS) $(CODEX_DEEP_LINKS) $(CONTROL_DEEP_LINKS) $(LAUNCHD_AGENT_LINKS) ~/bin
 	-rm $(RMFLAG) $(addprefix $(HOME)/,$(OLD_FILES))
 	if [ -e $(SECRETS_FILE) ] && [ ! -s $(SECRETS_FILE) ]; then rm $(RMFLAG) $(SECRETS_FILE); fi
 
@@ -126,6 +129,12 @@ $(SERVICES_DIR):
 	ln -s $(LINK_TARGET_PREFIX)/$< $@
 
 # Deep links for ~/.claude/: link each file directly to the claude/ subdir in the repo.
+~/src/%: $(LINK_TARGET_PREFIX)/control/%
+	mkdir -p $(dir $@)
+	if [ -e $@ ] && [ ! -h $@ ]; then false; fi
+	if [ -h $@ ]; then rm $(RMFLAG) $@; fi
+	ln -s $< $@
+
 ~/.claude/%: $(LINK_TARGET_PREFIX)/claude/%
 	mkdir -p $(dir $@)
 	if [ -e $@ ] && [ ! -h $@ ]; then false; fi

@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+#
+# project -- read the project registry in ~/src/AGENTS.md.
+#
+#   project list                 one project name per line
+#   project show <name>          every key = value for a project
+#   project get <name> <key>     one value (path is tilde-expanded); empty + rc 1 if unset
+#   project resolve <word>       name for a project name or alias ("dt" -> datatalk)
+#   project for [DIR]            name of the project DIR (default cwd) belongs to;
+#                                worktrees resolve to their main checkout
+#   project json                 every project as a JSON object keyed by name
+#
+# The registry is markdown: each `## <name>` heading starts a project, and
+# `key = value` lines directly under it (before the next heading) are the
+# machine-readable part. Everything else is prose and ignored here. Keys and
+# their meaning are documented at the top of the registry itself.
+#
+# Nothing here mutates anything. Set PROJECT_REGISTRY to read another file.
+
+set -euo pipefail
+
+REGISTRY=${PROJECT_REGISTRY:-$HOME/src/AGENTS.md}
+
+die() { echo "project: $*" >&2; exit 1; }
+
+[ -r "$REGISTRY" ] || die "no registry at $REGISTRY"
+
+# Emit "name<TAB>key<TAB>value" for every key of every project.
+records() {
+  awk '
+    /^## /          { name = substr($0, 4); sub(/[ \t]+$/, "", name); next }
+    /^#/            { name = ""; next }
+    name != "" && /^[A-Za-z_][A-Za-z0-9_]* *= */ {
+      key = $0; sub(/ *=.*/, "", key)
+      val = $0; sub(/^[^=]*= */, "", val); sub(/[ \t]+$/, "", val)
+      printf "%s\t%s\t%s\n", name, key, val
+    }
+  ' "$REGISTRY"
+}
+
+names() { awk '/^## /{ n = substr($0, 4); sub(/[ \t]+$/, "", n); print n }' "$REGISTRY"; }
+
+expand_tilde() { printf '%s' "${1/#\~/$HOME}"; }
+
+cmd_list() { names; }
+
+cmd_get() {
+  local name=${1:?usage: project get <name> <key>} key=${2:?usage: project get <name> <key>} val
+  val=$(records | awk -F'\t' -v n="$name" -v k="$key" '$1 == n && $2 == k { print $3; exit }')
+  [ -n "$val" ] || exit 1
+  case "$key" in path) expand_tilde "$val"; echo ;; *) echo "$val" ;; esac
+}
+
+cmd_show() {
+  local name=${1:?usage: project show <name>}
+  names | grep -qxF "$name" || die "no project named $name"
+  records | awk -F'\t' -v n="$name" '$1 == n { printf "%s = %s\n", $2, $3 }'
+}
+
+cmd_resolve() {
+  local word=${1:?usage: project resolve <word>} lw n
+  lw=$(printf '%s' "$word" | tr '[:upper:]' '[:lower:]')
+  # Exact name first, then aliases, then a repo basename.
+  while IFS= read -r n; do
+    [ "$(printf '%s' "$n" | tr '[:upper:]' '[:lower:]')" = "$lw" ] && { echo "$n"; return 0; }
+  done < <(names)
+  while IFS=$'\t' read -r n key val; do
+    [ "$key" = aliases ] || continue
+    for a in ${val//,/ }; do
+      [ "$(printf '%s' "$a" | tr '[:upper:]' '[:lower:]')" = "$lw" ] && { echo "$n"; return 0; }
+    done
+  done < <(records)
+  while IFS=$'\t' read -r n key val; do
+    [ "$key" = path ] || continue
+    [ "$(basename "$val" | tr '[:upper:]' '[:lower:]')" = "$lw" ] && { echo "$n"; return 0; }
+  done < <(records)
+  die "no project matches '$word'"
+}
+
+cmd_for() {
+  local dir=${1:-$PWD} common main n key val
+  [ -d "$dir" ] || die "no such directory: $dir"
+  # Worktrees share the main checkout's common git dir; that's the identity.
+  if common=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
+    main=$(dirname "$common")
+  else
+    main=$(cd "$dir" && pwd -P)
+  fi
+  while IFS=$'\t' read -r n key val; do
+    [ "$key" = path ] || continue
+    [ "$(cd "$(expand_tilde "$val")" 2>/dev/null && pwd -P)" = "$main" ] && { echo "$n"; return 0; }
+  done < <(records)
+  exit 1
+}
+
+cmd_json() {
+  command -v jq >/dev/null 2>&1 || die "jq required for json output"
+  records | jq -R -s '
+    split("\n") | map(select(length > 0) | split("\t"))
+    | reduce .[] as $r ({}; .[$r[0]] += { ($r[1]): $r[2] })
+  '
+}
+
+case "${1:-}" in
+  ''|-h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0" ;;
+  list)    shift; cmd_list ;;
+  get)     shift; cmd_get "$@" ;;
+  show)    shift; cmd_show "$@" ;;
+  resolve) shift; cmd_resolve "$@" ;;
+  for)     shift; cmd_for "$@" ;;
+  json)    shift; cmd_json ;;
+  *)       die "unknown command: $1 (try --help)" ;;
+esac
