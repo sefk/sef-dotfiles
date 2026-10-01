@@ -7,10 +7,11 @@ description: Tear down a finished unit of work — remove its worktree, delete i
 
 `/cleanup [<issue> | <slug> | all]`
 
-The bookend to `new-space`. That skill makes a worktree, a branch, and a
-herdr tab; this one takes them away once the work has landed. With no
-argument it means the task you're standing in (`task here`); with `all` (or
-"everything that's merged") it means every row `task status` flags as done.
+The bookend to `space new`. That builds a worktree, a branch, and a herdr
+tab; this one takes them away once the work has landed. With no argument it
+means the work you're standing in (the branch of the current directory, and
+the worktree if it's one); with `all` (or "everything that's merged") it
+means every worktree of this project whose branch is merged.
 
 Deleting a branch is the only irreversible step in the whole lifecycle — a
 commit that exists nowhere else is gone once its branch is. So this skill is
@@ -24,11 +25,19 @@ here.)
 
 ## Steps
 
-1. **Read the state.** `task here` for the current task, `task status
-   --branches` for the full picture (`--json` when you need the hidden rows).
-   Candidates are rows flagged `merged`, or `closed` with no unpushed
-   commits, or ones the user explicitly abandons. Nothing else is a candidate
-   until they say so.
+1. **Read the state.** `space ls` for the project's worktrees, tabs, and
+   open PRs in one view (`--json` when you need ids). The project itself is
+   `project for .`; its workflow (`project get <p> workflow`) is `worktrees`
+   or `main`. For each worktree you're considering, is its branch merged?
+
+   ```bash
+   gh pr list --repo <owner/name> --head <branch> --state merged --json number,mergedAt
+   git -C $MAIN merge-base --is-ancestor <branch> origin/<default>   # main projects: local merge/rebase
+   ```
+
+   Candidates are merged branches, or closed-without-merge ones with no
+   unpushed commits, or ones the user explicitly abandons. Nothing else is a
+   candidate until they say so.
 
 2. **Look for work that would die with the branch.** Per task, before writing
    any plan:
@@ -37,7 +46,7 @@ here.)
    git -C <dir> status --porcelain        # dirty
    git -C <dir> stash list                # forgotten hunks
    git -C $MAIN log --oneline <base>..<branch>   # commits not on the base
-   gh pr view <N> --json state,mergedAt   # team repo: merged, or just closed?
+   gh pr view <N> --json state,mergedAt   # worktrees project: merged, or just closed?
    ```
 
    Quote what you find — commit subjects, not a count — and stop there. A
@@ -61,13 +70,13 @@ here.)
      talk.
 
 5. **GitHub first, while the tree is still there.**
-   - **team repo**: never close the issue — the PR merge did that. If a
-     merged PR left its issue open, say so and leave it.
-   - **individual repo**: nothing closed it automatically. `gh issue close
+   - **`worktrees` project**: never close the issue — the PR merge did that.
+     If a merged PR left its issue open, say so and leave it.
+   - **`main` project**: nothing closed it automatically. `gh issue close
      <N>` with a comment naming the commits, marked as authored by Claude.
 
 6. **Remove.**
-   - issue work in a team repo: `wt rm -y <N>` from the main checkout — it
+   - issue work in a worktree: `wt rm -y <N>` from the main checkout — it
      removes the worktree and deletes the branch when it's merged, keeps it
      when it isn't, and says which.
    - anything else: `git -C $MAIN worktree remove <dir>` then
@@ -75,12 +84,11 @@ here.)
      in those words.
    - the remote branch stays. Deleting it is a push, and you never push —
      mention it's still on origin if it is, and leave it to the user.
-   - other tasks' herdr tabs (batch mode, tabs you are not sitting in)
-     close cleanly: `herdr tab close <id>`, with the id from that tab's
-     record in `task status --json`. The agent inside goes with them, so
-     name them in the plan. Closing a workspace's last tab closes the
-     workspace too -- fine for a task, but check it isn't the project's
-     only tab.
+   - other work's herdr tabs (batch mode, tabs you are not sitting in)
+     close cleanly: `space close <project> <tab-label>`, with the label from
+     `space ls`. The agent inside goes with them, so name them in the plan.
+     Closing a workspace's last tab closes the workspace too -- fine, `space
+     new` recreates it from the registry next time.
 
 7. **Report, then hand back your own tab.** What was removed, what was
    kept and why, what's left on origin. Then end with the handoff line:
@@ -94,7 +102,7 @@ here.)
 
 ## Related
 
-`new-space` builds what this removes. `task` holds the rest of the lifecycle
-(adopt, fork/split, rename) and the one-key-one-name convention that lets
-`task status` join a branch, a worktree, an issue, a PR, and a tab into
-one row.
+`space new` (driven by the `control` skill from the control session) builds
+what this removes. The one-key-one-name convention — branch
+`issue-<N>-<slug>`, directory `<repo>-<N>-<slug>`, tab `<N>-<slug>`, agent
+`<slug>` — is what lets `space ls` line them up.

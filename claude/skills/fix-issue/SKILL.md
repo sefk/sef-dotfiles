@@ -17,33 +17,43 @@ commits, working branch for multi-step work, never push).
    issue comment (marked as authored by Claude Code) before coding, so the
    decision is on the record. Trivial fixes skip the comment.
 
-3. **Branch / worktree** — depends on the repo's workflow (global Version
-   Control policy; `.wtconfig`'s `TASK_TEAM=1` marks a team repo):
-   - **Team repo**: work happens on `issue-<N>-<short-slug>` in a sibling
-     worktree (`../<repo>-<N>-<slug>`), never in the main checkout. Check
-     where you are first (`task here`). If this directory isn't issue N's
-     worktree — the main checkout, or another issue's tree — **stop and
-     hand off**: invoke the `new-space` skill with the issue number. It
-     builds the worktree and a herdr workspace with a claude agent waiting
-     in it. Once it reports the new agent's pane, continue the work there
-     yourself: `herdr agent prompt <pane-id> "/fix-issue <N>"` (no `--wait`
-     — fire it and move on). Then report where the space is and that
-     `/fix-issue <N>` was kicked off over there, and go no further. Two
-     agents in two trees on one issue is the collision the worktree exists
-     to prevent — that's why this session hands off instead of implementing
-     here, not a reason to leave the new one idle. Without herdr, `new-space`
-     still makes the worktree; name the directory and stop, since there's no
-     pane to prompt. Only continue here when you're already on issue N's
-     branch — or when the fix is a one-liner and the current branch is
-     already a working branch. Never `git worktree add`, never
-     `isolation: "worktree"`, never start work on the default branch.
-   - **Individual repo (default)**: work happens in the main checkout.
+3. **Branch / worktree** — depends on the project's workflow in the
+   registry (`project for .` names the project, `project get <p> workflow`
+   is `worktrees` or `main`; the global Version Control policy explains both).
+   - **`worktrees` project** (datatalk): work happens on `issue-<N>-<slug>` in
+     a sibling worktree (`../<repo>-<N>-<slug>`), never in the main checkout.
+     Check where you are first: `git rev-parse --abbrev-ref HEAD` and
+     `git worktree list`. If this directory isn't issue N's worktree — the
+     main checkout, another issue's tree, or the control session in `~/src`
+     — **hand off instead of implementing here**:
+
+     ```bash
+     space new <project> --issue <N> --prompt "/fix-issue <N>"
+     ```
+
+     That builds the worktree (via `wt`), a tab in the project's herdr
+     workspace with a claude agent in it, sends it this same command, and
+     focuses it. Settle the slug first (next bullet) and pass it with
+     `--slug`. Then report where the space is and that `/fix-issue <N>` was
+     kicked off there, and go no further. Two agents in two trees on one
+     issue is the collision the worktree exists to prevent — that's why this
+     session hands off, not a reason to leave the new one idle. If `space`
+     dies because herdr isn't running, `wt -y <N> <slug>` still makes the
+     worktree; name the directory and stop.
+
+     Only continue here when you're already on issue N's branch — or when the
+     fix is a one-liner and the current branch is already a working branch.
+     Never `git worktree add`, never `isolation: "worktree"`, never start work
+     on the default branch.
+   - **`main` project (default)**: work happens in the main checkout.
      Small fixes commit straight onto the current branch (usually `main`);
      anything that needs to stay reviewable or reversible on its own gets a
      local feature branch (`issue-<N>-<short-slug>`) that you merge or
      rebase back into `main` yourself when done — never open a PR for it.
+     If you're in the control session rather than the project, hand off the
+     same way: `space new <project> --main --prompt "/fix-issue <N>"`.
    - **Never pick the slug silently.** Wherever a slug is about to become a
-     branch name — the feature branch here, or the worktree `new-space`
+     branch name — the feature branch here, or the worktree `space new`
      builds — and it came from the issue title rather than from the user,
      stop and ask which one they want (`AskUserQuestion` when you have it;
      `wt slug <N>` for the suggestion, plus an alternative or two, and
@@ -51,24 +61,20 @@ commits, working branch for multi-step work, never push).
      things to rename afterwards, so the question is cheap by comparison.
      A slug the user typed needs no question.
    - **Name the space to match.** Once you're settled in issue N's worktree
-     and herdr is running (`HERDR_ENV=1`), the workspace should carry the
-     same key as everything else: label `<N>-<slug>`, agent `<slug>`, both
-     read off the branch (`issue-<N>-<slug>`), which is the authority — it's
-     the name the PR pins. A space that `/new-space` built is already right;
-     one adopted from a shell, a `wt` run, or a renamed branch often isn't,
-     and that drift is what `task status` flags as `name?`.
+     and herdr is running (`HERDR_ENV=1`), the tab and agent should carry the
+     same key as everything else: tab label `<N>-<slug>`, agent `<slug>`,
+     both read off the branch (`issue-<N>-<slug>`), which is the authority —
+     it's the name the PR pins. A space that `space new` built is already
+     right; one adopted from a shell or a `wt` run often isn't.
 
      ```bash
-     herdr workspace get "$HERDR_WORKSPACE_ID" | jq -r '.result.workspace.label'
-     herdr workspace rename "$HERDR_WORKSPACE_ID" <N>-<slug>
+     herdr tab rename "$HERDR_TAB_ID" <N>-<slug>
      herdr agent rename "$HERDR_PANE_ID" <slug>   # herdr names can't start with a digit
      ```
 
      Both renames are display-only and reversible, so don't ask — do it and
      say so in a clause. Leave it alone when you're working in the main
-     checkout (individual repos, or a one-liner on an existing branch): that
-     workspace belongs to the repo, not to this task, and `<N>-<slug>` would
-     be wrong the moment the issue is done.
+     checkout: that tab belongs to the repo, not to this task.
 
 4. **Implement** — directly, or delegated:
    - **Delegate when well-scoped**: if after Read/Plan the fix has a clear
@@ -123,7 +129,7 @@ commits, working branch for multi-step work, never push).
    message subject line and in the body.
 
 8. **Close the loop.**
-   - **Team repo**: do not close the issue. Comment with what changed,
+   - **`worktrees` project**: do not close the issue. Comment with what changed,
      files touched, branch name, and test results, marked as authored by
      Claude Code. Don't mention push state ("not pushed", "local only") —
      it goes stale as soon as the user pushes.
@@ -132,7 +138,7 @@ commits, working branch for multi-step work, never push).
      carry `Closes #<N>`; if a PR already exists, verify the line is there
      and add it if not, and if the PR is opened later, state in your report
      that its body needs `Closes #<N>`.
-   - **Individual repo**: nothing closes the issue automatically. If the fix
+   - **`main` project**: nothing closes the issue automatically. If the fix
      already landed on `main` (merged or rebased locally), close it yourself
      (`gh issue close <N>`) with a comment — marked as authored by Claude
      Code — naming the commit(s). If it's still sitting on an unmerged local
