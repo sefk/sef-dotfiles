@@ -19,7 +19,10 @@ instructions live in the global `claude/CLAUDE.md` (deep-linked to
   state (sockets, logs, sessions, sqlite DBs) and secrets (`auth.json`) that
   must **not** land in the repo, so only the checked-in files are linked — for
   herdr just `config.toml`; for codex just `AGENTS.md`, `hooks.json`, and the
-  herdr hook (**not** `config.toml`, which codex rewrites at runtime).
+  herdr hook (**not** `config.toml`, which codex rewrites at runtime); for pi
+  everything except `settings.json`, which is gitignored since it mixes in
+  machine-specific choices (default model/provider, local model server
+  endpoints) that vary per host.
 - `control/*` is deep-linked into `~/src/` the same way: `control/AGENTS.md`
   is the project registry the control session, `project`, `wt`, and `space`
   read (see README "Control session"); `control/CLAUDE.md` just includes it.
