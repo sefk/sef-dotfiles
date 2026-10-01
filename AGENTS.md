@@ -20,7 +20,10 @@ specific to this repo.
   checked-in files are linked — runtime state (sockets, logs, sessions, sqlite
   DBs) and secrets (`auth.json`) stay out of the repo. For codex that means
   `AGENTS.md` (global instructions), `hooks.json`, and the herdr hook are
-  linked, but **not** `config.toml` (codex rewrites it at runtime).
+  linked, but **not** `config.toml` (codex rewrites it at runtime). For pi,
+  everything except `settings.json`, which is gitignored since it mixes in
+  machine-specific choices (default model/provider, local model server
+  endpoints) that vary per host.
 - `control/*` is deep-linked into `~/src/` the same way: `control/AGENTS.md`
   is the project registry the control session, `project`, `wt`, and `space`
   read (see README "Control session"); `control/CLAUDE.md` just includes it.
