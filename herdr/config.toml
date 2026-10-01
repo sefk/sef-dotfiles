@@ -6,7 +6,7 @@ previous_workspace = "shift+left"    # tmux S-Left
 next_workspace     = "shift+right"   # tmux S-Right
 split_vertical     = "prefix+|"      # side-by-side split on | (was prefix+v)
 # Tabs are the unit of work inside a project workspace. Ghostty translates
-# Cmd-Ctrl-[ / ] into these chords (see ghostty/config), since Cmd chords
+# Cmd-[ / ] into these chords (see ghostty/config), since Cmd chords
 # never reach the pty. The defaults (prefix+p / prefix+n) are taken: prefix+n
 # is the new-task popup below.
 previous_tab       = "prefix+["
