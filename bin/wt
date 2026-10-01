@@ -28,24 +28,22 @@
 # puts them in the Docker build context, pytest's collection root, and every
 # file watcher. The main checkout stays parked on the default branch.
 #
-# Per-repo settings come from an optional `.wtconfig` at the main checkout's
-# root, sourced as shell. Recognized variables (defaults shown):
+# Per-repo settings come from the project registry, ~/src/AGENTS.md (read with
+# `project`): the section for this repo, found from the main checkout's path.
+# Keys, defaults shown; commas work as well as spaces in `link` and `ports`:
 #
-#   WT_LINK=".env .envrc"     untracked files symlinked back to the main
+#   link = .env .envrc        untracked files symlinked back to the main
 #                             checkout, so local config has one source of truth
-#   WT_PORT_VARS=""           per-worktree ports, written into $WT_PORT_FILE:
-#                             "CHAINLIT_PORT=8000 EVAL_PORT=9000" gives issue
+#   ports =                   per-worktree ports, written into .env.worktree:
+#                             "CHAINLIT_PORT=8000, EVAL_PORT=9000" gives issue
 #                             861 CHAINLIT_PORT=8861 and EVAL_PORT=9861
-#                             (base + N % 1000). The older single-var form,
-#                             WT_PORT_VAR=NAME with WT_PORT_BASE=8000, still
-#                             works and means the same thing.
-#   WT_PORT_FILE=".env.worktree"
-#   WT_SETUP=""               shell run inside the new worktree (e.g. "uv sync")
-#   WT_SLUG_MAX=18            slug length cap, trimmed on a word boundary
+#                             (base + N % 1000)
+#   setup =                   shell run inside the new worktree (e.g. "uv sync")
+#   workflow = main|worktrees a repo that works on `main` (or isn't registered)
+#                             gets a warning before the plan — a worktree is
+#                             unusual there — but wt still goes ahead
 #
-# `.wtconfig` also carries TASK_TEAM=1, read by `task` (not by this script) to
-# mark a repo as team workflow (PRs + worktrees expected); absent means
-# individual (no PRs, no worktrees — see the global Version Control policy).
+# The slug length cap (18, trimmed on a word boundary) isn't configurable.
 #
 # A worktree with an .envrc gets `direnv allow` run in it — a new path is a new
 # direnv block even when .envrc is the main checkout's approved file.
@@ -56,6 +54,8 @@
 # A script can't cd its calling shell, so the `wt` shell function in
 # bash_startup/wt.sh exports WT_CD_FILE; writing a path there moves the shell.
 # Without the wrapper this degrades to printing where to go.
+#
+# WT_DRY_RUN=1 prints the plan and stops, for checking what a run would do.
 
 set -euo pipefail
 
@@ -70,6 +70,10 @@ interactive() { [ "$ASSUME_YES" -eq 0 ] && [ -t 0 ]; }
 # `-y` or piped run still says what it's about to do; it just doesn't wait.
 confirm() {
   local ans
+  if [ "${WT_DRY_RUN:-0}" = 1 ]; then
+    echo "wt: dry run, stopping" >&2
+    return 1
+  fi
   interactive || return 0
   # A read that fails is EOF, not assent — bail rather than default to yes.
   read -r -p "wt: proceed? [Y/n] " ans || { echo >&2; echo "wt: cancelled" >&2; return 1; }
@@ -97,19 +101,34 @@ REPO=$(basename "$MAIN")
 PARENT=$(dirname "$MAIN")
 
 # --- per-repo config -------------------------------------------------------
+# From the project registry; see the header. Unset keys fall back to defaults.
 WT_LINK=".env .envrc"
 WT_PORT_VARS=""
-WT_PORT_VAR=""
 WT_PORT_BASE=8000
 WT_PORT_FILE=".env.worktree"
 WT_SETUP=""
 WT_SLUG_MAX=18
-# shellcheck disable=SC1091
-[ -f "$MAIN/.wtconfig" ] && . "$MAIN/.wtconfig"
-# The single-var form is just the multi-var form with one entry.
-if [ -z "$WT_PORT_VARS" ] && [ -n "$WT_PORT_VAR" ]; then
-  WT_PORT_VARS="$WT_PORT_VAR=$WT_PORT_BASE"
+WT_WORKFLOW=""
+
+proj=$(project for "$MAIN" 2>/dev/null || true)
+if [ -n "$proj" ]; then
+  v=$(project get "$proj" link 2>/dev/null || true)
+  [ -n "$v" ] && WT_LINK=${v//,/ }
+  v=$(project get "$proj" ports 2>/dev/null || true)
+  [ -n "$v" ] && WT_PORT_VARS=${v//,/ }
+  v=$(project get "$proj" setup 2>/dev/null || true)
+  [ -n "$v" ] && WT_SETUP=$v
+  WT_WORKFLOW=$(project get "$proj" workflow 2>/dev/null || true)
 fi
+
+# A worktree is the exception in a repo that works on main; say so, don't block.
+warn_workflow() {
+  if [ -z "$proj" ]; then
+    echo "wt: $REPO is not in ~/src/AGENTS.md; a worktree is unusual here" >&2
+  elif [ "$WT_WORKFLOW" = main ]; then
+    echo "wt: $REPO works on main per ~/src/AGENTS.md; a worktree is unusual here" >&2
+  fi
+}
 
 # "NAME=8861" lines for issue N, one per WT_PORT_VARS entry.
 port_assignments() {
@@ -361,6 +380,7 @@ cmd_add() {
     git show-ref --verify --quiet "refs/remotes/origin/$base" && start="origin/$base"
   fi
 
+  warn_workflow
   echo
   echo "wt: plan for issue $n"
   case "$mode" in
@@ -464,6 +484,7 @@ cmd_add_branch() {
     git show-ref --verify --quiet "refs/remotes/origin/$base" && start="origin/$base"
   fi
 
+  warn_workflow
   echo
   echo "wt: plan for branch $branch"
   case "$mode" in
