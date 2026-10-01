@@ -21,6 +21,10 @@ specific to this repo.
   DBs) and secrets (`auth.json`) stay out of the repo. For codex that means
   `AGENTS.md` (global instructions), `hooks.json`, and the herdr hook are
   linked, but **not** `config.toml` (codex rewrites it at runtime).
+- `control/*` is deep-linked into `~/src/` the same way: `control/AGENTS.md`
+  is the project registry the control session, `project`, `wt`, and `space`
+  read (see README "Control session"); `control/CLAUDE.md` just includes it.
+  New project → new `##` section there, nothing else to register.
 - `bash_secret` is **not** checked in but is treated as a link target (special
   create/cleanup logic in the Makefile). It defines things like
   `RESUME_ADDRESS` and `RESTIC_PASSWORD` (encrypts the nightly

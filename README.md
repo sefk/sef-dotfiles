@@ -60,53 +60,18 @@ Siblings, not `.worktrees/` or `.claude/worktrees/`: a nested worktree lands in
 the Docker build context, pytest's collection root, and every file watcher.
 
 The slug is looked up from the issue title via `gh` when omitted — filler words
-dropped, capped at `WT_SLUG_MAX` (18) on a word boundary. One slug serves all
-three names, so they read as the same thing:
+dropped, capped at 18 characters on a word boundary. The same slug names the
+directory, the branch, the herdr tab, and the agent (see the next section).
 
-```
-issue #861 "Write up some coding guidelines starting with comments"
-
-  directory  ../datatalk-861-write-coding
-  branch     issue-861-write-coding
-  workspace  861-write-coding
-```
-
-Per-repo setup comes from an optional `.wtconfig` at the repo root — which untracked
-files to symlink back to the main checkout (`.env`, `.envrc`), which env vars
-get a per-worktree port (one line each, `NAME=base`; the older
-`WT_PORT_VAR=NAME` plus `WT_PORT_BASE` still works), and a setup command
-(`uv sync`). Example:
-
-```sh
-WT_LINK=".env .envrc"
-WT_PORT_VARS="CHAINLIT_PORT=8000 EVAL_PORT=9000"  # issue 853 -> CHAINLIT_PORT=8853
-                                                  # and EVAL_PORT=9853 in .env.worktree
-WT_SETUP="uv sync"
-```
-
-A new worktree with an `.envrc` gets `direnv allow` run in it — a new path is a
-new direnv block even when `.envrc` is the same file the main checkout already
-approved. The worktree still needs to load `$WT_PORT_FILE` for the port to take
-effect: in a direnv repo, add `dotenv_if_exists .env.worktree` to `.envrc`
-after `.env`.
+Per-repo setup comes from the project registry (next section): which untracked
+files to symlink back to the main checkout (`link`), which env vars get a
+per-worktree port (`ports`, `NAME=base` pairs; issue 853 gets `base + 853`),
+and a setup command (`setup`). The port lands in `.env.worktree`; a direnv repo
+loads it with `dotenv_if_exists .env.worktree` after `.env`. A new worktree
+with an `.envrc` gets `direnv allow` run in it — a new path is a new direnv
+block even when `.envrc` is the same file the main checkout already approved.
 Share the one local service stack across worktrees; a distinct app port is
-enough, no second database per tree.
-
-`bin/herdr-new-task` (prefix+n) opens a named herdr workspace on a directory
-with a chosen pane layout and starts the agent, named after the workspace. Run
-`wt` first and give the workspace the same `<N>-<slug>` name as the directory
-and branch, so `task status` can join them (see below).
-
-herdr runs one session in one Ghostty window. Each project is a workspace
-(`leafletter`, `datatalk`, `sef-dotfiles`, ...) and each task is a tab inside
-it, labelled `<N>-<slug>`, with the claude + shell split in the tab. The tab
-row is always shown; Cmd-Ctrl-[ / ] step between tabs (a Ghostty keybind in
-`config/ghostty/config` sends herdr's `prefix+[` / `prefix+]`, since Cmd
-chords never reach the pty). `bin/herdr-project-for DIR` maps a repo to its
-workspace label (`--ensure` prints the id, creating it if missing); the
-`new-space` and `task` skills and the prefix+n `herdr-new-task` popup use it
-to put new tabs in the right workspace. The `studio` / `studio-mosh` zsh
-functions attach to studio's session in the current terminal.
+enough, no second database per tree. `WT_DRY_RUN=1` prints the plan and stops.
 
 The zsh prompt (`oh-my-zsh/custom/themes/sefk.zsh-theme`) squashes the last
 path component to a letter when it would just repeat the branch — a worktree
@@ -121,113 +86,65 @@ keep their name, since there the branch says nothing about the project:
 The matching agent policies — never create a worktree, never close an issue
 early — live in `config/agents/GLOBAL.md`.
 
-## Task lifecycle (`bin/task`, `claude/skills/task`)
+## Control session (`control/AGENTS.md`, `bin/project`, `bin/space`, `bin/control`)
 
-A task's state is scattered over five places that don't know about each other:
-a git worktree, a branch, a GitHub issue, a GitHub PR, and a herdr workspace
-with an agent in it. `task` joins them on one key — the issue number, or a slug
-for work without one — and reports the drift between them, which is what
-"stranded work" and "which session is this" actually are:
+herdr runs one session in one Ghostty window. Each project is a workspace
+(`datatalk`, `leafletter`, `sef-dotfiles`, `bench`) and each unit of work is a
+tab inside it — claude in the left pane, a shell on the right. The tab row is
+always shown; Cmd-Ctrl-[ / ] step between tabs (a Ghostty keybind in
+`config/ghostty/config` sends herdr's `prefix+[` / `prefix+]`, since Cmd
+chords never reach the pty). The `studio` / `studio-mosh` zsh functions attach
+to studio's session in the current terminal.
 
-```
-task status            one row per task in this repo; --all for every repo
-                       herdr is sitting in, --branches to include bare
-                       branches, --json for the whole thing
-task here [--short]    the row for this directory; --short is the one-liner
-                       the prompts use
-task herdr-sync        push kind/pri/pr/issue/port/need tokens onto the
-                       matching herdr workspaces (display-only metadata)
-task brief             where attention belongs (see "Wrangling" below)
-```
+Tabs are made by talking to the **control session**: a claude session (sonnet,
+it's a small problem) sitting in `~/src`, in the first tab of the `control`
+workspace. `prefix+n` (`bin/herdr-control`) jumps there, creating the
+workspace, tab, and agent if they don't exist. "Fix datatalk 1102", "temp
+window on leafletter main", "pick up the 1106 PR followup", "what's open?" —
+the `control` skill (`claude/skills/control`, also linked into
+`~/.agents/skills/` for pi) turns those into `space` calls and sends you to
+the result. It never does the work itself.
 
-```
-    PRI  KEY  SLUG               TAGS               WT  PR            ISSUE   HERDR              AGENT               PORT     FLAGS
-🌳  P3   920  log-lines          ops                ✓   #925 open     open    920-log-lines      claude idle (done)  8920 up  ahead 9
-🌳  P2   902  missing-nonauth    loader             ✓   #904 merged   closed  902-loaders        claude idle         8902     merged name?
-👀  P2   712  overhead-grouping  sql_agent decision ✓   #882 open     open    882-group-payroll  claude idle         8882     name?
-```
+- **`~/src/AGENTS.md`** is the project registry — `control/AGENTS.md` here,
+  deep-linked by the Makefile; `~/src/CLAUDE.md` just includes it. One `##`
+  section per project with `key = value` lines: `path`, `repo`, `workspace`,
+  `workflow` (`main`: work in the checkout, no PRs; `worktrees`: a sibling
+  worktree and a PR per issue — datatalk), `aliases`, and the `wt` settings
+  above. Prose under each section is for whoever's reading. Taking on a new
+  project means adding a section. This replaces the per-repo `.wtconfig`,
+  which was my metadata in other people's repos.
+- **`bin/project`** reads it: `list`, `get <name> <key>`, `resolve <alias>`,
+  `for <dir>` (worktrees resolve to their project), `json`.
+- **`bin/space`** is the plumbing. `space new <project> --issue N | --branch B
+  | --main [--slug S] [--prompt TEXT]` makes the worktree when the workflow
+  calls for one (via `wt -y`), the tab in the project's workspace, the
+  claude agent named after the slug, sends the prompt once it's idle, and
+  focuses the tab. It refuses a bare request in a `worktrees` project and
+  won't build a second tab for a live issue. `space ls` is the overview
+  (workspaces, tabs, agents and their states, worktrees, open PRs);
+  `space focus` and `space close` do what they say.
+- **`bin/control`** is what runs in the control pane: `claude --model
+  sonnet`, or `pi` on the LM Studio model when a quick claude probe fails
+  (`CONTROL_AGENT=pi` forces it, `CONTROL_PROBE=0` skips the probe).
 
-The first column is the **kind**, derived rather than declared: 🌳 issue work
-of mine, 👀 a worktree sitting on someone else's PR, 🧭 ad-hoc work with no
-issue. PRI and TAGS come from the issue's labels and are painted in GitHub's
-own label colors on a terminal, so P0/P1 and `sql_agent` vs `ops` read at a
-glance without the numbers. `merged` and `closed` mean the worktree/workspace
-outlived its work; `name?` means branch, directory, and workspace slugs
-disagree (the last row is issue 712's branch in a directory named after its
-PR — the classic bug-vs-PR mixup); `no-pr`, `dirty`, `unpushed N` flag work
-that hasn't left the machine. The legend is in `task --help`. GitHub state is
-cached for ten minutes under `~/.cache/task/`; herdr and `lsof` are queried
-live and skipped when absent.
-
-`task` is read-only on purpose. The flexible part — set up, adopt, fork/split
-(one piece of work that turned out to be two), rename, wrap up — is the `task`
-agent skill in `claude/skills/task/SKILL.md`, written tool-neutrally and
-linked into `~/.agents/skills/` for pi/codex. It reads `task status`, states a
-plan, and composes `wt`, `git`, `gh`, and `herdr`; anything destructive waits
-for a yes. "Set up a project for bug 931" or "split this into two tasks" from
-any agent session is the intended interface; `wt` and the herdr popup remain
-the primitives underneath.
-
-Both prompts carry the one-liner in a linked worktree (never a main checkout):
+One slug serves all four names, so they read as the same thing:
 
 ```
-~/s/b/datatalk-920-log-lines (issue…) [#920 · pr925 open · :8920] >
+issue #861 "Write up some coding guidelines starting with comments"
+
+  directory  ../datatalk-861-write-coding
+  branch     issue-861-write-coding
+  tab        861-write-coding
+  agent      write-coding
 ```
 
-The zsh theme and the Claude statusline call `task here --short`, which prints
-a per-directory cached line and refreshes it in the background, so a prompt
-costs ~0.1s and never waits on GitHub. The `:8920` appears only while a dev
-stack is actually listening there; the port a worktree *would* use is a
-`task status` matter.
-
-## Wrangling (`task brief`, `bin/wrangle-tick`, `claude/skills/wrangle`)
-
-With a dozen agents running, green/yellow/red per pane doesn't say what each
-one *needs*. `task brief` does: for every task row it reads the agent's last
-words (herdr knows the Claude session id; the transcript is the jsonl under
-`~/.claude/projects/`), the PR's review state (requested reviewers,
-unresolved threads by author, CI, conflicts, whether the last push came after
-your last look), and the issue's priority — and it adds open P0/P1 issues and
-review requests that have no worktree at all. The result is a ranked list with
-a reason per line:
-
-```
- 96 P1 🌳 cand-list · #910 · PR #919 · ws4
-       the agent's last message asks you something (31h ago)
- 94 P1 👀 distinguish-zero · #610 · PR #862 · ws2
-       by newsroomdev: your review is requested; pushed 6h ago, after your agent's findings (6d ago)
- 92 P0 Memo rows get one rule but are a mixed population · #715 · no ws
-       P0, assigned to newsroomdev, no branch or agent on it
-```
-
-The first line of each item is every handle you might reach for: kind icon,
-slug, issue number, PR number, herdr workspace number. The second is why it's
-there, assembled from evidence (transcript timestamps, reviewer lists, push
-times), not written by a model. The score is a band, not a ranking within a
-band: 90+ someone or something is waiting on you now (or a P0 is unowned);
-70s something of yours is stuck; 50s finished work that hasn't left the
-machine; 30s hygiene.
-
-`--since-last` prints only items that are new or rose a band (exit 3 when
-nothing did), which is what makes the rest cheap:
-
-- `bin/wrangle-tick`, run by launchd every five minutes
-  (`launchd/com.sefk.wrangle-tick.plist`), refreshes the brief, paints
-  kind/pri/need tokens onto the herdr sidebar, and nudges a Claude agent named
-  `wrangler` only when something new appeared (any band while you're active;
-  band 4 only, hourly at most, while you're away) or as a 30-minute heartbeat
-  while you're active. It reads the keyboard idle time and backs off to hourly
-  after an hour idle and four-hourly after eight, so overnight it costs
-  nothing but a few `gh` calls.
-- The `wrangle` skill is the judgment half: the wrangler agent reads the brief
-  and answers "what are the one or two things worth my attention, and why",
-  in under 150 words, by slug not number. It is read-only toward other agents
-  (never prompts them or answers their dialogs) and toward GitHub.
-
-Set-up is one herdr workspace on the project's main checkout with an agent
-named `wrangler` (the skill has the commands), then
-`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.sefk.wrangle-tick.plist`.
-Log: `~/.cache/task/wrangle-tick.log`.
+`/fix-issue N` from the control session, or from a session in the wrong
+tree, hands off with `space new <project> --issue N --prompt "/fix-issue N"`;
+`/cleanup` from inside a finished tab removes the worktree and branch and
+hands the tab back to close. Status beyond `space ls` is still an open
+question — the `task`/`wrangle` tooling that used to live here was too
+clunky and is gone; herdr-projects, herdr-radar, or captains-deck are the
+candidates.
 
 ## Quota history (`claude/statusline-command.sh`)
 

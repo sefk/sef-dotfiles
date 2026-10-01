@@ -44,12 +44,13 @@ When monitoring long-running tasks, especially with production / other servers:
 
 Use Git for version control hosted at GitHub.
 
-Two workflows, chosen per repo. Default is **individual**; a repo is **team**
-only when its `.wtconfig` sets `TASK_TEAM=1` (see `wt`/`task`) — today that's
-just DataTalk.
+Two workflows, chosen per project in the registry at `~/src/AGENTS.md`
+(`project get <name> workflow`; `project for .` names the project you're in).
+`main` is the default; `worktrees` is the team workflow — today that's just
+DataTalk.
 
-- **Team** — pull requests, sibling worktrees per issue.
-- **Individual** — no PRs, no worktrees. Work happens directly on `main`, or
+- **Team** (`worktrees`) — pull requests, sibling worktrees per issue.
+- **Individual** (`main`) — no PRs, no worktrees. Work happens directly on `main`, or
   occasionally a short-lived feature branch that lives in the main checkout
   and gets merged or rebased back into `main` by me, locally — it never
   becomes a PR.
@@ -80,16 +81,15 @@ Worktrees (team repos only — individual repos work directly in the main checko
   tasks can't collide.
 - **Never create a worktree yourself** — no `isolation: "worktree"`, no
   `EnterWorktree`, no `git worktree add` into `.claude/worktrees/` or
-  `.worktrees/`. The one exception is `wt` itself, run on my behalf by the
-  `new-space` skill (or the `task` skill's *new* verb): those may run
-  `wt -y <N> <slug>`, which prints its plan before it acts. Anywhere else, if
-  a task needs isolation, say so and let me run `wt <N>` — or offer
-  `/new-space <N> <slug>`, which also builds the herdr workspace and starts
-  an agent there.
-- Tearing one down is `/cleanup` (the `task` skill's *wrap up* verb): worktree
-  and branch go, the herdr workspace is left for me to close with the keystroke.
-  Unpushed commits, dirty trees, and unmerged branches stop it until I say the
-  work is disposable, and the remote branch is mine to delete — that's a push.
+  `.worktrees/`. The one exception is `wt`, run through `space new`
+  (`bin/space`) — by the control session or by a `fix-issue` hand-off — which
+  prints its plan before it acts. Anywhere else, if a task needs isolation,
+  say so and let me run `wt <N>` or ask the control session (prefix+n) for a
+  space.
+- Tearing one down is `/cleanup`: worktree and branch go, the herdr tab is
+  left for me to close with the keystroke. Unpushed commits, dirty trees, and
+  unmerged branches stop it until I say the work is disposable, and the
+  remote branch is mine to delete — that's a push.
 - Worktrees share the main checkout's `.env`/`.envrc` (symlinked by `wt`) and
   the one already-running local service stack. Don't stand up a second
   database or duplicate stack per worktree; `wt` assigns a distinct app port.

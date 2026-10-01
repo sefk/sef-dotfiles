@@ -20,6 +20,10 @@ instructions live in the global `claude/CLAUDE.md` (deep-linked to
   must **not** land in the repo, so only the checked-in files are linked — for
   herdr just `config.toml`; for codex just `AGENTS.md`, `hooks.json`, and the
   herdr hook (**not** `config.toml`, which codex rewrites at runtime).
+- `control/*` is deep-linked into `~/src/` the same way: `control/AGENTS.md`
+  is the project registry the control session, `project`, `wt`, and `space`
+  read (see README "Control session"); `control/CLAUDE.md` just includes it.
+  New project → new `##` section there, nothing else to register.
 - `bash_secret` is **not** checked in but is treated as a link target (special
   create/cleanup logic in the Makefile). It defines things like
   `RESUME_ADDRESS` and `RESTIC_PASSWORD` (encrypts the nightly
