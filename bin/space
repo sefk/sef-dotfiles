@@ -1,0 +1,410 @@
+#!/usr/bin/env bash
+#
+# space — the mechanical half of the control session: build and inspect herdr
+# tabs, one per unit of work. An LLM decides what to do; this does the plumbing.
+#
+#   space ls [--json]
+#       Per project in the registry: its herdr workspace, each tab (label, id,
+#       cwd, agents with name/kind/state), plus git facts from the main checkout
+#       (worktrees, branches ahead of the default branch, open PRs). Workspaces
+#       no project claims (e.g. "control") are listed last.
+#
+#   space new <project> [--issue N | --branch NAME | --main] [--slug SLUG]
+#             [--label L] [--prompt TEXT] [--no-agent] [--no-focus]
+#             [--layout claude-shell|shell-shell|shell]
+#       Build a tab for a unit of work. <project> is a registry name or alias.
+#         --issue N    sibling worktree via `wt -y N [SLUG]` (branch issue-N-<slug>)
+#         --branch B   sibling worktree via `wt -y B`
+#         --main       the project's main checkout, no worktree
+#       With none of these: a `main`-workflow project defaults to --main; a
+#       `worktrees` project refuses. If a tab already sits in the target
+#       directory (and, for issues, is labelled "N-..."), it is focused and
+#       reported as "exists" instead of building a second one.
+#       The tab is labelled --label, else "N-<slug>", else the branch, else
+#       "main" (main-2, main-3 if taken). Layout defaults to the project's
+#       `layout` key, else claude-shell: claude agent in the left pane (named
+#       after the slug), a plain shell on the right. --prompt is sent to the
+#       agent once it is idle. If the agent fails to start the pane stays a
+#       shell and the exit status is still 0. Ends with key: value lines.
+#
+#   space focus <project> [<tab-label-or-id>]
+#       Focus the project's workspace, and a tab in it (exact label, then
+#       label prefix such as "1102", or tab id).
+#
+#   space close <project> <tab-label-or-id>
+#       Close one tab. Never touches worktrees or branches (that is cleanup's
+#       job). Refuses to close the tab it is running in ($HERDR_TAB_ID).
+#
+# Needs jq, herdr, and a reachable herdr server. Progress lines start "space: ".
+
+set -euo pipefail
+
+# Sibling scripts (project, wt) work even when bin/ isn't on PATH.
+PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd):$PATH"
+
+die()  { echo "space: $*" >&2; exit 1; }
+note() { echo "space: $*"; }
+
+# --- environment -----------------------------------------------------------
+
+require_env() {
+  command -v jq >/dev/null 2>&1    || die "jq is required"
+  command -v herdr >/dev/null 2>&1 || die "herdr not found on PATH"
+  command -v project >/dev/null 2>&1 || die "project (bin/project) not found on PATH"
+  if [ "${HERDR_ENV:-}" != 1 ]; then
+    herdr workspace list >/dev/null 2>&1 \
+      || die "no herdr server reachable (run inside herdr, or start the server)"
+  fi
+}
+
+# Resolve a word to a canonical project name (die if none).
+resolve() { project resolve "$1" 2>/dev/null || die "no project matches '$1' (try: project list)"; }
+pget()    { project get "$1" "$2" 2>/dev/null || true; }
+
+# --- herdr lookups (all print plain values) --------------------------------
+
+# Workspace id for an exact label, or empty.
+ws_id() {
+  herdr workspace list | jq -r --arg l "$1" '[.result.workspaces[] | select(.label == $l)][0].workspace_id // empty'
+}
+
+# Tabs of a workspace, one JSON object per line, each with its root pane's cwd:
+# {tab_id,label,cwd,root_pane}. The root pane is the tab's first listed pane.
+ws_tabs() {
+  local ws=$1 tabs panes
+  tabs=$(herdr tab list --workspace "$ws")
+  panes=$(herdr pane list --workspace "$ws")
+  jq -c -n --argjson t "$tabs" --argjson p "$panes" '
+    $t.result.tabs[] as $tab
+    | ([$p.result.panes[] | select(.tab_id == $tab.tab_id)][0]) as $root
+    | {tab_id: $tab.tab_id, label: $tab.label, cwd: ($root.cwd // ""), root_pane: ($root.pane_id // "")}'
+}
+
+# Find a tab by id, exact label, then label prefix. Prints its JSON line.
+find_tab() {
+  local ws=$1 want=$2 tabs hit
+  tabs=$(ws_tabs "$ws")
+  hit=$(jq -c --arg w "$want" 'select(.tab_id == $w)' <<<"$tabs" | head -1)
+  [ -n "$hit" ] || hit=$(jq -c --arg w "$want" 'select(.label == $w)' <<<"$tabs" | head -1)
+  [ -n "$hit" ] || hit=$(jq -c --arg w "$want" 'select(.label | startswith($w))' <<<"$tabs" | head -1)
+  [ -n "$hit" ] || return 1
+  printf '%s\n' "$hit"
+}
+
+# --- ls --------------------------------------------------------------------
+
+# Default branch of a checkout: origin/HEAD, else main, else master.
+default_branch() {
+  local d=$1 b
+  b=$(git -C "$d" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+  [ -n "$b" ] && { echo "${b#origin/}"; return; }
+  for b in main master; do
+    git -C "$d" show-ref --verify --quiet "refs/heads/$b" && { echo "$b"; return; }
+  done
+}
+
+# Git facts for a checkout as JSON: {default, worktrees:[{path,branch}], ahead:[{branch,ahead}]}.
+git_facts() {
+  local d=$1 base wt ahead b n
+  [ -d "$d/.git" ] || [ -f "$d/.git" ] || { echo '{"default":null,"worktrees":[],"ahead":[]}'; return; }
+  base=$(default_branch "$d")
+  wt=$(git -C "$d" worktree list --porcelain 2>/dev/null | awk '
+    /^worktree /{ if (p!="") printf "%s\t%s\n", p, b; p=substr($0,10); b="" }
+    /^branch /{ b=$2; sub("refs/heads/","",b) }
+    /^detached/{ b="(detached)" }
+    END{ if (p!="") printf "%s\t%s\n", p, b }' \
+    | jq -R -s -c 'split("\n") | map(select(length>0) | split("\t") | {path: .[0], branch: .[1]})')
+  ahead="[]"
+  if [ -n "$base" ]; then
+    while IFS= read -r b; do
+      [ "$b" = "$base" ] && continue
+      n=$(git -C "$d" rev-list --count "$base..$b" 2>/dev/null || echo 0)
+      [ "$n" -gt 0 ] && ahead=$(jq -c --arg b "$b" --argjson n "$n" '. + [{branch:$b, ahead:$n}]' <<<"$ahead")
+    done < <(git -C "$d" for-each-ref --format='%(refname:short)' refs/heads)
+  fi
+  jq -c -n --arg base "$base" --argjson wt "${wt:-[]}" --argjson ahead "$ahead" \
+    '{default: $base, worktrees: $wt, ahead: $ahead}'
+}
+
+# One project as JSON. $3 is a file holding open PRs (JSON array), $4 the
+# shared herdr snapshot {workspaces,tabs,panes,agents}.
+project_json() {
+  local name=$1 path=$2 prs=$3 snap=$4 label ws
+  label=$(pget "$name" workspace)
+  jq -c -n --arg name "$name" --arg path "$path" --arg label "$label" \
+    --arg repo "$(pget "$name" repo)" --arg workflow "$(pget "$name" workflow)" \
+    --argjson git "$(git_facts "$path")" --slurpfile prs "$prs" --slurpfile s "$snap" '
+    ($s[0]) as $s
+    | ([$s.workspaces[] | select(.label == $label)][0]) as $w
+    | {name: $name, path: $path, repo: $repo, workflow: $workflow,
+       workspace: (if $w then {label: $w.label, id: $w.workspace_id} else null end),
+       tabs: (if $w then [ $s.tabs[] | select(.workspace_id == $w.workspace_id) as $t
+              | ([$s.panes[] | select(.tab_id == $t.tab_id)][0]) as $root
+              | {label: $t.label, id: $t.tab_id, cwd: ($root.cwd // ""),
+                 agents: [ $s.agents[] | select(.tab_id == $t.tab_id)
+                           | {name: (.name // null), kind: .agent, state: .agent_status, pane: .pane_id} ]} ]
+             else [] end),
+       git: $git, prs: $prs[0]}'
+}
+
+cmd_ls() {
+  local json=0 snap tmp name path n
+  [ "${1:-}" = "--json" ] && json=1
+  tmp=$(mktemp -d); trap "rm -rf '$tmp'" EXIT
+  jq -c -n --argjson w "$(herdr workspace list)" --argjson t "$(herdr tab list)" \
+    --argjson p "$(herdr pane list)" --argjson a "$(herdr agent list)" \
+    '{workspaces: $w.result.workspaces, tabs: $t.result.tabs, panes: $p.result.panes, agents: $a.result.agents}' >"$tmp/snap"
+
+  # gh is the slow part: one call per project, all in parallel.
+  while IFS= read -r name; do
+    echo '[]' >"$tmp/pr.$name"
+    if command -v gh >/dev/null 2>&1 && [ -n "$(pget "$name" repo)" ]; then
+      ( gh pr list --repo "$(pget "$name" repo)" --state open --limit 30 \
+          --json number,title,headRefName,isDraft >"$tmp/pr.$name.new" 2>/dev/null \
+          && mv "$tmp/pr.$name.new" "$tmp/pr.$name" ) &
+    fi
+  done < <(project list)
+  wait
+
+  local out="$tmp/out" claimed='[]'
+  : >"$out"
+  while IFS= read -r name; do
+    path=$(pget "$name" path)
+    project_json "$name" "$path" "$tmp/pr.$name" "$tmp/snap" >>"$out"
+    claimed=$(jq -c --arg l "$(pget "$name" workspace)" '. + [$l]' <<<"$claimed")
+  done < <(project list)
+  jq -c -s --slurpfile s "$tmp/snap" --argjson claimed "$claimed" \
+    '{projects: ., other_workspaces: [$s[0].workspaces[] | select(.label as $l | $claimed | index($l) | not)
+       | {label, id: .workspace_id}]}' "$out" >"$tmp/all"
+
+  if [ "$json" = 1 ]; then jq . "$tmp/all"; return; fi
+  jq -r '
+    (.projects[] |
+      "== \(.name)  [\(.workflow)]  \(.path)",
+      (if .workspace then "   workspace: \(.workspace.label) (\(.workspace.id))" else "   workspace: no workspace" end),
+      (.tabs[] | "   tab \(.label) (\(.id))  \(.cwd)",
+         (.agents[] | "      agent \(.name // "-") \(.kind) \(.state)")),
+      (if (.git.worktrees | length) > 1 then
+         "   worktrees:", (.git.worktrees[] | "      \(.path)  \(.branch)") else empty end),
+      # Local branches with commits the default branch lacks, minus the ones a
+      # worktree or an open PR already names above; capped so a repo full of
+      # old branches does not drown the view.
+      (((.git.worktrees | map(.branch)) + (.prs | map(.headRefName))) as $known
+       | [.git.ahead[] | select(.branch as $b | $known | index($b) | not)] as $extra
+       | if ($extra | length) > 0 then
+           "   other branches ahead of \(.git.default):",
+           ($extra[:8][] | "      \(.branch)  +\(.ahead)"),
+           (if ($extra | length) > 8 then "      ... and \(($extra | length) - 8) more" else empty end)
+         else empty end),
+      # Bot PRs (copilot/, dependabot/) are counted, not listed; --json has them all.
+      ([.prs[] | select(.headRefName | test("^(copilot|dependabot)/") | not)] as $prs
+       | ([.prs[] | select(.headRefName | test("^(copilot|dependabot)/"))] | length) as $bots
+       | if ($prs | length) > 0 or $bots > 0 then
+           "   open PRs:",
+           ($prs[] | "      #\(.number) \(.headRefName)\(if .isDraft then " [draft]" else "" end)  \(.title)"),
+           (if $bots > 0 then "      ... and \($bots) bot PRs (copilot/dependabot)" else empty end)
+         else empty end),
+      ""),
+    (if (.other_workspaces | length) > 0 then
+       "== other workspaces", (.other_workspaces[] | "   \(.label) (\(.id))") else empty end)
+  ' "$tmp/all"
+}
+
+# --- new -------------------------------------------------------------------
+
+# Sanitize text into a valid herdr agent name: [a-z][a-z0-9_-]{0,31}.
+agent_name() {
+  local s
+  s=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_-]+/-/g; s/^-+//; s/-+$//')
+  case "$s" in ''|[0-9]*|[_-]*) s="t-$s" ;; esac
+  printf '%s' "${s:0:32}" | sed -E 's/-+$//'
+}
+
+# First of main, main-2, main-3... not already a tab label in workspace $1.
+free_main_label() {
+  local labels; labels=$(ws_tabs "$1" | jq -r .label)
+  local l=main i=2
+  while grep -qxF "$l" <<<"$labels"; do l="main-$i"; i=$((i+1)); done
+  echo "$l"
+}
+
+cmd_new() {
+  [ $# -ge 1 ] || die "usage: space new <project> [--issue N | --branch NAME | --main] ..."
+  local proj; proj=$(resolve "$1"); shift
+  local issue="" branch="" main=0 slug="" label="" prompt="" noagent=0 focus=--focus layout=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --issue)    issue=${2:?--issue needs a number}; shift 2 ;;
+      --branch)   branch=${2:?--branch needs a name}; shift 2 ;;
+      --main)     main=1; shift ;;
+      --slug)     slug=${2:?--slug needs a value}; shift 2 ;;
+      --label)    label=${2:?--label needs a value}; shift 2 ;;
+      --prompt)   prompt=${2:?--prompt needs text}; shift 2 ;;
+      --layout)   layout=${2:?--layout needs a value}; shift 2 ;;
+      --no-agent) noagent=1; shift ;;
+      --no-focus) focus=--no-focus; shift ;;
+      *) die "unknown option for new: $1" ;;
+    esac
+  done
+  case "$issue" in ''|*[!0-9]*) [ -z "$issue" ] || die "--issue takes a number, got '$issue'" ;; esac
+  [ $(( ${issue:+1} + ${branch:+1} + main )) -le 1 ] || die "pass only one of --issue, --branch, --main"
+
+  local path workflow wsname
+  path=$(pget "$proj" path); workflow=$(pget "$proj" workflow); wsname=$(pget "$proj" workspace)
+  [ -d "$path" ] || die "project path does not exist: $path"
+  [ -n "$wsname" ] || die "project $proj has no workspace key in the registry"
+  if [ -z "$issue$branch" ] && [ "$main" = 0 ]; then
+    [ "$workflow" = worktrees ] \
+      && die "$proj works in worktrees; pass --issue N, --branch NAME, or --main to override"
+    main=1
+  fi
+  [ -n "$layout" ] || layout=$(pget "$proj" layout)
+  [ -n "$layout" ] || layout=claude-shell
+  case "$layout" in claude-shell|shell-shell|shell) ;; *) die "unknown layout: $layout" ;; esac
+
+  # Decide the directory (creating a worktree if needed).
+  local dir br=""
+  if [ -n "$issue" ]; then
+    note "creating worktree for issue $issue"
+    ( cd "$path" && wt -y "$issue" ${slug:+"$slug"} ) || die "wt failed for issue $issue"
+    dir=$(cd "$path" && wt path "$issue") || die "wt path $issue failed"
+    br=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    [ -n "$slug" ] || slug=$(basename "$dir" | sed -E "s/^.*-$issue-//")
+  elif [ -n "$branch" ]; then
+    note "creating worktree for branch $branch"
+    ( cd "$path" && wt -y "$branch" ) || die "wt failed for branch $branch"
+    dir="$(dirname "$path")/$(basename "$path")-$(printf '%s' "$branch" | tr '/' '-')"
+    [ -d "$dir" ] || dir=$(git -C "$path" worktree list --porcelain \
+      | awk -v b="refs/heads/$branch" '/^worktree /{p=substr($0,10)} $1=="branch" && $2==b {print p}' | head -1)
+    [ -d "$dir" ] || die "cannot find the worktree for branch $branch"
+    br=$branch
+  else
+    dir=$path
+    br=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  fi
+  dir=$(cd "$dir" && pwd -P)
+
+  # Workspace: reuse by label, else create (its first tab is reused below).
+  local ws pre_tab="" pre_pane="" resp
+  ws=$(ws_id "$wsname")
+
+  # Idempotence: a tab already in this directory (and issue-numbered, for issues).
+  if [ -n "$ws" ]; then
+    local hit
+    hit=$(ws_tabs "$ws" | jq -c --arg d "$dir" --arg n "${issue:+$issue-}" \
+      'select((.cwd | sub("/+$"; "")) == $d and (.label | startswith($n)))' | head -1)
+    # --main may legitimately open several tabs in one directory; only dedupe
+    # it when the caller named the tab and that label exists.
+    if [ "$main" = 1 ] && [ -n "$hit" ]; then
+      hit=$( [ -n "$label" ] && ws_tabs "$ws" | jq -c --arg l "$label" 'select(.label == $l)' | head -1 || true )
+    fi
+    if [ -n "$hit" ]; then
+      local tid; tid=$(jq -r .tab_id <<<"$hit")
+      herdr tab focus "$tid" >/dev/null
+      echo "exists"
+      printf 'project: %s\ndir: %s\nbranch: %s\nworkspace_id: %s\ntab_id: %s\nroot_pane: %s\n' \
+        "$proj" "$dir" "$br" "$ws" "$tid" "$(jq -r .root_pane <<<"$hit")"
+      return 0
+    fi
+  fi
+
+  # Tab label.
+  if [ -z "$label" ]; then
+    if   [ -n "$issue" ];  then label="$issue-$slug"
+    elif [ -n "$branch" ]; then label=$branch
+    elif [ -n "$ws" ];     then label=$(free_main_label "$ws")
+    else label=main; fi
+  fi
+
+  local tab root
+  if [ -z "$ws" ]; then
+    note "creating workspace $wsname"
+    resp=$(herdr workspace create --label "$wsname" --cwd "$dir" --no-focus) || die "workspace create failed"
+    ws=$(jq -r '.result.workspace.workspace_id // empty' <<<"$resp")
+    tab=$(jq -r '.result.tab.tab_id // empty' <<<"$resp")
+    root=$(jq -r '.result.root_pane.pane_id // empty' <<<"$resp")
+    [ -n "$ws" ] && [ -n "$tab" ] && [ -n "$root" ] || die "unexpected workspace create response: $resp"
+    herdr tab rename "$tab" "$label" >/dev/null
+    [ "$focus" = --focus ] && herdr tab focus "$tab" >/dev/null
+  else
+    note "creating tab $label in workspace $wsname"
+    resp=$(herdr tab create --workspace "$ws" --label "$label" --cwd "$dir" "$focus") || die "tab create failed"
+    tab=$(jq -r '.result.tab.tab_id // empty' <<<"$resp")
+    root=$(jq -r '.result.root_pane.pane_id // empty' <<<"$resp")
+    [ -n "$tab" ] && [ -n "$root" ] || die "unexpected tab create response: $resp"
+  fi
+
+  local shell_pane=""
+  if [ "$layout" != shell ]; then
+    resp=$(herdr pane split "$root" --direction right --cwd "$dir" --no-focus) || die "pane split failed"
+    shell_pane=$(jq -r '.result.pane.pane_id // empty' <<<"$resp")
+  fi
+
+  # Agent in the left/root pane.
+  local agent=none sent=no aname
+  if [ "$layout" = claude-shell ] && [ "$noagent" = 0 ]; then
+    aname=$(agent_name "${slug:-$label}")
+    note "starting claude as $aname"
+    if herdr agent start "$aname" --kind claude --pane "$root" >/dev/null 2>&1; then
+      agent=$aname
+      if herdr agent wait "$root" --until idle --timeout 60000 >/dev/null 2>&1; then
+        if [ -n "$prompt" ]; then
+          herdr agent prompt "$root" "$prompt" >/dev/null 2>&1 && sent=yes \
+            || note "prompt submission failed"
+        fi
+      else
+        note "agent did not become idle within 60s; prompt not sent"
+      fi
+    else
+      note "agent failed to start; pane left as a shell"
+    fi
+  fi
+
+  note "done"
+  printf 'project: %s\ndir: %s\nbranch: %s\nworkspace_id: %s\ntab_id: %s\nroot_pane: %s\nshell_pane: %s\nagent: %s\nprompt_sent: %s\n' \
+    "$proj" "$dir" "$br" "$ws" "$tab" "$root" "${shell_pane:-none}" "$agent" "$sent"
+}
+
+# --- focus / close ---------------------------------------------------------
+
+cmd_focus() {
+  [ $# -ge 1 ] || die "usage: space focus <project> [<tab-label-or-id>]"
+  local proj ws hit
+  proj=$(resolve "$1"); ws=$(ws_id "$(pget "$proj" workspace)")
+  [ -n "$ws" ] || die "$proj has no herdr workspace open"
+  herdr workspace focus "$ws" >/dev/null
+  if [ -n "${2:-}" ]; then
+    hit=$(find_tab "$ws" "$2") || die "no tab matching '$2' in $proj"
+    herdr tab focus "$(jq -r .tab_id <<<"$hit")" >/dev/null
+    note "focused $proj / $(jq -r .label <<<"$hit") ($(jq -r .tab_id <<<"$hit"))"
+  else
+    note "focused workspace of $proj ($ws)"
+  fi
+}
+
+cmd_close() {
+  [ $# -eq 2 ] || die "usage: space close <project> <tab-label-or-id>"
+  local proj ws hit tid
+  proj=$(resolve "$1"); ws=$(ws_id "$(pget "$proj" workspace)")
+  [ -n "$ws" ] || die "$proj has no herdr workspace open"
+  hit=$(find_tab "$ws" "$2") || die "no tab matching '$2' in $proj"
+  tid=$(jq -r .tab_id <<<"$hit")
+  [ "$tid" != "${HERDR_TAB_ID:-}" ] || die "refusing to close the tab this session is running in ($tid)"
+  note "closing tab $(jq -r .label <<<"$hit") ($tid) in $proj; worktrees and branches are untouched"
+  herdr tab close "$tid" >/dev/null
+  note "closed"
+}
+
+# --- dispatch --------------------------------------------------------------
+
+case "${1:-}" in
+  ''|-h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "$0"; exit 0 ;;
+esac
+require_env
+case "$1" in
+  ls)    shift; cmd_ls "$@" ;;
+  new)   shift; cmd_new "$@" ;;
+  focus) shift; cmd_focus "$@" ;;
+  close) shift; cmd_close "$@" ;;
+  *)     die "unknown command: $1 (try --help)" ;;
+esac
