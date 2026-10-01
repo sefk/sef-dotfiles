@@ -91,7 +91,7 @@ early — live in `config/agents/GLOBAL.md`.
 herdr runs one session in one Ghostty window. Each project is a workspace
 (`datatalk`, `leafletter`, `sef-dotfiles`, `bench`) and each unit of work is a
 tab inside it — claude in the left pane, a shell on the right. The tab row is
-always shown; Cmd-[ / ] step between tabs (a Ghostty keybind in
+always shown; Cmd-Shift-[ / ] step between tabs (a Ghostty keybind in
 `config/ghostty/config` sends herdr's `prefix+[` / `prefix+]`, since Cmd
 chords never reach the pty). The `studio` / `studio-mosh` zsh functions attach
 to studio's session in the current terminal.

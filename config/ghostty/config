@@ -17,12 +17,12 @@ shell-integration-features = ssh-terminfo
 keybind = shift+page_up=unbind
 keybind = shift+page_down=unbind
 
-# herdr tab navigation on Cmd-[ / ]; Ghostty's own tabs stay on the default
-# Cmd-Shift-[ / ], mirroring Chrome. Cmd chords never reach the pty, so send
-# herdr's prefix chord (Ctrl-A [ / ]) as bytes; herdr/config.toml binds
-# previous_tab/next_tab to those. Ghostty binds nothing to Cmd-[ / ] by default.
-keybind = super+left_bracket=text:\x01\x5b
-keybind = super+right_bracket=text:\x01\x5d
+# herdr tab navigation on Cmd-Shift-[ / ], like Chrome. This takes over Ghostty's
+# default previous_tab/next_tab on those keys. Cmd chords never reach the pty, so
+# send herdr's prefix chord (Ctrl-A [ / ]) as bytes; herdr/config.toml binds
+# previous_tab/next_tab to those.
+keybind = super+shift+left_bracket=text:\x01\x5b
+keybind = super+shift+right_bracket=text:\x01\x5d
 
 # Cmd-1..9 jump to herdr tab N: send Alt-N as a CSI-u sequence, which
 # herdr/config.toml binds directly (switch_tab = alt+1..9). Ghostty's own tab switching moves to
