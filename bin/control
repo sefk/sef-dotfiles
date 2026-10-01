@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#
+# control -- start the control agent: a claude session in ~/src that you talk to
+# about which project / tab to set up. Run it inside a pane whose cwd is ~/src
+# (herdr-control does that for you).
+#
+#   control [agent args...]
+#
+# Primary agent is `claude --model sonnet`. Before using it, a cheap probe
+# (`claude -p 'reply with the single word ok'`, 20s timeout) checks claude is
+# usable right now (logged in, quota left, network up). If the probe fails
+# (non-zero exit, timeout, or no "ok" in the reply) the fallback is `pi`, which
+# talks to the local LM Studio model. Extra arguments are passed to the agent.
+#
+# Environment:
+#   CONTROL_AGENT=claude|pi   force one agent and skip the probe
+#   CONTROL_PROBE=0           skip the probe and go straight to claude
+#
+# The agent is exec'd, so the pane's process *is* the agent (herdr detects
+# agents by process).
+
+set -uo pipefail
+
+case "${1:-}" in
+  -h|--help)
+    awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"
+    exit 0 ;;
+esac
+
+# Run a command with a time limit; prefer coreutils timeout, else watchdog.
+with_timeout() {
+  local secs="$1"; shift
+  if command -v timeout >/dev/null 2>&1; then timeout "$secs" "$@"; return; fi
+  if command -v gtimeout >/dev/null 2>&1; then gtimeout "$secs" "$@"; return; fi
+  "$@" &
+  local pid=$!
+  ( sleep "$secs"; kill "$pid" 2>/dev/null ) &
+  local killer=$!
+  wait "$pid"; local rc=$?
+  kill "$killer" 2>/dev/null
+  [[ $rc -eq 143 ]] && rc=124
+  return "$rc"
+}
+
+# probe_claude -> 0 if claude answered "ok"; else 1 and $reason is set
+probe_claude() {
+  local out rc
+  command -v claude >/dev/null 2>&1 || { reason="claude not found"; return 1; }
+  out=$(with_timeout 20 claude -p 'reply with the single word ok' --model sonnet 2>/dev/null </dev/null)
+  rc=$?
+  if [[ $rc -ne 0 ]]; then reason="claude probe failed (rc=$rc)"; return 1; fi
+  if [[ "$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]')" != *ok* ]]; then
+    reason="claude probe gave unexpected output"; return 1
+  fi
+  return 0
+}
+
+cd "$HOME/src" 2>/dev/null || true
+
+agent="" why="" reason=""
+case "${CONTROL_AGENT:-}" in
+  claude|pi) agent="$CONTROL_AGENT"; why="CONTROL_AGENT=$agent" ;;
+  "")
+    if [[ "${CONTROL_PROBE:-1}" == 0 ]]; then
+      agent=claude; why="probe skipped"
+    elif probe_claude; then
+      agent=claude; why="probe ok"
+    else
+      agent=pi; why="$reason; falling back to pi"
+    fi ;;
+  *) echo "control: CONTROL_AGENT must be claude or pi" >&2; exit 2 ;;
+esac
+
+echo "control: starting $agent ($why)"
+if [[ "$agent" == claude ]]; then
+  exec claude --model sonnet "$@"
+else
+  exec pi "$@"
+fi

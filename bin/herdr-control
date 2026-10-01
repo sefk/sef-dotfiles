@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+#
+# herdr-control -- jump to the control session, creating it if needed.
+#
+#   herdr-control            ensure the `control` workspace, its first tab
+#                            (labelled `control`, cwd ~/src) and a control agent
+#                            in that tab's root pane exist, then focus them
+#   herdr-control --status   print workspace / tab / pane / agent, change nothing
+#
+# Bound to Ctrl-A n (prefix+n) via a `[[keys.command]]` in herdr/config.toml;
+# also fine from a plain shell. The agent is started by running `control`
+# (bin/control) in the pane, which picks claude or falls back to pi. Idempotent:
+# when everything exists this only focuses.
+#
+# Not `set -e`: on failure we print the message, log it, and pause so a popup
+# doesn't vanish before it can be read.
+set -uo pipefail
+
+case "${1:-}" in
+  -h|--help)
+    awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"
+    exit 0 ;;
+  ""|--status) ;;
+  *) echo "herdr-control: unknown argument $1" >&2; exit 2 ;;
+esac
+status_only=0; [[ "${1:-}" == --status ]] && status_only=1
+
+herdr="${HERDR_BIN_PATH:-herdr}"
+dir="$HOME/src"
+label=control
+log="${TMPDIR:-/tmp}/herdr-control.log"
+
+die() {
+  printf 'herdr-control: %s\n' "$*" >&2
+  printf '%s herdr-control: %s\n' "$(date '+%F %T')" "$*" >> "$log" 2>/dev/null
+  sleep 2
+  exit 1
+}
+say() { printf '  %s\n' "$*"; }
+
+# jqr <json> <filter> -- first result or empty
+jqr() { printf '%s' "$1" | jq -r "$2" 2>/dev/null; }
+
+find_workspace() {
+  "$herdr" workspace list | jq -r --arg l "$label" \
+    '[.result.workspaces[] | select(.label==$l)][0].workspace_id // empty'
+}
+# first tab (lowest number) of a workspace -> "tab_id<TAB>label"
+first_tab() {
+  "$herdr" tab list --workspace "$1" | jq -r \
+    '[.result.tabs[]] | sort_by(.number) | .[0] | select(.) | "\(.tab_id)\t\(.label)"'
+}
+root_pane_of() {
+  "$herdr" pane list --workspace "$1" | jq -r --arg t "$2" \
+    '[.result.panes[] | select(.tab_id==$t)] | .[0].pane_id // empty'
+}
+# agent record in a pane -> "name<TAB>state" or empty
+agent_in() {
+  "$herdr" agent list | jq -r --arg p "$1" \
+    '.result.agents[] | select(.pane_id==$p) | "\(.agent)\t\(.agent_status)"' | head -1
+}
+
+command -v jq >/dev/null 2>&1 || die "jq not found"
+"$herdr" workspace list >/dev/null 2>&1 || die "cannot reach herdr (is the server running?)"
+
+ws=$(find_workspace)
+if [[ -z "$ws" ]]; then
+  if [[ $status_only -eq 1 ]]; then
+    echo "workspace: none"; echo "tab: none"; echo "pane: none"; echo "agent: none"; exit 0
+  fi
+  say "creating workspace $label ..."
+  created=$("$herdr" workspace create --cwd "$dir" --label "$label" --no-focus) \
+    || die "workspace create failed"
+  ws=$(jqr "$created" '.result.workspace.workspace_id // empty')
+  [[ -n "$ws" ]] || ws=$(find_workspace)
+  [[ -n "$ws" ]] || die "could not find the new workspace"
+fi
+
+tab="" tab_label=""
+IFS=$'\t' read -r tab tab_label < <(first_tab "$ws")
+if [[ -z "$tab" ]]; then
+  [[ $status_only -eq 1 ]] && { echo "workspace: $ws"; echo "tab: none"; echo "pane: none"; echo "agent: none"; exit 0; }
+  say "creating tab $label ..."
+  created=$("$herdr" tab create --workspace "$ws" --cwd "$dir" --label "$label" --no-focus) \
+    || die "tab create failed"
+  tab=$(jqr "$created" '.result.tab.tab_id // empty')
+  [[ -n "$tab" ]] || die "could not read new tab id"
+elif [[ "$tab_label" != "$label" ]]; then
+  if [[ $status_only -eq 0 ]]; then
+    say "labelling first tab $label ..."
+    "$herdr" tab rename "$tab" "$label" >/dev/null || die "tab rename failed"
+  fi
+fi
+
+root=$(root_pane_of "$ws" "$tab")
+[[ -n "$root" ]] || die "no pane in tab $tab"
+rec=$(agent_in "$root")
+
+if [[ $status_only -eq 1 ]]; then
+  echo "workspace: $ws"
+  echo "tab: $tab"
+  echo "pane: $root"
+  if [[ -n "$rec" ]]; then echo "agent: ${rec%%$'\t'*} (${rec#*$'\t'})"; else echo "agent: none"; fi
+  exit 0
+fi
+
+if [[ -z "$rec" ]]; then
+  say "starting control agent in $root ..."
+  "$herdr" pane run "$root" control >/dev/null || die "could not run control in pane $root"
+  found=""
+  for _ in $(seq 1 60); do
+    [[ -n "$(agent_in "$root")" ]] && { found=1; break; }
+    sleep 1
+  done
+  if [[ -n "$found" ]]; then
+    "$herdr" agent rename "$root" "$label" >/dev/null 2>&1 || say "(could not rename agent)"
+  else
+    say "agent did not appear within 60s; focusing anyway"
+    printf '%s herdr-control: agent did not appear in %s\n' "$(date '+%F %T')" "$root" >> "$log" 2>/dev/null
+    sleep 2
+  fi
+fi
+
+"$herdr" workspace focus "$ws" >/dev/null 2>&1 || say "(could not focus workspace $ws)"
+"$herdr" tab focus "$tab" >/dev/null 2>&1 || say "(could not focus tab $tab)"
+say "control: $ws $tab"
