@@ -28,8 +28,11 @@ commits, working branch for multi-step work, never push).
      — **hand off instead of implementing here**:
 
      ```bash
-     space new <project> --issue <N> --prompt "/fix-issue <N>"
+     space new <project> --issue <N> --slug <slug> --model <model> --prompt "/fix-issue <N>"
      ```
+
+     `--model` is required on a hand-off. Pick it with the rule under
+     "Choosing the model for a hand-off" below, and say which one you chose.
 
      That builds the worktree (via `wt`), a tab in the project's herdr
      workspace with a claude agent in it, sends it this same command, and
@@ -51,7 +54,7 @@ commits, working branch for multi-step work, never push).
      local feature branch (`issue-<N>-<short-slug>`) that you merge or
      rebase back into `main` yourself when done — never open a PR for it.
      If you're in the control session rather than the project, hand off the
-     same way: `space new <project> --main --prompt "/fix-issue <N>"`.
+     same way: `space new <project> --main --model <model> --prompt "/fix-issue <N>"`.
    - **Never pick the slug silently.** Wherever a slug is about to become a
      branch name — the feature branch here, or the worktree `space new`
      builds — and it came from the issue title rather than from the user,
@@ -60,6 +63,24 @@ commits, working branch for multi-step work, never push).
      *Other* for their own words). A branch and a directory are the hardest
      things to rename afterwards, so the question is cheap by comparison.
      A slug the user typed needs no question.
+   - **Choosing the model for a hand-off.** The session doing the reading
+     and planning is usually the expensive one (Fable); the space it hands
+     off to should not inherit that by default. Pick from the issue, not
+     from habit, and pass it as `--model`:
+     - `sonnet` — the work is well-scoped once read: the issue names the
+       files or the acceptance test, the fix is mechanical, investigative
+       (pull numbers, compare, write them down), config or Terraform with a
+       known shape, copy changes, or a test-and-doc follow-up.
+     - `opus` — the fix needs design judgment inside the code: choosing
+       between stores or mechanisms, touching concurrency or cancellation,
+       changing a shared interface, anything where a wrong first cut is
+       expensive to unwind.
+     - `fable` — only when the user asks for it, or the task is itself
+       planning or orchestration (an epic to break down, a design to spar
+       over). Never the default for an implementer.
+     When in doubt between two, take the cheaper one; the agent can escalate
+     by asking, and the review loop catches a weak fix. An epic is split
+     into one space per sub-issue, each with its own model choice.
    - **Name the space to match.** Once you're settled in issue N's worktree
      and herdr is running (`HERDR_ENV=1`), the tab and agent should carry the
      same key as everything else: tab label `<N>-<slug>`, agent `<slug>`,

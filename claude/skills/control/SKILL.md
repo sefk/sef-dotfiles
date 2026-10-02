@@ -41,8 +41,8 @@ Then pick the shape of the space:
 
 | the user says                                   | do                                                          |
 |-------------------------------------------------|-------------------------------------------------------------|
-| fix / work on issue N in project P              | `space new P --issue N --prompt "/fix-issue N"`             |
-| follow up on PR N / address review on PR N      | find its branch in `space ls` (open PRs list `headRefName`); `space new P --branch <that> --prompt "/pr-followup N"` |
+| fix / work on issue N in project P              | `space new P --issue N --model M --prompt "/fix-issue N"` (M from "Pick the model" below) |
+| follow up on PR N / address review on PR N      | find its branch in `space ls` (open PRs list `headRefName`); `space new P --branch <that> --model M --prompt "/pr-followup N"` |
 | pick up / go back to X                          | an existing tab → `space focus P <tab>`; an existing worktree or branch with no tab → `space new P --branch <b>` (or `--issue N`) with no prompt |
 | a temporary window / scratch space / "don't know yet" | `space new P --main --label <short name>` with no prompt    |
 | just a shell, no agent                          | add `--layout shell-shell` (or `shell`)                     |
@@ -59,6 +59,26 @@ Multiple tabs in one checkout are fine for `main` projects; two agents on one
 datatalk issue are not. `space new` already refuses to duplicate an issue
 tab; if `space ls` shows the issue is live somewhere, focus it and say so.
 
+## Pick the model
+
+You are the planner; the tab's agent is the worker, and it should not
+inherit your model by default. Read the issue (`gh issue view N`) far enough
+to classify it, then pass `--model`:
+
+- `sonnet` — well-scoped once read: named files or a clear acceptance test,
+  a mechanical fix, an investigation that pulls numbers and writes them
+  down, config or Terraform of a known shape, copy, a test or doc follow-up.
+  Also the default for `/pr-followup`, which works from written review
+  comments.
+- `opus` — design judgment inside the code: choosing between mechanisms,
+  concurrency or cancellation, a shared interface, anything expensive to
+  unwind if the first cut is wrong.
+- `fable` — only when the user asks, or the tab's job is itself planning or
+  orchestration (breaking down an epic, a design to spar over).
+
+When torn, take the cheaper one; the agent can ask, and review catches a
+weak fix. Say which model you chose in the plan block.
+
 ## The slug is the one thing to confirm
 
 For issue work with no slug given, `wt` derives one from the issue title
@@ -72,7 +92,7 @@ and wait. A slug the user typed needs no question. Pass the answer as
 
 Everything else about creating a space is reversible, so don't ask twice:
 state the plan in one block (project, issue/branch, directory, tab label,
-prompt to send), then run it.
+model, prompt to send), then run it.
 
 ## After `space new`
 

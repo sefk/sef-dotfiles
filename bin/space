@@ -10,8 +10,8 @@
 #       no project claims (e.g. "control") are listed last.
 #
 #   space new <project> [--issue N | --branch NAME | --main] [--slug SLUG]
-#             [--label L] [--prompt TEXT] [--no-agent] [--no-focus]
-#             [--layout claude-shell|shell-shell|shell]
+#             [--label L] [--prompt TEXT] [--model NAME] [--no-agent]
+#             [--no-focus] [--layout claude-shell|shell-shell|shell]
 #       Build a tab for a unit of work. <project> is a registry name or alias.
 #         --issue N    sibling worktree via `wt -y N [SLUG]` (branch issue-N-<slug>)
 #         --branch B   sibling worktree via `wt -y B`
@@ -23,9 +23,11 @@
 #       The tab is labelled --label, else "N-<slug>", else the branch, else
 #       "main" (main-2, main-3 if taken). Layout defaults to the project's
 #       `layout` key, else claude-shell: claude agent in the left pane (named
-#       after the slug), a plain shell on the right. --prompt is sent to the
-#       agent once it is idle. If the agent fails to start the pane stays a
-#       shell and the exit status is still 0. Ends with key: value lines.
+#       after the slug), a plain shell on the right. --model picks the claude
+#       model for that agent (sonnet, opus, fable; default: the caller's
+#       default model). --prompt is sent to the agent once it is idle. If the
+#       agent fails to start the pane stays a shell and the exit status is
+#       still 0. Ends with key: value lines.
 #
 #   space focus <project> [<tab-label-or-id>]
 #       Focus the project's workspace, and a tab in it (exact label, then
@@ -231,7 +233,7 @@ free_main_label() {
 cmd_new() {
   [ $# -ge 1 ] || die "usage: space new <project> [--issue N | --branch NAME | --main] ..."
   local proj; proj=$(resolve "$1"); shift
-  local issue="" branch="" main=0 slug="" label="" prompt="" noagent=0 focus=--focus layout=""
+  local issue="" branch="" main=0 slug="" label="" prompt="" model="" noagent=0 focus=--focus layout=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --issue)    issue=${2:?--issue needs a number}; shift 2 ;;
@@ -240,6 +242,7 @@ cmd_new() {
       --slug)     slug=${2:?--slug needs a value}; shift 2 ;;
       --label)    label=${2:?--label needs a value}; shift 2 ;;
       --prompt)   prompt=${2:?--prompt needs text}; shift 2 ;;
+      --model)    model=${2:?--model needs a name}; shift 2 ;;
       --layout)   layout=${2:?--layout needs a value}; shift 2 ;;
       --no-agent) noagent=1; shift ;;
       --no-focus) focus=--no-focus; shift ;;
@@ -344,8 +347,11 @@ cmd_new() {
   local agent=none sent=no aname
   if [ "$layout" = claude-shell ] && [ "$noagent" = 0 ]; then
     aname=$(agent_name "${slug:-$label}")
-    note "starting claude as $aname"
-    if herdr agent start "$aname" --kind claude --pane "$root" >/dev/null 2>&1; then
+    note "starting claude as $aname${model:+ ($model)}"
+    # 60s: direnv loads the project env before the shell prompt appears, and
+    # claude's own startup has missed herdr's 30s default on a busy box.
+    if herdr agent start "$aname" --kind claude --pane "$root" --timeout 60000 \
+         ${model:+-- --model "$model"} >/dev/null 2>&1; then
       agent=$aname
       if herdr agent wait "$root" --until idle --timeout 60000 >/dev/null 2>&1; then
         if [ -n "$prompt" ]; then
@@ -361,8 +367,8 @@ cmd_new() {
   fi
 
   note "done"
-  printf 'project: %s\ndir: %s\nbranch: %s\nworkspace_id: %s\ntab_id: %s\nroot_pane: %s\nshell_pane: %s\nagent: %s\nprompt_sent: %s\n' \
-    "$proj" "$dir" "$br" "$ws" "$tab" "$root" "${shell_pane:-none}" "$agent" "$sent"
+  printf 'project: %s\ndir: %s\nbranch: %s\nworkspace_id: %s\ntab_id: %s\nroot_pane: %s\nshell_pane: %s\nagent: %s\nmodel: %s\nprompt_sent: %s\n' \
+    "$proj" "$dir" "$br" "$ws" "$tab" "$root" "${shell_pane:-none}" "$agent" "${model:-default}" "$sent"
 }
 
 # --- focus / close ---------------------------------------------------------
