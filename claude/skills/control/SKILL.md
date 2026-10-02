@@ -79,20 +79,18 @@ to classify it, then pass `--model`:
 When torn, take the cheaper one; the agent can ask, and review catches a
 weak fix. Say which model you chose in the plan block.
 
-## The slug is the one thing to confirm
+## Pick the slug yourself
 
-For issue work with no slug given, `wt` derives one from the issue title
-(`wt slug N` shows it: lowercase, dashes, stopwords dropped, 18 chars). That
-slug becomes the branch and the directory, the two hardest things to rename,
-so ask before building: offer the derived slug first (recommended), one or
-two alternatives that stress a different part of the title, and free text.
-Use a structured question tool if you have one; otherwise ask in a sentence
-and wait. A slug the user typed needs no question. Pass the answer as
-`--slug`.
+For issue work the slug becomes the branch, the directory, the tab, and the
+agent name. Don't ask about it. Take the user's if they gave one; otherwise
+use the derived one from `wt slug N` (lowercase, dashes, stopwords dropped,
+18 chars), or write a better one if the derived slug is vague or misleading
+(a short phrase for what the change is, not the issue's first words). Pass it
+as `--slug`, and state it in the plan block so it's visible after the fact.
 
-Everything else about creating a space is reversible, so don't ask twice:
-state the plan in one block (project, issue/branch, directory, tab label,
-model, prompt to send), then run it.
+Creating a space is reversible, so don't ask first: state the plan in one
+block (project, issue/branch, slug, directory, tab label, model, prompt to
+send), then run it.
 
 ## After `space new`
 

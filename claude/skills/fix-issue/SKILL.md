@@ -36,7 +36,7 @@ commits, working branch for multi-step work, never push).
 
      That builds the worktree (via `wt`), a tab in the project's herdr
      workspace with a claude agent in it, sends it this same command, and
-     focuses it. Settle the slug first (next bullet) and pass it with
+     focuses it. Choose the slug yourself (next bullet) and pass it with
      `--slug`. Then report where the space is and that `/fix-issue <N>` was
      kicked off there, and go no further. Two agents in two trees on one
      issue is the collision the worktree exists to prevent — that's why this
@@ -55,14 +55,12 @@ commits, working branch for multi-step work, never push).
      rebase back into `main` yourself when done — never open a PR for it.
      If you're in the control session rather than the project, hand off the
      same way: `space new <project> --main --model <model> --prompt "/fix-issue <N>"`.
-   - **Never pick the slug silently.** Wherever a slug is about to become a
-     branch name — the feature branch here, or the worktree `space new`
-     builds — and it came from the issue title rather than from the user,
-     stop and ask which one they want (`AskUserQuestion` when you have it;
-     `wt slug <N>` for the suggestion, plus an alternative or two, and
-     *Other* for their own words). A branch and a directory are the hardest
-     things to rename afterwards, so the question is cheap by comparison.
-     A slug the user typed needs no question.
+   - **Pick the slug yourself; don't ask.** Wherever a slug is about to
+     become a branch name — the feature branch here, or the worktree `space
+     new` builds — use the user's if they gave one. Otherwise take the one
+     `wt slug <N>` derives from the issue title, or write a better short
+     phrase if that one is vague. Say which you used in the report. A slug
+     is a label, and a rename is possible if it turns out wrong.
    - **Choosing the model for a hand-off.** The session doing the reading
      and planning is usually the expensive one (Fable); the space it hands
      off to should not inherit that by default. Pick from the issue, not
