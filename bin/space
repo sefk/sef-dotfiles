@@ -348,10 +348,14 @@ cmd_new() {
   if [ "$layout" = claude-shell ] && [ "$noagent" = 0 ]; then
     aname=$(agent_name "${slug:-$label}")
     note "starting claude as $aname${model:+ ($model)}"
-    # 60s: direnv loads the project env before the shell prompt appears, and
-    # claude's own startup has missed herdr's 30s default on a busy box.
-    if herdr agent start "$aname" --kind claude --pane "$root" --timeout 60000 \
-         ${model:+-- --model "$model"} >/dev/null 2>&1; then
+    # The fresh pane is still running direnv when we get here, and agent start
+    # refuses a pane that is not at its shell prompt. Wait for the prompt
+    # (the zsh theme ends it with "> "), then give claude 60s to come up.
+    herdr pane wait-output "$root" --regex '> *$' --timeout 30000 >/dev/null 2>&1 \
+      || note "shell prompt not seen within 30s; trying to start the agent anyway"
+    local start_err
+    if start_err=$(herdr agent start "$aname" --kind claude --pane "$root" --timeout 60000 \
+         ${model:+-- --model "$model"} 2>&1 >/dev/null); then
       agent=$aname
       if herdr agent wait "$root" --until idle --timeout 60000 >/dev/null 2>&1; then
         if [ -n "$prompt" ]; then
@@ -363,6 +367,7 @@ cmd_new() {
       fi
     else
       note "agent failed to start; pane left as a shell"
+      [ -z "$start_err" ] || note "  $(printf '%s' "$start_err" | tail -1 | cut -c1-200)"
     fi
   fi
 
