@@ -1,0 +1,133 @@
+#!/bin/bash
+# convert-video: convert video/animation files to another format with ffmpeg.
+#
+# Usage: convert-video [-t FORMAT] FILE...
+#
+# Without -t, pops up a macOS list to choose the target format. Output lands
+# next to each input as <name>.<format> (never overwrites; adds -1, -2, ...).
+# Used by the "Convert Video" Quick Action (osx_services/convert-video.workflow)
+# but works fine from a shell too. Needs Homebrew's ffmpeg.
+
+FORMATS=(mov mp4 mkv webm gif m4v avi)
+
+# Quick Actions run with a bare PATH; find brew's bin explicitly.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# osascript wrappers. Strings are passed as argv, never interpolated into
+# the AppleScript, so odd characters in filenames can't break anything.
+dialog() { # title message [button...]
+    osascript - "$@" <<'EOF' 2>/dev/null
+on run argv
+    set btns to items 3 thru -1 of argv
+    if (count of btns) is 0 then set btns to {"OK"}
+    set r to display dialog (item 2 of argv) with title (item 1 of argv) ¬
+        buttons btns default button (last item of btns) with icon caution
+    return button returned of r
+end run
+EOF
+}
+
+notify() { # title message
+    osascript - "$1" "$2" <<'EOF' >/dev/null 2>&1
+on run argv
+    display notification (item 2 of argv) with title (item 1 of argv)
+end run
+EOF
+}
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+    if command -v brew >/dev/null 2>&1; then
+        cmd="brew install ffmpeg"
+        msg="Convert Video needs ffmpeg, which isn't installed.
+
+Install it with Homebrew by running this in Terminal:
+
+    $cmd"
+        if [ "$(dialog "ffmpeg not found" "$msg" "Cancel" "Copy Command")" = "Copy Command" ]; then
+            printf %s "$cmd" | pbcopy
+            notify "Convert Video" "Copied '$cmd' to the clipboard."
+        fi
+    else
+        dialog "ffmpeg not found" "Convert Video needs ffmpeg, and Homebrew isn't installed either.
+
+Install Homebrew from https://brew.sh, then run:
+
+    brew install ffmpeg" >/dev/null
+    fi
+    exit 1
+fi
+
+fmt=""
+if [ "$1" = "-t" ]; then fmt="$2"; shift 2; fi
+
+if [ $# -eq 0 ]; then
+    echo "usage: convert-video [-t FORMAT] FILE..." >&2
+    exit 2
+fi
+
+if [ -z "$fmt" ]; then
+    fmt=$(osascript - "${FORMATS[@]}" <<'EOF' 2>/dev/null
+on run argv
+    set r to choose from list argv with title "Convert Video" ¬
+        with prompt "Convert to:" default items {item 1 of argv}
+    if r is false then return ""
+    return item 1 of r
+end run
+EOF
+)
+    [ -z "$fmt" ] && exit 0   # cancelled
+fi
+
+# Per-format ffmpeg args. Everything is made broadly playable: H.264 + AAC
+# where the container allows, yuv420p, and even dimensions (animated WebP/GIF
+# often have odd sizes that libx264 rejects).
+EVEN="scale=trunc(iw/2)*2:trunc(ih/2)*2"
+case "$fmt" in
+    mov|mp4|m4v)
+        args=(-vf "$EVEN,format=yuv420p" -c:v libx264 -crf 18 -preset medium
+              -c:a aac -b:a 192k -movflags +faststart) ;;
+    mkv)
+        args=(-vf "$EVEN,format=yuv420p" -c:v libx264 -crf 18 -c:a aac -b:a 192k) ;;
+    webm)
+        args=(-vf "$EVEN,format=yuv420p" -c:v libvpx-vp9 -crf 32 -b:v 0
+              -c:a libopus -b:a 128k) ;;
+    avi)
+        args=(-vf "$EVEN,format=yuv420p" -c:v mpeg4 -q:v 3 -c:a libmp3lame -q:a 3) ;;
+    gif)
+        args=(-an -vf "fps=15,scale='min(640,iw)':-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" -loop 0) ;;
+    *)
+        dialog "Convert Video" "Unsupported format: $fmt" >/dev/null
+        exit 2 ;;
+esac
+
+ok=0 failed=0 errors=""
+for in in "$@"; do
+    [ -f "$in" ] || continue
+    dir=$(dirname "$in")
+    base=$(basename "$in")
+    base="${base%.*}"
+    out="$dir/$base.$fmt"
+    n=0
+    while [ -e "$out" ]; do n=$((n + 1)); out="$dir/$base-$n.$fmt"; done
+
+    log=$(mktemp -t convert-video)
+    # Optional audio map: stills/animations have none. -nostdin so ffmpeg
+    # doesn't eat the loop's input when run from a shell.
+    if ffmpeg -nostdin -hide_banner -loglevel error -i "$in" \
+            -map 0:v:0 -map '0:a:0?' "${args[@]}" "$out" 2>"$log"; then
+        ok=$((ok + 1))
+    else
+        failed=$((failed + 1))
+        rm -f "$out"
+        errors="$errors
+$(basename "$in"): $(tail -n 3 "$log")"
+    fi
+    rm -f "$log"
+done
+
+if [ $failed -gt 0 ]; then
+    dialog "Convert Video" "$failed file(s) failed to convert to .$fmt ($ok succeeded).
+$errors" >/dev/null
+    exit 1
+fi
+notify "Convert Video" "Converted $ok file(s) to .$fmt"
