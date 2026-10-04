@@ -18,8 +18,8 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 dialog() { # title message [button...]
     osascript - "$@" <<'EOF' 2>/dev/null
 on run argv
-    set btns to items 3 thru -1 of argv
-    if (count of btns) is 0 then set btns to {"OK"}
+    set btns to {"OK"}
+    if (count of argv) > 2 then set btns to items 3 thru -1 of argv
     set r to display dialog (item 2 of argv) with title (item 1 of argv) ¬
         buttons btns default button (last item of btns) with icon caution
     return button returned of r
