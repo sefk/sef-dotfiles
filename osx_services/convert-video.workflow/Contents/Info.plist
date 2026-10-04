@@ -10,6 +10,10 @@
 				<key>default</key>
 				<string>Convert Video</string>
 			</dict>
+			<key>NSBackgroundSystemColorName</key>
+			<string>systemBlue</string>
+			<key>NSIconName</key>
+			<string>NSActionTemplate</string>
 			<key>NSMessage</key>
 			<string>runWorkflowAsService</string>
 			<key>NSRequiredContext</key>

@@ -121,7 +121,7 @@
 		<key>serviceProcessesInput</key>
 		<integer>0</integer>
 		<key>workflowTypeIdentifier</key>
-		<string>com.apple.Automator.servicesMenu</string>
+		<string>com.apple.Automator.quickAction</string>
 	</dict>
 </dict>
 </plist>
