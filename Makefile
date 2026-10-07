@@ -118,6 +118,7 @@ clean:
 $(SERVICES_DIR):
 	if [ $(shell uname) == Darwin ]; then \
 		rsync -rupEv osx_services/ $(SERVICES_DIR); \
+		/System/Library/CoreServices/pbs -update; \
 	fi
 
 # launchd user agents: symlink each plist into ~/Library/LaunchAgents/.
