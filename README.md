@@ -141,7 +141,8 @@ issue #861 "Write up some coding guidelines starting with comments"
 `/fix-issue N` from the control session, or from a session in the wrong
 tree, hands off with `space new <project> --issue N --prompt "/fix-issue N"`;
 `/cleanup` from inside a finished tab removes the worktree and branch and
-hands the tab back to close. Status beyond `space ls` is still an open
+closes the tab itself when cleanup was clean (otherwise hands it back to
+you). Status beyond `space ls` is still an open
 question — the `task`/`wrangle` tooling that used to live here was too
 clunky and is gone; herdr-projects, herdr-radar, or captains-deck are the
 candidates.

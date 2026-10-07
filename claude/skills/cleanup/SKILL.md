@@ -1,6 +1,6 @@
 ---
 name: cleanup
-description: Tear down a finished unit of work — remove its worktree, delete its branch, close its issue if the repo expects that, and hand the herdr tab back for you to close. Use when work is merged, landed, or abandoned and the space should be reclaimed, e.g. "/cleanup", "/cleanup 931", "clean up everything that's merged", "I'm done with this worktree".
+description: Tear down a finished unit of work — remove its worktree, delete its branch, close its issue if the repo expects that, and close the herdr tab if everything went cleanly. Use when work is merged, landed, or abandoned and the space should be reclaimed, e.g. "/cleanup", "/cleanup 931", "clean up everything that's merged", "I'm done with this worktree".
 ---
 
 # Clean up a finished unit of work
@@ -56,7 +56,8 @@ here.)
 
 3. **State the plan and wait for a yes.** Per task: worktree to remove,
    branch to delete and whether it's merged, issue to close or leave, the
-   tab that will be left open, and anything being abandoned. This is
+   tab that will be closed at the end (if all goes cleanly), and anything
+   being abandoned. This is
    the destructive verb — the approval is not optional.
 
 4. **Gather everything before you remove anything.** You are usually standing
@@ -90,15 +91,32 @@ here.)
      Closing a workspace's last tab closes the workspace too -- fine, `space
      new` recreates it from the registry next time.
 
-7. **Report, then hand back your own tab.** What was removed, what was
-   kept and why, what's left on origin. Then end with the handoff line:
+7. **Report, then close your own tab if it was clean.** Write the report
+   first, as plain text: what was removed, what was kept and why, what's
+   left on origin. The close takes this agent, this report, and the shell
+   pane beside it with it, so the report has to be out before the close.
+
+   *Clean* means no errors and no surprises: every step did what the plan
+   said, nothing was kept that the plan didn't expect to keep, no command
+   failed or warned, and the user approved the plan as written. If anything
+   was off — a branch `wt rm` kept, an issue left open unexpectedly, a
+   failed command, a changed plan — don't close. End the report with the
+   handoff line instead and let the user decide:
 
    > all done — close the herdr tab with Ctrl-A Shift-X
 
-   Do **not** run `herdr tab close` on the tab you're in. It
-   takes this agent, this report, and the shell pane beside it with it, and
-   the confirmation vanishes before it's read. Closing it is one keystroke
-   for the user and nothing for them to verify afterwards.
+   If it was clean, end the report with "closing this herdr tab" and make
+   the **last tool call** the close, from the main checkout since your old
+   cwd is gone:
+
+   ```bash
+   cd $MAIN && herdr tab close "$HERDR_TAB_ID"
+   ```
+
+   (`space close` refuses the tab it runs in, so use `herdr` directly.) If
+   `$HERDR_TAB_ID` is unset you're not in herdr; skip the close and just
+   report. Only ever close your own tab this way — other tabs go through
+   `space close` in step 6.
 
 ## Related
 
