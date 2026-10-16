@@ -67,3 +67,60 @@ workspace = bench
 workflow = main
 
 Local LLM investigations (LM Studio, ollama, fm).
+
+## homepower
+
+path = ~/src/homepower
+repo = sefk/homepower
+workspace = homepower
+workflow = main
+aliases = solar
+
+Home solar monitoring: Django collectors, billing, Grafana dashboards over SQLite.
+Solo project; work straight on `main`.
+
+## email-clipping
+
+path = ~/src/email-clipping
+repo = sefk/email-clipping
+workspace = email-clipping
+workflow = main
+aliases = clipping
+
+Solo project; work straight on `main`.
+
+## sefk.github.io
+
+path = ~/src/sefk.github.io
+repo = sefk/sefk.github.io
+workspace = sefk.github.io
+workflow = main
+aliases = site, blog
+
+Solo project; work straight on `main`.
+
+## learning
+
+path = ~/src/learning
+workspace = learning
+workflow = main
+
+Solo project; no repo yet. Work in the checkout.
+
+## frisket
+
+path = ~/src/frisket
+repo = sefk/frisket
+workspace = frisket
+workflow = main
+
+Solo project; work straight on `main`.
+
+## wrgpt-buddy
+
+path = ~/src/wrgpt-buddy
+workspace = wrgpt-buddy
+workflow = main
+aliases = wrgpt
+
+New solo project; no repo yet. Work in the checkout.
