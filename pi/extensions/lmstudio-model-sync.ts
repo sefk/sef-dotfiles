@@ -134,17 +134,20 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // Free memory before the next request JIT-loads the selected model. Both
-  // hooks are needed: model_select frees memory the moment you press Ctrl+P,
-  // but it doesn't fire for the model pi starts with (`--model`, or the one
-  // restored from settings), so before_agent_start covers that case.
-  pi.on("model_select", async (event) => {
-    if (event.model.provider !== "lmstudio") return;
-    await unloadOthers(pi, event.model.id);
-  });
-
-  pi.on("before_agent_start", async (_event, ctx) => {
-    if (ctx.model?.provider !== "lmstudio") return;
-    await unloadOthers(pi, ctx.model.id);
-  });
+  // Eviction is disabled: the poker helper keeps two models resident
+  // (gpt-oss-20b + qwen3.6-35b-a3b, ~33 GB), and unloading "the others" on
+  // every turn would evict one of them. If a load fails the guardrail check
+  // ("insufficient system resources"), unload a model by hand with `lms unload`
+  // or re-enable these hooks (model_select for Ctrl+P, before_agent_start for
+  // the model pi starts with):
+  //
+  //   pi.on("model_select", async (event) => {
+  //     if (event.model.provider !== "lmstudio") return;
+  //     await unloadOthers(pi, event.model.id);
+  //   });
+  //   pi.on("before_agent_start", async (_event, ctx) => {
+  //     if (ctx.model?.provider !== "lmstudio") return;
+  //     await unloadOthers(pi, ctx.model.id);
+  //   });
+  void unloadOthers;
 }
