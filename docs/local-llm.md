@@ -249,6 +249,45 @@ Two non-obvious details, both found by testing with `kill -9`:
   later. With both fixes, measured recovery from `kill -9` of llmster
   is ~15s, down from ~80s.
 
+## 2026-10-15: back to the GUI app
+
+The llmster setup above was retired after it wedged in a way the
+supervisor couldn't recover from. At 21:03 the supervisor restarted and
+the long-running daemon (up since 09-30) went away; from then on every
+`lms` command failed with *"Failed to authenticate: Invalid passkey for
+lms CLI client"*. The daemon and `~/.lmstudio/.internal/lms-key-2`
+disagreed, and every supervisor retry hit the same error, so port 1234
+stayed dead. Each `lms` command that found no daemon also started a new
+one (`lms ls` started one at 21:06:40), so more than one process was
+starting daemons at once. A likely contributor: bench's `lmsmon` calls
+`lms ps` every second. Not proven.
+
+The SSH-only objection above turned out weaker than stated: this
+account auto-logs in at the console (FileVault off), so there is always
+a window-server session, and `open -a "LM Studio"` over SSH launches
+into it. Remaining tradeoff, accepted knowingly: nothing restarts the
+app if it's killed (the 09-01 jetsam case the supervisor existed for).
+
+### What we did
+
+1. `launchctl bootout gui/$(id -u)/com.sefk.llmster`; removed
+   `launchd/com.sefk.llmster.plist` and `bin/llmster-supervise.sh` from
+   this repo, and their links in `~/Library/LaunchAgents` and `~/bin`.
+2. Stopped the leftover llmster processes, and renamed
+   `~/.lmstudio/.internal/llmster-install-location.json` to
+   `…json.disabled-2026-10-15`. While that file exists, any `lms`
+   command that finds no server starts llmster again. One did during
+   the switch, before the app was up.
+3. `brew install --cask lm-studio` (0.4.26), `open -a "LM Studio"`.
+   The app then needs its window, via Screen Sharing: first-run screens,
+   start the server on port 1234 (Developer tab), and turn on
+   start-server-on-launch and launch-at-login (Settings).
+
+`~/.lmstudio/llmster/` is left in place. Rollback: quit the app, rename
+the `.disabled-…` file back, `git revert` the commit that removed the
+plist and script, `make`, then
+`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.sefk.llmster.plist`.
+
 ## Can ollama and LM Studio share a models directory?
 
 No — tried to find a shortcut here and it doesn't exist.
