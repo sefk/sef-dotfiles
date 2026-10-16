@@ -279,9 +279,21 @@ app if it's killed (the 09-01 jetsam case the supervisor existed for).
    command that finds no server starts llmster again. One did during
    the switch, before the app was up.
 3. `brew install --cask lm-studio` (0.4.26), `open -a "LM Studio"`.
-   The app then needs its window, via Screen Sharing: first-run screens,
-   start the server on port 1234 (Developer tab), and turn on
-   start-server-on-launch and launch-at-login (Settings).
+   The app then needs its window, via Screen Sharing:
+   - Settings → "Local LLM Service (headless)" → **Enable Local LLM
+     Service** (`enableLocalService` in `~/.lmstudio/settings.json`).
+     Registers LM Studio as a login item, and closing the window leaves
+     the service running in the menu bar.
+   - Menu-bar icon → **Start Server on Port 1234**. There is no separate
+     "start on launch" setting: starting the server sets
+     `autoStartOnLaunch: true` in `.internal/http-server-config.json`,
+     and Stop Server clears it, so the server comes back in whatever
+     state it was last left.
+
+   Verified 2026-10-15: `lms ps` reports device "LM Studio", port 1234
+   answers completions, wrgpt-buddy's gpt-oss calls resumed, and LM
+   Studio is in the login items. On first start the app replaced
+   `~/.lmstudio/bin/lms` with its own copy.
 
 `~/.lmstudio/llmster/` is left in place. Rollback: quit the app, rename
 the `.disabled-…` file back, `git revert` the commit that removed the
