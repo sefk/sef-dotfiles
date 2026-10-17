@@ -1,4 +1,4 @@
-# Claude Code against local LM Studio (llmster) — zero Anthropic quota.
+# Claude Code against local LM Studio — zero Anthropic quota.
 #
 # LM Studio >= 0.4.1 exposes a native Anthropic-compatible /v1/messages
 # endpoint, so no proxy is needed; the auth token is required-but-ignored
@@ -6,8 +6,8 @@
 # per-invocation only: your claude.ai login stays saved and untouched, and
 # plain `claude` keeps using the subscription.
 #
-# Migrated from ollama 2026-07-06: same qwen3.6 weights, now served via
-# llmster/lms instead (see launchd/com.sefk.llmster.plist for the daemon).
+# Migrated from ollama 2026-07-06: same qwen3.6 weights, now served by LM
+# Studio (the GUI app since 2026-10-15; see docs/local-llm.md).
 #
 # Model notes (tested 2026-07-03, ollama 0.24.0 — needs re-validation under
 # LM Studio's serving stack, which may behave differently on both counts):

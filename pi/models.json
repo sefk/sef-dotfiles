@@ -10,8 +10,8 @@
       },
       "models": [
         {
-          "id": "qwen/qwen3.6-27b",
-          "name": "qwen/qwen3.6-27b",
+          "id": "qwen/qwen3.6-35b-a3b",
+          "name": "qwen/qwen3.6-35b-a3b",
           "reasoning": true,
           "contextWindow": 262144,
           "maxTokens": 32768,
@@ -20,8 +20,28 @@
           }
         },
         {
-          "id": "qwen/qwen3.6-35b-a3b",
-          "name": "qwen/qwen3.6-35b-a3b",
+          "id": "openai/gpt-oss-20b",
+          "name": "openai/gpt-oss-20b",
+          "reasoning": true,
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "thinkingFormat": "qwen-chat-template"
+          }
+        },
+        {
+          "id": "qwen/qwen3.8-27b",
+          "name": "qwen/qwen3.8-27b",
+          "reasoning": true,
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "compat": {
+            "thinkingFormat": "qwen-chat-template"
+          }
+        },
+        {
+          "id": "qwen/qwen3.6-27b",
+          "name": "qwen/qwen3.6-27b",
           "reasoning": true,
           "contextWindow": 262144,
           "maxTokens": 32768,

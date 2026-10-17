@@ -22,5 +22,4 @@ package, so load them before acting rather than relying on this file:
 Setup fallbacks:
 
 - If `hunk` isn't installed: `brew install hunk` (it's in this repo's `brewlist`).
-- If no session is running: ask the user to launch `hunk diff --watch` first
-  (or `/diff --hunk`).
+- If no session is running: ask the user to launch `! hunk diff --watch` first.
