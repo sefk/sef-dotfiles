@@ -1,10 +1,43 @@
 {
   "hooks": {
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/Users/sefk/.codex/herdr-agent-state.sh' idle",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
           {
             "command": "bash '/Users/sefk/.codex/herdr-agent-state.sh' session",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/Users/sefk/.codex/herdr-agent-state.sh' idle",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/Users/sefk/.codex/herdr-agent-state.sh' working",
             "timeout": 10,
             "type": "command"
           }
