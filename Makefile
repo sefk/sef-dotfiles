@@ -21,6 +21,12 @@ OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
 LAUNCHD_AGENTS_TO_LINK = $(sort $(wildcard launchd/*.plist))
 LAUNCHD_AGENT_LINKS    = $(patsubst launchd/%,~/Library/LaunchAgents/%,$(LAUNCHD_AGENTS_TO_LINK))
+# Jobs with a launchd/system/ daemon version run as system LaunchDaemons on studio (install by
+# hand with sudo into /Library/LaunchDaemons), so studio must not also link their user agents.
+# Other hosts keep the agents.
+ifeq ($(shell hostname -s),studio)
+LAUNCHD_AGENTS_TO_LINK = $(filter-out $(addprefix launchd/,$(notdir $(wildcard launchd/system/*.plist))),$(sort $(wildcard launchd/*.plist)))
+endif
 
 # Dependencies that will end up with symlinks
 # Relies on "sort" to also remove dups
