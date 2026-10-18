@@ -35,7 +35,7 @@ For each service below:
 
 - [x] `com.sefk.wrgpt-buddy.web`
 - [x] `com.sefk.wrgpt-buddy.poll`
-- [ ] `com.sefk.wrgpt-buddy.recommend` (auth is `CLAUDE_CODE_OAUTH_TOKEN` in `.env`, no keychain needed; confirm it runs with no login)
+- [x] `com.sefk.wrgpt-buddy.recommend` (auth is `CLAUDE_CODE_OAUTH_TOKEN` in `.env`, no keychain needed; confirm it runs with no login)
 - [ ] `com.sefk.homepower`
 - [ ] `com.sefk.grafana` (keep `TZ`)
 - [ ] `com.datatalk.cloud-sql-proxy` (ADC is a file in `~/.config/gcloud`)
