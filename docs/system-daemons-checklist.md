@@ -43,8 +43,8 @@ For each service below:
 
 ## Phase 3: Scheduled jobs (credential risk)
 
-- [ ] `com.sefk.claude-backup`: find out how the Synology share is mounted and authenticated; a daemon cannot use a session mount or keychain
-- [ ] `com.sefk.homepower-backup`: same share, same answer
+- [x] `com.sefk.claude-backup`: guest SMB + restic password in ~/.bash_secret, no keychain; daemon copy in launchd/system/
+- [x] `com.sefk.homepower-backup`: may need Full Disk Access for the venv python (ext1)
 
 ## Phase 4: Open questions
 
