@@ -38,7 +38,7 @@ For each service below:
 - [x] `com.sefk.wrgpt-buddy.recommend` (auth is `CLAUDE_CODE_OAUTH_TOKEN` in `.env`, no keychain needed; confirm it runs with no login)
 - [x] `com.sefk.homepower`
 - [x] `com.sefk.grafana` (keep `TZ`)
-- [ ] `com.datatalk.cloud-sql-proxy` (ADC is a file in `~/.config/gcloud`)
+- [x] `com.datatalk.cloud-sql-proxy`: stays a per-user agent (used at the keyboard; not needed at boot)
 - [ ] `com.sefk.agentsview` (plist is symlinked from sef-dotfiles; decide where the daemon copy lives)
 
 ## Phase 3: Scheduled jobs (credential risk)

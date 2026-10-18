@@ -4,8 +4,13 @@
 <dict>
 	<key>Label</key>
 	<string>com.sefk.agentsview</string>
+	<key>UserName</key>
+	<string>sefk</string>
+	<key>GroupName</key>
+	<string>staff</string>
 
-	<!-- Keep agentsview serving + watching for new Claude/Ollama sessions. -->
+	<!-- System LaunchDaemon (install with sudo into /Library/LaunchDaemons; launchd
+	     rejects symlinks there). Keep agentsview serving + watching for new Claude/Ollama sessions. -->
 	<key>ProgramArguments</key>
 	<array>
 		<string>/opt/homebrew/bin/agentsview</string>
@@ -23,6 +28,8 @@
 	<!-- launchd starts with a minimal PATH; give agentsview a sane one. -->
 	<key>EnvironmentVariables</key>
 	<dict>
+		<key>HOME</key>
+		<string>/Users/sefk</string>
 		<key>PATH</key>
 		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
 	</dict>
