@@ -28,8 +28,8 @@ For each service below:
 ## Phase 1: Data stores (others depend on these)
 
 - [x] `homebrew.mxcl.postgresql@18` (never via `sudo brew services`; Postgres refuses root)
-- [ ] `homebrew.mxcl.mysql` (skip if unused)
-- [ ] `homebrew.mxcl.redis` (skip if unused)
+- [x] `homebrew.mxcl.mysql`: not needed, stopped and agent disabled (data kept)
+- [x] `homebrew.mxcl.redis`: not needed, stopped and agent disabled
 
 ## Phase 2: Applications
 
