@@ -33,8 +33,8 @@ For each service below:
 
 ## Phase 2: Applications
 
-- [ ] `com.sefk.wrgpt-buddy.web`
-- [ ] `com.sefk.wrgpt-buddy.poll`
+- [x] `com.sefk.wrgpt-buddy.web`
+- [x] `com.sefk.wrgpt-buddy.poll`
 - [ ] `com.sefk.wrgpt-buddy.recommend` (auth is `CLAUDE_CODE_OAUTH_TOKEN` in `.env`, no keychain needed; confirm it runs with no login)
 - [ ] `com.sefk.homepower`
 - [ ] `com.sefk.grafana` (keep `TZ`)
