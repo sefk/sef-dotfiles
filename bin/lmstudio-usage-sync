@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+"""Backfill LM Studio API usage into agentsview as synthetic pi sessions.
+
+agentsview has no generic usage import but ingests pi sessions, so each
+completion in the LM Studio server logs becomes an assistant message in a
+pi-format JSONL file, one session per (workload, day). The workload is guessed
+from the system prompt (CLASSIFIERS) and becomes the session's cwd, which
+agentsview shows as the project. Traffic from pi itself is skipped: pi already
+writes its own sessions.
+
+Idempotent: output files are rebuilt from the logs on every run.
+"""
+import argparse
+import collections
+import datetime as dt
+import glob
+import hashlib
+import json
+import os
+import re
+
+LOGS = os.path.expanduser("~/.lmstudio/server-logs")
+OUT = os.path.expanduser("~/.pi/agent/sessions")
+PROJECTS = os.path.expanduser("~/src")
+
+# (system-prompt prefix, project). First match wins; unmatched -> lmstudio-other.
+CLASSIFIERS = [
+    ("You are an expert coding assistant operating inside pi", None),  # skip
+    ("\nAlways respond with a JSON object", "wrgpt-buddy"),
+    ("You are an expert no-limit hold'em coach", "wrgpt-buddy"),
+    ("You parse a canvasser's trip message", "leafletter-app"),
+    ("You are the parser for a trip-logging", "leafletter-app"),
+    ("You name screenshot files", "screenshot-namer"),
+    ("You analyze one parent response", "school-parent-survey"),
+    ("You are auditing an analysis of one parent", "school-parent-survey"),
+    ("You are labeling a cluster of parent survey", "school-parent-survey"),
+    ("You analyze short items from a school survey", "school-parent-survey"),
+    ("You score short items from a school survey", "school-parent-survey"),
+    ("Answer the multiple-choice question", "bench"),
+    ("Answer with a single letter only", "bench"),
+    ("/no_think Answer with a single letter", "bench"),
+    ("Solve the problem. Show your work", "bench"),
+    ("You are an expert Python programmer", "bench"),
+    ("[run ", "bench"),
+    ("Complete this Python function", "bench"),
+]
+OTHER = "lmstudio-other"
+
+REQ = re.compile(r"^\[([^\]]+)\]\[DEBUG\] Received request: POST to /(?:v1|api/v0)/chat/completions with body[ ]", re.M)
+RESP = re.compile(r"^\[([^\]]+)\]\[INFO\]\[([^\]]*)\] Generated prediction: ", re.M)
+
+
+def classify(body):
+    msgs = body.get("messages") or []
+    first = msgs[0].get("content") if msgs else ""
+    if not isinstance(first, str):
+        first = json.dumps(first)
+    for prefix, project in CLASSIFIERS:
+        if first.startswith(prefix):
+            return project
+    return OTHER
+
+
+def project_cwd(project):
+    path = os.path.join(PROJECTS, project)
+    return path if os.path.isdir(path) else os.path.join(os.path.expanduser("~"), "lmstudio", project)
+
+
+def parse_log(path):
+    """Yield (timestamp, project, response dict) for each completion in one log."""
+    text = open(path, errors="replace").read()
+    dec = json.JSONDecoder()
+    events = []
+    for m in REQ.finditer(text):
+        try:
+            body, _ = dec.raw_decode(text, m.end())
+        except ValueError:
+            body = {}
+        events.append((m.start(), "req", m.group(1), body))
+    for m in RESP.finditer(text):
+        try:
+            resp, _ = dec.raw_decode(text, m.end())
+        except ValueError:
+            continue
+        events.append((m.start(), "resp", m.group(1), resp))
+    events.sort(key=lambda e: e[0])
+    pending = collections.defaultdict(collections.deque)  # model -> FIFO of requests
+    for _, kind, ts, obj in events:
+        if kind == "req":
+            # Streamed requests (pi) never get a "Generated prediction" entry; queueing
+            # them would shift every later pairing.
+            if not obj.get("stream"):
+                pending[obj.get("model")].append(obj)
+            continue
+        model = obj.get("model")
+        queue = pending[model] or next((q for q in pending.values() if q), None)
+        body = queue.popleft() if queue else {}
+        yield ts, classify(body) if body else OTHER, obj
+
+
+def local_to_utc(ts):
+    return dt.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").astimezone(dt.timezone.utc)
+
+
+def session_dir(cwd):
+    return os.path.join(OUT, "--" + cwd.strip("/").replace("/", "-") + "--")
+
+
+def write_session(project, day, rows):
+    cwd = project_cwd(project)
+    sid = hashlib.md5(f"lmstudio-{project}-{day}".encode()).hexdigest()
+    sid = f"{sid[:8]}-{sid[8:12]}-{sid[12:16]}-{sid[16:20]}-{sid[20:32]}"
+    rows.sort(key=lambda r: r[0])
+    first = rows[0][0]
+    stamp = first.strftime("%Y-%m-%dT%H-%M-%S-") + f"{first.microsecond // 1000:03d}Z"
+    d = session_dir(cwd)
+    os.makedirs(d, exist_ok=True)
+    # Replace any earlier file for this session id (its first-row stamp may shift).
+    for old in glob.glob(os.path.join(d, f"*_{sid}.jsonl")):
+        os.remove(old)
+    iso = lambda t: t.strftime("%Y-%m-%dT%H:%M:%S.") + f"{t.microsecond // 1000:03d}Z"
+    lines = [{"type": "session", "version": 3, "id": sid, "timestamp": iso(first), "cwd": cwd}]
+    parent = None
+    for i, (t, resp) in enumerate(rows):
+        u = resp.get("usage") or {}
+        details = u.get("completion_tokens_details") or {}
+        ch = (resp.get("choices") or [{}])[0]
+        msg = ch.get("message") or {}
+        mid = hashlib.md5((resp.get("id") or str(i)).encode()).hexdigest()[:8]
+        if i == 0 or resp.get("model") != rows[i - 1][1].get("model"):
+            cid = "c" + mid
+            lines.append({"type": "model_change", "id": cid, "parentId": parent, "timestamp": iso(t),
+                          "provider": "lmstudio", "modelId": resp.get("model")})
+            parent = cid
+        lines.append({
+            "type": "message", "id": mid, "parentId": parent, "timestamp": iso(t),
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": msg.get("content") or ""}],
+                "api": "openai-completions", "provider": "lmstudio", "model": resp.get("model"),
+                "usage": {"input": u.get("prompt_tokens", 0), "output": u.get("completion_tokens", 0),
+                          "cacheRead": 0, "cacheWrite": 0, "reasoning": details.get("reasoning_tokens", 0),
+                          "totalTokens": u.get("total_tokens", 0),
+                          "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0, "total": 0}},
+                "stopReason": "stop", "timestamp": int(t.timestamp() * 1000),
+                "responseId": resp.get("id"),
+            },
+        })
+        parent = mid
+    path = os.path.join(d, f"{stamp}_{sid}.jsonl")
+    with open(path, "w") as f:
+        for line in lines:
+            f.write(json.dumps(line) + "\n")
+    return path
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--since", help="only logs on/after this date (YYYY-MM-DD)")
+    ap.add_argument("--dry-run", action="store_true", help="print the summary, write nothing")
+    args = ap.parse_args()
+
+    groups = collections.defaultdict(dict)  # (project, day) -> response id -> (utc, resp)
+    for path in sorted(glob.glob(os.path.join(LOGS, "*", "*.log"))):
+        if args.since and os.path.basename(path)[:10] < args.since:
+            continue
+        for ts, project, resp in parse_log(path):
+            if project is None:
+                continue
+            if not (resp.get("usage") or {}).get("total_tokens"):
+                continue
+            t = local_to_utc(ts)
+            day = t.astimezone().strftime("%Y-%m-%d")
+            groups[(project, day)][resp.get("id") or f"{ts}-{len(groups)}"] = (t, resp)
+
+    totals = collections.Counter()
+    for (project, day), by_id in sorted(groups.items()):
+        rows = list(by_id.values())
+        tok = sum(r["usage"].get("total_tokens", 0) for _, r in rows)
+        totals[project] += tok
+        if not args.dry_run:
+            write_session(project, day, rows)
+    for project, tok in totals.most_common():
+        print(f"{project:24} {tok:>14,} tokens")
+    print(f"{sum(len(g) for g in groups.values())} completions in {len(groups)} sessions"
+          + (" (dry run)" if args.dry_run else ""))
+
+
+if __name__ == "__main__":
+    main()

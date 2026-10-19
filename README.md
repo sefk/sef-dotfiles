@@ -168,6 +168,18 @@ not to prove a quiet one stayed quiet. Which window is which comes from
 `window_minutes`, not from Codex's `primary`/`secondary` position — Codex moved
 its weekly window into `primary` and dropped `secondary` to null.
 
+## LM Studio usage in agentsview (`bin/lmstudio-usage-sync`)
+
+[agentsview] only reads agent session logs, so programmatic LM Studio calls
+(wrgpt-buddy, bench, leafletter, ...) never show up in its usage graphs. The
+script parses `~/.lmstudio/server-logs`, where every completion is logged with
+its token `usage`, and writes synthetic pi-format sessions (one per workload
+per day) into `~/.pi/agent/sessions/`, which agentsview already ingests. The
+workload is guessed from the system prompt (`CLASSIFIERS` at the top of the
+script; unmatched traffic lands under project `lmstudio-other`), and becomes
+the session's project. Streamed requests are skipped: that is pi's own traffic,
+already recorded by pi. Rebuilds are idempotent; run it, then `agentsview sync`.
+
 [agentsview]: https://www.agentsview.io/
 
 ## Things to set up on new machines
