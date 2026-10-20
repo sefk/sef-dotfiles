@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.sefk.lmstudio-usage-sync</string>
+	<key>UserName</key>
+	<string>sefk</string>
+	<key>GroupName</key>
+	<string>staff</string>
+
+	<!-- Nightly backfill of LM Studio API usage into agentsview (as synthetic pi sessions).
+	     System LaunchDaemon version for studio (see Makefile); the agent in ../ stays for
+	     other hosts. If the machine is asleep at 03:45, launchd runs it on next wake. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/sefk/bin/lmstudio-usage-sync</string>
+	</array>
+
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>3</integer>
+		<key>Minute</key>
+		<integer>45</integer>
+	</dict>
+
+	<key>RunAtLoad</key>
+	<false/>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>/Users/sefk</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/sefk/Library/Logs/lmstudio-usage-sync.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/sefk/Library/Logs/lmstudio-usage-sync.log</string>
+</dict>
+</plist>
