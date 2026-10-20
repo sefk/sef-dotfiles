@@ -19,7 +19,9 @@ FILE_EXCLUDES          = README README.md CLAUDE.md AGENTS.md Makefile %.swp .% 
 SECRETS_FILE           = bash_secret
 OLD_FILES              = .vimrc.before .vimrc.after
 SERVICES_DIR           = ~/Library/Services
-LAUNCHD_AGENTS_TO_LINK = $(sort $(wildcard launchd/*.plist))
+# The agentsview agent is only linked on hosts where agentsview is installed.
+LAUNCHD_SKIP           = $(if $(shell PATH=/opt/homebrew/bin:$$PATH command -v agentsview),,launchd/com.sefk.agentsview.plist)
+LAUNCHD_AGENTS_TO_LINK = $(sort $(filter-out $(LAUNCHD_SKIP),$(wildcard launchd/*.plist)))
 LAUNCHD_AGENT_LINKS    = $(patsubst launchd/%,~/Library/LaunchAgents/%,$(LAUNCHD_AGENTS_TO_LINK))
 # Jobs with a launchd/system/ daemon version run as system LaunchDaemons on studio (install by
 # hand with sudo into /Library/LaunchDaemons), so studio must not also link their user agents.
