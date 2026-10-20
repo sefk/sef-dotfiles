@@ -44,7 +44,7 @@ For each service below:
 ## Phase 3: Scheduled jobs (credential risk)
 
 - [x] `com.sefk.claude-backup`: guest SMB + restic password in ~/.bash_secret, no keychain; daemon copy in launchd/system/
-- [ ] `com.sefk.lmstudio-usage-sync`: nightly LM Studio log backfill into agentsview; daemon copy in launchd/system/, needs sudo install
+- [x] `com.sefk.lmstudio-usage-sync`: nightly LM Studio log backfill into agentsview; daemon copy in launchd/system/, needs sudo install
 - [x] `com.sefk.homepower-backup`: may need Full Disk Access for the venv python (ext1)
 
 ## Phase 4: Open questions
