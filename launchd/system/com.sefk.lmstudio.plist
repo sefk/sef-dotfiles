@@ -11,13 +11,13 @@
 
 	<!-- System LaunchDaemon (install with sudo into /Library/LaunchDaemons; launchd
 	     rejects symlinks there). Headless LM Studio so the API on :1234 is up after a
-	     reboot with nobody logged in. No model is preloaded: server config has
+	     reboot with nobody logged in. The wrapper waits for the external models disk to
+	     mount first (LM Studio doesn't rescan a missing models dir). No model is preloaded: server config has
 	     autoStartOnLaunch and just-in-time loading, so clients load what they need.
 	     Studio-only, so there is deliberately no launchd/ agent twin. -->
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Applications/LM Studio.app/Contents/MacOS/LM Studio</string>
-		<string>--run-as-service</string>
+		<string>/Users/sefk/bin/lmstudio-service.sh</string>
 	</array>
 
 	<key>RunAtLoad</key>
