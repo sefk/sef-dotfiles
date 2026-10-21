@@ -124,3 +124,13 @@ workflow = main
 aliases = wrgpt
 
 New solo project; no repo yet. Work in the checkout.
+
+## local-redirector
+
+path = ~/src/local-redirector
+repo = sefk/local-redirector
+workspace = local-redirector
+workflow = main
+aliases = redirector
+
+Solo project; work straight on `main`.
