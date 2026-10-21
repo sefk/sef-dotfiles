@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.sefk.lmstudio</string>
+	<key>UserName</key>
+	<string>sefk</string>
+	<key>GroupName</key>
+	<string>staff</string>
+
+	<!-- System LaunchDaemon (install with sudo into /Library/LaunchDaemons; launchd
+	     rejects symlinks there). Headless LM Studio so the API on :1234 is up after a
+	     reboot with nobody logged in. No model is preloaded: server config has
+	     autoStartOnLaunch and just-in-time loading, so clients load what they need.
+	     Studio-only, so there is deliberately no launchd/ agent twin. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Applications/LM Studio.app/Contents/MacOS/LM Studio</string>
+		<string>--run-as-service</string>
+	</array>
+
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>/Users/sefk</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/sefk/.lmstudio/service.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/sefk/.lmstudio/service.log</string>
+</dict>
+</plist>
