@@ -134,3 +134,11 @@ workflow = main
 aliases = redirector
 
 Solo project; work straight on `main`.
+
+## westwing
+
+path = ~/src/westwing
+workspace = westwing
+workflow = main
+
+New solo project; no repo yet. Work in the checkout.
