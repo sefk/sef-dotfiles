@@ -142,3 +142,11 @@ workspace = westwing
 workflow = main
 
 New solo project; no repo yet. Work in the checkout.
+
+## peninsula-list-archive
+
+path = ~/src/peninsula-list-archive
+workspace = peninsula-list-archive
+workflow = main
+
+New solo project; no repo yet. Work in the checkout.
