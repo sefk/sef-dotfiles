@@ -150,3 +150,12 @@ workspace = peninsula-list-archive
 workflow = main
 
 New solo project; no repo yet. Work in the checkout.
+
+## product
+
+path = ~/src/biglocalnews/product
+repo = biglocalnews/product
+workspace = product
+workflow = main
+
+Work straight on `main` in the checkout.
