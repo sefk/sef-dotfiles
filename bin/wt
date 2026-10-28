@@ -301,6 +301,13 @@ cmd_rm() {
   echo
   confirm || return 1
 
+  # agentsview resolves a session's project through git at parse time; once
+  # the worktree is gone it falls back to the directory name and the sessions
+  # split off from the main project. Sync while the tree still exists.
+  if command -v agentsview >/dev/null; then
+    agentsview sync >/dev/null 2>&1 || echo "wt: agentsview sync failed; continuing" >&2
+  fi
+
   # Run from the main checkout: we may be deleting the directory we're in.
   here=$PWD
   git -C "$MAIN" worktree remove "$d"

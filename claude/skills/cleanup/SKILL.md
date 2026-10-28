@@ -80,7 +80,9 @@ here.)
    - issue work in a worktree: `wt rm -y <N>` from the main checkout — it
      removes the worktree and deletes the branch when it's merged, keeps it
      when it isn't, and says which.
-   - anything else: `git -C $MAIN worktree remove <dir>` then
+   - anything else: `agentsview sync` (so its sessions are attributed to the
+     project while the tree still exists — `wt rm` does this itself), then
+     `git -C $MAIN worktree remove <dir>` then
      `git -C $MAIN branch -d <branch>`. `-D` only when the user said abandon,
      in those words.
    - the remote branch stays. Deleting it is a push, and you never push —
